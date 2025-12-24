@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -59,6 +60,7 @@ const navItems = [
 function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
+  const { signOut } = useClerk();
 
   return (
     <aside
@@ -70,7 +72,8 @@ function Sidebar() {
     >
       {/* Logo + Collapse Toggle */}
       <div className={`h-14 flex items-center border-b border-border ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}>
-        <span
+        <Link
+          href="/"
           className={`
             font-semibold text-lg text-foreground tracking-tight
             transition-all duration-300
@@ -78,7 +81,7 @@ function Sidebar() {
           `}
         >
           endoros
-        </span>
+        </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200"
@@ -135,6 +138,7 @@ function Sidebar() {
       {/* Log Out */}
       <div className={`py-3 border-t border-border ${collapsed ? "px-2" : "px-3"}`}>
         <button
+          onClick={() => signOut({ redirectUrl: "/" })}
           className={`
             flex items-center rounded-lg transition-all duration-200 group relative w-full
             ${collapsed ? "w-9 h-9 justify-center" : "gap-3 px-3 py-2"}
