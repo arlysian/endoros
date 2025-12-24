@@ -6,7 +6,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="flex items-center px-8 py-6">
         <span className="text-2xl font-semibold text-[#2d2d2d] tracking-tight">
-          endoros
+          Endoros
         </span>
       </header>
 

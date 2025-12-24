@@ -8,7 +8,7 @@ export default function SignupPage() {
       <header className="flex items-center justify-between px-8 py-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl font-semibold text-[#2d2d2d] tracking-tight">
-            endoros
+            Endoros
           </span>
         </Link>
       </header>

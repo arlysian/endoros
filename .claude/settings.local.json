@@ -5,7 +5,8 @@
       "Bash(npx tsc:*)",
       "Bash(move audience-insights \"\\(dashboard\\)\\\\audience-insights\")",
       "Bash(move settings \"\\(dashboard\\)\\\\settings\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

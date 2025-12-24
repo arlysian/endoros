@@ -1,9 +1,22 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
+
+interface UserData {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  userName: string | null;
+  category: string | null;
+  bio: string | null;
+  website: string | null;
+  location: string | null;
+  profileImageUrl: string | null;
+  coverImageUrl: string | null;
+}
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -80,7 +93,7 @@ function Sidebar() {
             ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"}
           `}
         >
-          endoros
+          Endoros
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
@@ -166,6 +179,35 @@ function Sidebar() {
 }
 
 function LivePreview() {
+  const [user, setUser] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/user");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  const displayName = user?.firstName && user?.lastName
+    ? `${user.firstName} ${user.lastName}`
+    : user?.firstName || user?.userName || "Your Name";
+
+  const displayUsername = user?.userName ? `@${user.userName}` : "@username";
+
+  const displayBio = user?.bio || "Add a bio to tell brands about yourself.";
+
+  // TODO: Fetch from Achievement and Collaboration tables
   const achievements = [
     "Featured in Vogue Magazine",
     "Brand Partner of the Year 2023",
@@ -190,29 +232,53 @@ function LivePreview() {
 
         {/* Cover Image */}
         <div className="relative mb-8">
-          <div className="h-24 bg-gray-200 rounded-xl" />
+          {user?.coverImageUrl ? (
+            <img
+              src={user.coverImageUrl}
+              alt="Cover"
+              className="h-24 w-full object-cover rounded-xl"
+            />
+          ) : (
+            <div className="h-24 bg-gray-200 rounded-xl" />
+          )}
           <div className="absolute -bottom-6 left-4">
             <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-gray-300">
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
+              {user?.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500">
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Profile Info */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold text-foreground">John Doe</h3>
+          <h3 className="text-xl font-semibold text-foreground">
+            {loading ? <span className="bg-gray-200 rounded w-32 h-6 inline-block animate-pulse" /> : displayName}
+          </h3>
           <div className="flex items-center gap-1 mt-1">
-            <span className="text-muted">@john_doe</span>
-            <svg className="w-4 h-4 text-[#4285F4]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-            </svg>
+            <span className="text-muted">
+              {loading ? <span className="bg-gray-200 rounded w-20 h-4 inline-block animate-pulse" /> : displayUsername}
+            </span>
+            {!loading && user?.userName && (
+              <svg className="w-4 h-4 text-[#4285F4]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+              </svg>
+            )}
           </div>
           <p className="text-sm text-muted mt-3 leading-relaxed">
-            Passionate content creator sharing lifestyle tips and inspiration. Partnered with top brands in fashion and wellness.
+            {loading ? (
+              <span className="bg-gray-200 rounded w-full h-12 inline-block animate-pulse" />
+            ) : displayBio}
           </p>
         </div>
 
