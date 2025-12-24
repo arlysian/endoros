@@ -4,7 +4,8 @@
       "Bash(mkdir:*)",
       "Bash(npx tsc:*)",
       "Bash(move audience-insights \"\\(dashboard\\)\\\\audience-insights\")",
-      "Bash(move settings \"\\(dashboard\\)\\\\settings\")"
+      "Bash(move settings \"\\(dashboard\\)\\\\settings\")",
+      "Bash(ls:*)"
     ]
   }
 }
