@@ -11,6 +11,7 @@ interface UserData {
   lastName: string | null;
   userName: string | null;
   category: string | null;
+  email: string | null;
   bio: string | null;
   website: string | null;
   location: string | null;
@@ -23,12 +24,25 @@ interface SidebarContextType {
   setCollapsed: (collapsed: boolean) => void;
 }
 
+interface UserContextType {
+  user: UserData | null;
+  loading: boolean;
+  refreshUser: () => Promise<void>;
+}
+
 const SidebarContext = createContext<SidebarContextType>({
   collapsed: false,
   setCollapsed: () => {},
 });
 
+const UserContext = createContext<UserContextType>({
+  user: null,
+  loading: true,
+  refreshUser: async () => {},
+});
+
 export const useSidebar = () => useContext(SidebarContext);
+export const useUser = () => useContext(UserContext);
 
 const navItems = [
   {
@@ -179,25 +193,7 @@ function Sidebar() {
 }
 
 function LivePreview() {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch("/api/user");
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUser();
-  }, []);
+  const { user, loading } = useUser();
 
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -231,7 +227,7 @@ function LivePreview() {
         <h2 className="text-lg font-semibold text-foreground mb-4">Live Preview</h2>
 
         {/* Cover Image */}
-        <div className="relative mb-8">
+        <div className="relative mb-12">
           {user?.coverImageUrl ? (
             <img
               src={user.coverImageUrl}
@@ -241,8 +237,8 @@ function LivePreview() {
           ) : (
             <div className="h-24 bg-gray-200 rounded-xl" />
           )}
-          <div className="absolute -bottom-6 left-4">
-            <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-gray-300">
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2">
+            <div className="w-16 h-16 rounded-full shadow-md overflow-hidden bg-gray-300">
               {user?.profileImageUrl ? (
                 <img
                   src={user.profileImageUrl}
@@ -261,11 +257,11 @@ function LivePreview() {
         </div>
 
         {/* Profile Info */}
-        <div className="mb-6">
+        <div className="mb-6 text-center">
           <h3 className="text-xl font-semibold text-foreground">
             {loading ? <span className="bg-gray-200 rounded w-32 h-6 inline-block animate-pulse" /> : displayName}
           </h3>
-          <div className="flex items-center gap-1 mt-1">
+          <div className="flex items-center justify-center gap-1 mt-1">
             <span className="text-muted">
               {loading ? <span className="bg-gray-200 rounded w-20 h-4 inline-block animate-pulse" /> : displayUsername}
             </span>
@@ -338,19 +334,41 @@ function LivePreview() {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      const res = await fetch("/api/user");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshUser();
+  }, []);
 
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
-      <Sidebar />
-      <main
-        className={`
-          min-h-screen transition-all duration-300 pr-[320px]
-          ${collapsed ? "pl-[52px]" : "pl-[240px]"}
-        `}
-      >
-        {children}
-      </main>
-      <LivePreview />
+      <UserContext.Provider value={{ user, loading: userLoading, refreshUser }}>
+        <Sidebar />
+        <main
+          className={`
+            min-h-screen transition-all duration-300 pr-[320px]
+            ${collapsed ? "pl-[52px]" : "pl-[240px]"}
+          `}
+        >
+          {children}
+        </main>
+        <LivePreview />
+      </UserContext.Provider>
     </SidebarContext.Provider>
   );
 }

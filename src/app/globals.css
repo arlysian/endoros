@@ -4,22 +4,26 @@
   /* Background */
   --background: #faf9f5;
   --sidebar: #faf9f5;
-  
+
   /* Text colors */
   --foreground: #1f2937;
   --muted: #6b7280;
-  
+
   /* Border colors - gray outlines */
   --border: #d1d5db;
-  
+
   /* Accent */
   --accent: #2596be;
-  
+
   /* Interactive states */
   --hover: rgba(0, 0, 0, 0.04);
-  
+
   /* Card */
   --card: #ffffff;
+
+  /* Popover */
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
 }
 
 @theme inline {
@@ -31,6 +35,8 @@
   --color-accent: var(--accent);
   --color-hover: var(--hover);
   --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

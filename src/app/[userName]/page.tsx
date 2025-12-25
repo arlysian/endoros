@@ -113,11 +113,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
                 className="h-32 w-full object-cover"
               />
             ) : (
-              <div className="h-32 bg-gradient-to-r from-[#2596be] to-[#1e7a9a]" />
+              <div className="h-32 bg-white" />
             )}
             {/* Profile Picture - Centered, hovering over hero */}
             <div className="absolute left-1/2 -translate-x-1/2 bottom-0">
-              <div className="w-28 h-28 rounded-full border-4 border-white overflow-hidden bg-gray-300 shadow-xl">
+              <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-300 shadow-xl">
               {user.profileImageUrl ? (
                 <img
                   src={user.profileImageUrl}
@@ -153,7 +153,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
             {/* Stats */}
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <div className="flex justify-between text-center">
+              <div className="grid grid-cols-3 text-center">
                 <div>
                   <p className="text-lg font-semibold text-[#1f2937]">{formatNumber(totalFollowers)}</p>
                   <p className="text-xs text-[#6b7280]">Followers</p>

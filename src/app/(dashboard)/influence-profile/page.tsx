@@ -1,14 +1,247 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { useUser } from "@/components/DashboardLayout";
+import Cropper, { Area } from "react-easy-crop";
 
 export default function InfluenceProfile() {
+  const { user, refreshUser } = useUser();
+
+  // Image URLs (from server or local preview)
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+
+  // Pending files to upload on save
+  const [pendingPfp, setPendingPfp] = useState<File | null>(null);
+  const [pendingHero, setPendingHero] = useState<File | null>(null);
+
+  const [saving, setSaving] = useState(false);
+  const [formLoaded, setFormLoaded] = useState(false);
+
+  // Crop modal state
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [cropType, setCropType] = useState<"pfp" | "hero">("pfp");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const pfpInputRef = useRef<HTMLInputElement>(null);
+  const heroInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync images with user data (always keep in sync after save)
+  useEffect(() => {
+    if (user) {
+      if (user.profileImageUrl && !pendingPfp) setProfileImagePreview(user.profileImageUrl);
+      if (user.coverImageUrl && !pendingHero) setCoverImagePreview(user.coverImageUrl);
+    }
+  }, [user, pendingPfp, pendingHero]);
+
+  // Sync form data only on initial load
+  useEffect(() => {
+    if (user && !formLoaded) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        userName: user.userName || "",
+        category: user.category || "",
+        email: user.email || "",
+        website: user.website || "",
+        bio: user.bio || "",
+      });
+      setFormLoaded(true);
+    }
+  }, [user, formLoaded]);
+
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const createCroppedImage = async (imageSrc: string, pixelCrop: Area): Promise<File> => {
+    const image = new Image();
+    image.src = imageSrc;
+    await new Promise((resolve) => (image.onload = resolve));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) throw new Error("Could not get canvas context");
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Could not create blob"));
+          return;
+        }
+        const file = new File([blob], "cropped-image.jpg", { type: "image/jpeg" });
+        resolve(file);
+      }, "image/jpeg", 0.9);
+    });
+  };
+
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "pfp" | "hero"
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setCropImage(previewUrl);
+      setCropType(type);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCropModalOpen(true);
+    }
+    e.target.value = "";
+  };
+
+  const handleCropConfirm = async () => {
+    if (!cropImage || !croppedAreaPixels) return;
+
+    try {
+      const croppedFile = await createCroppedImage(cropImage, croppedAreaPixels);
+      const previewUrl = URL.createObjectURL(croppedFile);
+
+      if (cropType === "pfp") {
+        setPendingPfp(croppedFile);
+        setProfileImagePreview(previewUrl);
+      } else {
+        setPendingHero(croppedFile);
+        setCoverImagePreview(previewUrl);
+      }
+
+      setCropModalOpen(false);
+      setCropImage(null);
+    } catch (error) {
+      console.error("Error cropping image:", error);
+      alert("Failed to crop image");
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropModalOpen(false);
+    setCropImage(null);
+  };
+
+  const handleSaveChanges = async () => {
+    setSaving(true);
+    try {
+      // Upload pending images
+      const uploads: Promise<void>[] = [];
+
+      if (pendingPfp) {
+        uploads.push(uploadImage(pendingPfp, "pfp"));
+      }
+      if (pendingHero) {
+        uploads.push(uploadImage(pendingHero, "hero"));
+      }
+
+      await Promise.all(uploads);
+
+      // Save form data
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to save profile");
+      }
+
+      // Refresh user data first, then clear pending files
+      // This prevents useEffect from briefly showing old images
+      await refreshUser();
+
+      setPendingPfp(null);
+      setPendingHero(null);
+
+      alert("Changes saved successfully!");
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveImage = async (type: "pfp" | "hero") => {
+    try {
+      const res = await fetch("/api/user/image", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || "Failed to remove image");
+        return;
+      }
+
+      if (type === "pfp") {
+        setProfileImagePreview(null);
+        setPendingPfp(null);
+      } else {
+        setCoverImagePreview(null);
+        setPendingHero(null);
+      }
+
+      await refreshUser();
+    } catch (error) {
+      console.error("Remove error:", error);
+      alert("Failed to remove image");
+    }
+  };
+
+  const uploadImage = async (file: File, type: "pfp" | "hero") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+
+    const res = await fetch("/api/user/image", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Upload failed");
+    }
+
+    const { url } = await res.json();
+    if (type === "pfp") {
+      setProfileImagePreview(url);
+    } else {
+      setCoverImagePreview(url);
+    }
+  };
+
   const [formData, setFormData] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    userName: "@john_doe",
+    firstName: "",
+    lastName: "",
+    userName: "",
     category: "",
-    email: "john.doe@gmail.com",
+    email: "",
     website: "",
     bio: "",
   });
@@ -59,6 +292,26 @@ export default function InfluenceProfile() {
     { id: 8, brand: "Disney", campaign: "Movie Premiere", date: "2023-09", type: "Event" },
   ]);
 
+  const [showCollabModal, setShowCollabModal] = useState(false);
+  const [collabDate, setCollabDate] = useState<Date | undefined>(undefined);
+  const [newCollab, setNewCollab] = useState({
+    brand: "",
+    campaign: "",
+    date: "",
+    type: "Paid",
+  });
+
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [achievementDate, setAchievementDate] = useState<Date | undefined>(undefined);
+  const [newAchievement, setNewAchievement] = useState({
+    title: "",
+    description: "",
+    date: "",
+    category: "Media",
+  });
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "collab" | "achievement"; id: number } | null>(null);
+
   const categories = [
     "Fashion & Style",
     "Beauty & Makeup",
@@ -72,14 +325,6 @@ export default function InfluenceProfile() {
     "Business & Finance",
   ];
 
-  const removeAchievement = (id: number) => {
-    setAchievements(achievements.filter(a => a.id !== id));
-  };
-
-  const removeCollaboration = (id: number) => {
-    setCollaborations(collaborations.filter(c => c.id !== id));
-  };
-
   const removeAccount = (platformId: string, username: string) => {
     setPlatforms(platforms.map(p => {
       if (p.id === platformId) {
@@ -87,6 +332,41 @@ export default function InfluenceProfile() {
       }
       return p;
     }));
+  };
+
+  const addCollaboration = () => {
+    if (newCollab.brand && newCollab.campaign) {
+      setCollaborations([
+        ...collaborations,
+        { id: Date.now(), ...newCollab },
+      ]);
+      setNewCollab({ brand: "", campaign: "", date: "", type: "Paid" });
+      setCollabDate(undefined);
+      setShowCollabModal(false);
+    }
+  };
+
+  const addAchievement = () => {
+    if (newAchievement.title && newAchievement.description) {
+      setAchievements([
+        ...achievements,
+        { id: Date.now(), ...newAchievement },
+      ]);
+      setNewAchievement({ title: "", description: "", date: "", category: "Media" });
+      setAchievementDate(undefined);
+      setShowAchievementModal(false);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      if (deleteConfirm.type === "collab") {
+        setCollaborations(collaborations.filter(c => c.id !== deleteConfirm.id));
+      } else {
+        setAchievements(achievements.filter(a => a.id !== deleteConfirm.id));
+      }
+      setDeleteConfirm(null);
+    }
   };
 
   return (
@@ -101,29 +381,105 @@ export default function InfluenceProfile() {
         <h2 className="text-lg font-medium text-foreground mb-6">Basic Information</h2>
 
         {/* Cover Image Upload */}
-        <div className="border-2 border-dashed border-border rounded-xl p-8 mb-6 flex flex-col items-center justify-center">
-          <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-hover transition-colors mb-2">
-            <UploadIcon className="w-4 h-4" />
-            <span className="text-sm font-medium">Upload Cover Image</span>
-          </button>
-          <p className="text-sm text-muted">JPG, PNG up to 5MB • 1200x300px recommended</p>
+        <div className={`rounded-xl mb-6 overflow-hidden relative ${coverImagePreview ? "" : "border-2 border-dashed border-border"}`}>
+          {coverImagePreview ? (
+            <div className="relative h-[200px]">
+              <img
+                src={coverImagePreview}
+                alt="Cover"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <button
+                  onClick={() => heroInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-foreground hover:bg-gray-100 transition-colors"
+                >
+                  <UploadIcon className="w-4 h-4" />
+                  <span className="text-sm font-medium">Change</span>
+                </button>
+                <button
+                  onClick={() => handleRemoveImage("hero")}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  <span className="text-sm font-medium">Remove</span>
+                </button>
+              </div>
+              {pendingHero && (
+                <div className="absolute top-2 right-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
+                  Unsaved
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-8 flex flex-col items-center justify-center">
+              <button
+                onClick={() => heroInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-hover transition-colors mb-2"
+              >
+                <UploadIcon className="w-4 h-4" />
+                <span className="text-sm font-medium">Upload Cover Image</span>
+              </button>
+              <p className="text-sm text-muted">JPG, PNG up to 5MB • 1200x300px recommended</p>
+            </div>
+          )}
+          <input
+            ref={heroInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => handleFileChange(e, "hero")}
+            className="hidden"
+          />
         </div>
 
         {/* Profile Picture */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-            <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face"
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
+          <div className={`w-20 h-20 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center relative ${profileImagePreview ? "" : "bg-gray-200"}`}>
+            {profileImagePreview ? (
+              <img
+                src={profileImagePreview}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <UserIcon className="w-10 h-10 text-gray-400" />
+            )}
+            {pendingPfp && (
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white" />
+            )}
           </div>
           <div>
-            <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-hover transition-colors mb-1">
-              <UploadIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">Upload Profile Picture</span>
-            </button>
-            <p className="text-sm text-muted">JPG, PNG up to 5MB</p>
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                onClick={() => pfpInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-hover transition-colors"
+              >
+                <UploadIcon className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {profileImagePreview ? "Change" : "Upload"}
+                </span>
+              </button>
+              {profileImagePreview && (
+                <button
+                  onClick={() => handleRemoveImage("pfp")}
+                  className="flex items-center gap-2 px-4 py-2 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  <span className="text-sm font-medium">Remove</span>
+                </button>
+              )}
+            </div>
+            <p className="text-sm text-muted">
+              JPG, PNG up to 5MB
+              {pendingPfp && <span className="text-yellow-600 ml-2">• Unsaved</span>}
+            </p>
+            <input
+              ref={pfpInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => handleFileChange(e, "pfp")}
+              className="hidden"
+            />
           </div>
         </div>
 
@@ -135,6 +491,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              placeholder="Enter your first name"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
             />
           </div>
@@ -144,6 +501,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              placeholder="Enter your last name"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
             />
           </div>
@@ -153,6 +511,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.userName}
               onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+              placeholder="@yourname"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
             />
           </div>
@@ -175,6 +534,7 @@ export default function InfluenceProfile() {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="your@email.com"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
             />
           </div>
@@ -184,7 +544,7 @@ export default function InfluenceProfile() {
               type="url"
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              placeholder=""
+              placeholder="https://yourwebsite.com"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
             />
           </div>
@@ -196,8 +556,19 @@ export default function InfluenceProfile() {
             value={formData.bio}
             onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
             rows={4}
+            placeholder="Add a bio to tell brands about yourself."
             className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20 resize-none"
           />
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleSaveChanges}
+            disabled={saving}
+            className="px-6 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </section>
 
@@ -301,7 +672,7 @@ export default function InfluenceProfile() {
                 </div>
               </div>
               <button
-                onClick={() => removeAchievement(achievement.id)}
+                onClick={() => setDeleteConfirm({ type: "achievement", id: achievement.id })}
                 className="text-muted hover:text-foreground transition-colors"
               >
                 <XIcon className="w-5 h-5" />
@@ -310,7 +681,10 @@ export default function InfluenceProfile() {
           ))}
         </div>
 
-        <button className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors">
+        <button
+          onClick={() => setShowAchievementModal(true)}
+          className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors"
+        >
           <PlusCircleIcon className="w-5 h-5" />
           <span className="text-sm font-medium">Add Achievements</span>
         </button>
@@ -339,7 +713,7 @@ export default function InfluenceProfile() {
                 </div>
               </div>
               <button
-                onClick={() => removeCollaboration(collab.id)}
+                onClick={() => setDeleteConfirm({ type: "collab", id: collab.id })}
                 className="text-muted hover:text-foreground transition-colors"
               >
                 <XIcon className="w-5 h-5" />
@@ -348,18 +722,296 @@ export default function InfluenceProfile() {
           ))}
         </div>
 
-        <button className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors">
+        <button
+          onClick={() => setShowCollabModal(true)}
+          className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors"
+        >
           <PlusCircleIcon className="w-5 h-5" />
           <span className="text-sm font-medium">Add Brand Collaboration</span>
         </button>
       </section>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button className="px-6 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors">
-          Save Changes
-        </button>
-      </div>
+      {/* Add Collaboration Modal */}
+      {showCollabModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Add Brand Collaboration</h2>
+              <button
+                onClick={() => setShowCollabModal(false)}
+                className="text-muted hover:text-foreground transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Brand Name *</label>
+                <input
+                  type="text"
+                  value={newCollab.brand}
+                  onChange={(e) => setNewCollab({ ...newCollab, brand: e.target.value })}
+                  placeholder="e.g. Nike"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Campaign Name *</label>
+                <input
+                  type="text"
+                  value={newCollab.campaign}
+                  onChange={(e) => setNewCollab({ ...newCollab, campaign: e.target.value })}
+                  placeholder="e.g. Summer Collection"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full h-auto justify-start text-left font-normal px-4 py-3 bg-gray-50 rounded-lg text-foreground hover:bg-gray-100 border-none text-base"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {collabDate ? format(collabDate, "MMM yyyy") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={collabDate}
+                        onSelect={(date) => {
+                          setCollabDate(date);
+                          if (date) {
+                            setNewCollab({ ...newCollab, date: format(date, "yyyy-MM") });
+                          }
+                        }}
+                        captionLayout="dropdown"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Type</label>
+                  <select
+                    value={newCollab.type}
+                    onChange={(e) => setNewCollab({ ...newCollab, type: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                  >
+                    <option value="Paid">Paid</option>
+                    <option value="Gifted">Gifted</option>
+                    <option value="Event">Event</option>
+                    <option value="Ambassador">Ambassador</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowCollabModal(false)}
+                className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-foreground hover:bg-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addCollaboration}
+                className="flex-1 px-4 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors"
+              >
+                Add Collaboration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Achievement Modal */}
+      {showAchievementModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-foreground">Add Achievement</h2>
+              <button
+                onClick={() => setShowAchievementModal(false)}
+                className="text-muted hover:text-foreground transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Title *</label>
+                <input
+                  type="text"
+                  value={newAchievement.title}
+                  onChange={(e) => setNewAchievement({ ...newAchievement, title: e.target.value })}
+                  placeholder="e.g. Featured in Vogue Magazine"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Description *</label>
+                <input
+                  type="text"
+                  value={newAchievement.description}
+                  onChange={(e) => setNewAchievement({ ...newAchievement, description: e.target.value })}
+                  placeholder="e.g. Cover story feature"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full h-auto justify-start text-left font-normal px-4 py-3 bg-gray-50 rounded-lg text-foreground hover:bg-gray-100 border-none text-base"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {achievementDate ? format(achievementDate, "MMM yyyy") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={achievementDate}
+                        onSelect={(date) => {
+                          setAchievementDate(date);
+                          if (date) {
+                            setNewAchievement({ ...newAchievement, date: format(date, "yyyy-MM") });
+                          }
+                        }}
+                        captionLayout="dropdown"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Category</label>
+                  <select
+                    value={newAchievement.category}
+                    onChange={(e) => setNewAchievement({ ...newAchievement, category: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                  >
+                    <option value="Media">Media</option>
+                    <option value="Events">Events</option>
+                    <option value="Awards">Awards</option>
+                    <option value="Features">Features</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAchievementModal(false)}
+                className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-foreground hover:bg-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addAchievement}
+                className="flex-1 px-4 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors"
+              >
+                Add Achievement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl">
+            <h2 className="text-lg font-semibold text-foreground mb-2">Are you sure?</h2>
+            <p className="text-sm text-muted mb-6">
+              This {deleteConfirm.type === "collab" ? "collaboration" : "achievement"} will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-foreground hover:bg-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Crop Modal */}
+      {cropModalOpen && cropImage && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-2xl mx-4 shadow-xl overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-foreground">
+                Crop {cropType === "pfp" ? "Profile Picture" : "Cover Image"}
+              </h2>
+            </div>
+
+            <div className="relative h-[400px] bg-gray-900">
+              <Cropper
+                image={cropImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={cropType === "pfp" ? 1 : 4}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                cropShape={cropType === "pfp" ? "round" : "rect"}
+                showGrid={false}
+              />
+            </div>
+
+            <div className="p-4 border-t border-border">
+              <div className="flex items-center gap-4 mb-4">
+                <span className="text-sm text-muted">Zoom:</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCropCancel}
+                  className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-foreground hover:bg-hover transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCropConfirm}
+                  className="flex-1 px-4 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors"
+                >
+                  Apply Crop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -412,6 +1064,30 @@ function PlusCircleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  );
+}
+
+function UserIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
   );
 }

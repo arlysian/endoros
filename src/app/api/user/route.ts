@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   const { userId } = await auth();
@@ -17,6 +17,7 @@ export async function GET() {
       lastName,
       userName,
       category,
+      email,
       bio,
       website,
       location,
@@ -32,4 +33,64 @@ export async function GET() {
   }
 
   return NextResponse.json(user);
+}
+
+export async function PATCH(request: NextRequest) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+
+    // Only allow updating specific fields
+    const allowedFields = [
+      "firstName",
+      "lastName",
+      "userName",
+      "category",
+      "email",
+      "bio",
+      "website",
+    ];
+
+    const updates: Record<string, string | null> = {};
+    for (const field of allowedFields) {
+      if (field in body) {
+        updates[field] = body[field] || null;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: "No valid fields to update" },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("User")
+      .update(updates)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating user:", error);
+      return NextResponse.json(
+        { error: "Failed to update user" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("PATCH error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
