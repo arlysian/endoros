@@ -275,11 +275,15 @@ export default function InfluenceProfile() {
     },
   ]);
 
-  const [achievements, setAchievements] = useState([
-    { id: 1, title: "Featured in Vogue Magazine", description: "Cover story feature", date: "2023-06", category: "Media" },
-    { id: 2, title: "Interviewed by The New York Times", description: "In-depth article", date: "2023-08", category: "Media" },
-    { id: 3, title: "Showcased at Paris Fashion Week", description: "Runway presentation", date: "2023-09", category: "Events" },
-  ]);
+  interface Achievement {
+    id: string;
+    title: string;
+    description: string | null;
+    date: string | null;
+    category: string | null;
+  }
+
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   const [collaborations, setCollaborations] = useState([
     { id: 1, brand: "Nike", campaign: "Air Max Campaign", date: "2023-06", type: "Paid" },
@@ -310,7 +314,23 @@ export default function InfluenceProfile() {
     category: "Media",
   });
 
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "collab" | "achievement"; id: number } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "collab" | "achievement"; id: string | number } | null>(null);
+
+  // Fetch achievements on mount
+  useEffect(() => {
+    async function fetchAchievements() {
+      try {
+        const res = await fetch("/api/achievements");
+        if (res.ok) {
+          const data = await res.json();
+          setAchievements(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch achievements:", error);
+      }
+    }
+    fetchAchievements();
+  }, []);
 
   const categories = [
     "Fashion & Style",
@@ -346,24 +366,50 @@ export default function InfluenceProfile() {
     }
   };
 
-  const addAchievement = () => {
+  const addAchievement = async () => {
     if (newAchievement.title && newAchievement.description) {
-      setAchievements([
-        ...achievements,
-        { id: Date.now(), ...newAchievement },
-      ]);
-      setNewAchievement({ title: "", description: "", date: "", category: "Media" });
-      setAchievementDate(undefined);
-      setShowAchievementModal(false);
+      try {
+        const res = await fetch("/api/achievements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newAchievement),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setAchievements([data, ...achievements]);
+          setNewAchievement({ title: "", description: "", date: "", category: "Media" });
+          setAchievementDate(undefined);
+          setShowAchievementModal(false);
+        } else {
+          alert("Failed to add achievement");
+        }
+      } catch (error) {
+        console.error("Error adding achievement:", error);
+        alert("Failed to add achievement");
+      }
     }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteConfirm) {
       if (deleteConfirm.type === "collab") {
         setCollaborations(collaborations.filter(c => c.id !== deleteConfirm.id));
       } else {
-        setAchievements(achievements.filter(a => a.id !== deleteConfirm.id));
+        try {
+          const res = await fetch(`/api/achievements?id=${deleteConfirm.id}`, {
+            method: "DELETE",
+          });
+
+          if (res.ok) {
+            setAchievements(achievements.filter(a => a.id !== deleteConfirm.id));
+          } else {
+            alert("Failed to delete achievement");
+          }
+        } catch (error) {
+          console.error("Error deleting achievement:", error);
+          alert("Failed to delete achievement");
+        }
       }
       setDeleteConfirm(null);
     }
