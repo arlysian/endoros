@@ -54,12 +54,14 @@ export async function PATCH(request: NextRequest) {
       "email",
       "bio",
       "website",
+      "engagement",
+      "avgViews",
     ];
 
-    const updates: Record<string, string | null> = {};
+    const updates: Record<string, string | number | null> = {};
     for (const field of allowedFields) {
       if (field in body) {
-        updates[field] = body[field] || null;
+        updates[field] = body[field] ?? null;
       }
     }
 

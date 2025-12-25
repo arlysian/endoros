@@ -152,20 +152,18 @@ export default async function PublicProfilePage({ params }: PageProps) {
             </div>
 
             {/* Stats */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <div className="grid grid-cols-3 text-center">
-                <div>
-                  <p className="text-lg font-semibold text-[#1f2937]">{formatNumber(totalFollowers)}</p>
-                  <p className="text-xs text-[#6b7280]">Followers</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-[#1f2937]">{connectedAccounts?.length || 0}</p>
-                  <p className="text-xs text-[#6b7280]">Platforms</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-[#1f2937]">{collaborations?.length || 0}</p>
-                  <p className="text-xs text-[#6b7280]">Collabs</p>
-                </div>
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              <div className="border border-gray-200 rounded-xl p-3 bg-white text-center">
+                <p className="text-lg font-semibold text-[#1f2937]">{formatNumber(totalFollowers)}</p>
+                <p className="text-xs text-[#9ca3af]">Followers</p>
+              </div>
+              <div className="border border-gray-200 rounded-xl p-3 bg-white text-center">
+                <p className="text-lg font-semibold text-[#1f2937]">-</p>
+                <p className="text-xs text-[#9ca3af]">Engagement</p>
+              </div>
+              <div className="border border-gray-200 rounded-xl p-3 bg-white text-center">
+                <p className="text-lg font-semibold text-[#1f2937]">-</p>
+                <p className="text-xs text-[#9ca3af]">Avg. Views</p>
               </div>
             </div>
 
@@ -181,13 +179,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
             {achievements && achievements.length > 0 && (
               <div className="mb-6">
                 <h2 className="font-semibold text-[#1f2937] mb-3">Achievements & Highlights</h2>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
                   {achievements.map((achievement) => (
-                    <div key={achievement.id} className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span className="text-sm text-[#6b7280]">{achievement.title}</span>
+                    <div
+                      key={achievement.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1f2937] text-white text-sm rounded-full"
+                    >
+                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                      <span>{achievement.title}</span>
                     </div>
                   ))}
                 </div>
@@ -198,20 +197,103 @@ export default async function PublicProfilePage({ params }: PageProps) {
             {collaborations && collaborations.length > 0 && (
               <div className="mb-6">
                 <h2 className="font-semibold text-[#1f2937] mb-3">Brand Collaborations</h2>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {collaborations.map((collab) => (
-                    <div key={collab.id} className="bg-gray-50 rounded-xl p-3">
-                      <p className="font-medium text-[#1f2937] text-sm">{collab.brand}</p>
-                      <p className="text-xs text-[#6b7280] mt-0.5">{collab.campaign}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">{collab.date}</span>
-                        <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">{collab.type}</span>
-                      </div>
+                    <div key={collab.id} className="border border-gray-200 rounded-xl p-3 bg-white">
+                      <p className="font-semibold text-[#1f2937] text-sm">{collab.brand}</p>
+                      {collab.campaign && (
+                        <p className="text-xs text-[#6b7280] mt-1 line-clamp-1">{collab.campaign}</p>
+                      )}
+                      {(collab.type || collab.date) && (
+                        <div className="flex items-center gap-2 mt-2 text-[10px] text-[#9ca3af]">
+                          {collab.type && <span>{collab.type}</span>}
+                          {collab.type && collab.date && <span>•</span>}
+                          {collab.date && <span>{collab.date}</span>}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Follower Growth */}
+            <div className="border border-gray-200 rounded-xl p-4 bg-white mb-3">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-semibold text-[#1f2937]">Follower Growth</h3>
+                <span className="text-[11px] text-[#9ca3af]">Last 7 days</span>
+              </div>
+
+              {/* Bar Chart */}
+              <div className="flex items-end gap-3 h-24 mb-1">
+                {[
+                  { light: 56, dark: 44 },
+                  { light: 72, dark: 60 },
+                  { light: 64, dark: 52 },
+                  { light: 88, dark: 76 },
+                  { light: 80, dark: 68 },
+                  { light: 96, dark: 84 },
+                  { light: 88, dark: 76 },
+                ].map((bar, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center">
+                    <div className="w-full rounded-md overflow-hidden flex flex-col justify-end" style={{ height: `${bar.light}px` }}>
+                      <div className="w-full bg-[#b8e4f0]" style={{ height: `${bar.light - bar.dark}px` }} />
+                      <div className="w-full bg-[#2596be]" style={{ height: `${bar.dark}px` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mb-4">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                  <span key={d} className="flex-1 text-center text-[10px] text-[#9ca3af]">{d}</span>
+                ))}
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 pt-4 border-t border-gray-100">
+                <div>
+                  <p className="text-[11px] text-[#9ca3af]">New followers</p>
+                  <p className="text-lg font-semibold text-[#1f2937]">+2,847</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-[#9ca3af]">Growth rate</p>
+                  <p className="text-lg font-semibold text-[#2596be]">+2.3%</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-[#9ca3af]">Unfollows</p>
+                  <p className="text-lg font-semibold text-[#ef4444]">-124</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Engagement Breakdown */}
+            <div className="border border-gray-200 rounded-xl p-4 bg-white mb-6">
+              <h3 className="font-semibold text-[#1f2937] mb-4">Engagement Breakdown</h3>
+
+              <div className="space-y-4">
+                {[
+                  { label: "Likes", pct: 68, count: "45.2K", color: "#2596be" },
+                  { label: "Comments", pct: 18, count: "12.1K", color: "#10b981" },
+                  { label: "Shares", pct: 9, count: "6.2K", color: "#f59e0b" },
+                  { label: "Saves", pct: 5, count: "3.4K", color: "#8b5cf6" },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-sm font-medium text-[#1f2937]">{item.label}</span>
+                      <span className="text-sm text-[#9ca3af]">{item.count} ({item.pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full">
+                      <div className="h-full rounded-full" style={{ width: `${item.pct}%`, backgroundColor: item.color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
+                <span className="text-sm text-[#9ca3af]">Total Engagements</span>
+                <span className="text-lg font-semibold text-[#1f2937]">66.9K</span>
+              </div>
+            </div>
 
             {/* Contact */}
             {(user.location || user.website) && (
