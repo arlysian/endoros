@@ -283,18 +283,16 @@ export default function InfluenceProfile() {
     category: string | null;
   }
 
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  interface Collaboration {
+    id: string;
+    brand: string;
+    campaign: string | null;
+    date: string | null;
+    type: string | null;
+  }
 
-  const [collaborations, setCollaborations] = useState([
-    { id: 1, brand: "Nike", campaign: "Air Max Campaign", date: "2023-06", type: "Paid" },
-    { id: 2, brand: "Adidas", campaign: "Lifestyle Collection", date: "2023-08", type: "Gifted" },
-    { id: 3, brand: "Puma", campaign: "Running Series", date: "2023-07", type: "Paid" },
-    { id: 4, brand: "Reebok", campaign: "CrossFit Line", date: "2023-09", type: "Paid" },
-    { id: 5, brand: "Under Armour", campaign: "Training Gear", date: "2023-10", type: "Gifted" },
-    { id: 6, brand: "New Balance", campaign: "Marathon Essentials", date: "2023-11", type: "Paid" },
-    { id: 7, brand: "Asics", campaign: "Performance Running", date: "2023-12", type: "Gifted" },
-    { id: 8, brand: "Disney", campaign: "Movie Premiere", date: "2023-09", type: "Event" },
-  ]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
 
   const [showCollabModal, setShowCollabModal] = useState(false);
   const [collabDate, setCollabDate] = useState<Date | undefined>(undefined);
@@ -316,20 +314,29 @@ export default function InfluenceProfile() {
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "collab" | "achievement"; id: string | number } | null>(null);
 
-  // Fetch achievements on mount
+  // Fetch achievements and collaborations on mount
   useEffect(() => {
-    async function fetchAchievements() {
+    async function fetchData() {
       try {
-        const res = await fetch("/api/achievements");
-        if (res.ok) {
-          const data = await res.json();
+        const [achievementsRes, collaborationsRes] = await Promise.all([
+          fetch("/api/achievements"),
+          fetch("/api/collaborations"),
+        ]);
+
+        if (achievementsRes.ok) {
+          const data = await achievementsRes.json();
           setAchievements(data);
         }
+
+        if (collaborationsRes.ok) {
+          const data = await collaborationsRes.json();
+          setCollaborations(data);
+        }
       } catch (error) {
-        console.error("Failed to fetch achievements:", error);
+        console.error("Failed to fetch data:", error);
       }
     }
-    fetchAchievements();
+    fetchData();
   }, []);
 
   const categories = [
@@ -354,15 +361,29 @@ export default function InfluenceProfile() {
     }));
   };
 
-  const addCollaboration = () => {
+  const addCollaboration = async () => {
     if (newCollab.brand && newCollab.campaign) {
-      setCollaborations([
-        ...collaborations,
-        { id: Date.now(), ...newCollab },
-      ]);
-      setNewCollab({ brand: "", campaign: "", date: "", type: "Paid" });
-      setCollabDate(undefined);
-      setShowCollabModal(false);
+      try {
+        const res = await fetch("/api/collaborations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newCollab),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setCollaborations([data, ...collaborations]);
+          setNewCollab({ brand: "", campaign: "", date: "", type: "Paid" });
+          setCollabDate(undefined);
+          setShowCollabModal(false);
+          await refreshUser(); // Update Live Preview
+        } else {
+          alert("Failed to add collaboration");
+        }
+      } catch (error) {
+        console.error("Error adding collaboration:", error);
+        alert("Failed to add collaboration");
+      }
     }
   };
 
@@ -381,6 +402,7 @@ export default function InfluenceProfile() {
           setNewAchievement({ title: "", description: "", date: "", category: "Media" });
           setAchievementDate(undefined);
           setShowAchievementModal(false);
+          await refreshUser(); // Update Live Preview
         } else {
           alert("Failed to add achievement");
         }
@@ -393,23 +415,33 @@ export default function InfluenceProfile() {
 
   const confirmDelete = async () => {
     if (deleteConfirm) {
-      if (deleteConfirm.type === "collab") {
-        setCollaborations(collaborations.filter(c => c.id !== deleteConfirm.id));
-      } else {
-        try {
+      try {
+        if (deleteConfirm.type === "collab") {
+          const res = await fetch(`/api/collaborations?id=${deleteConfirm.id}`, {
+            method: "DELETE",
+          });
+
+          if (res.ok) {
+            setCollaborations(collaborations.filter(c => c.id !== deleteConfirm.id));
+            await refreshUser(); // Update Live Preview
+          } else {
+            alert("Failed to delete collaboration");
+          }
+        } else {
           const res = await fetch(`/api/achievements?id=${deleteConfirm.id}`, {
             method: "DELETE",
           });
 
           if (res.ok) {
             setAchievements(achievements.filter(a => a.id !== deleteConfirm.id));
+            await refreshUser(); // Update Live Preview
           } else {
             alert("Failed to delete achievement");
           }
-        } catch (error) {
-          console.error("Error deleting achievement:", error);
-          alert("Failed to delete achievement");
         }
+      } catch (error) {
+        console.error("Error deleting:", error);
+        alert("Failed to delete");
       }
       setDeleteConfirm(null);
     }

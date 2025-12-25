@@ -24,8 +24,26 @@ interface SidebarContextType {
   setCollapsed: (collapsed: boolean) => void;
 }
 
+interface Achievement {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string | null;
+  category: string | null;
+}
+
+interface Collaboration {
+  id: string;
+  brand: string;
+  campaign: string | null;
+  date: string | null;
+  type: string | null;
+}
+
 interface UserContextType {
   user: UserData | null;
+  achievements: Achievement[];
+  collaborations: Collaboration[];
   loading: boolean;
   refreshUser: () => Promise<void>;
 }
@@ -37,6 +55,8 @@ const SidebarContext = createContext<SidebarContextType>({
 
 const UserContext = createContext<UserContextType>({
   user: null,
+  achievements: [],
+  collaborations: [],
   loading: true,
   refreshUser: async () => {},
 });
@@ -193,7 +213,7 @@ function Sidebar() {
 }
 
 function LivePreview() {
-  const { user, loading } = useUser();
+  const { user, achievements, collaborations, loading } = useUser();
 
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -202,24 +222,6 @@ function LivePreview() {
   const displayUsername = user?.userName ? `@${user.userName}` : "@username";
 
   const displayBio = user?.bio || "Add a bio to tell brands about yourself.";
-
-  // TODO: Fetch from Achievement and Collaboration tables
-  const achievements = [
-    "Featured in Vogue Magazine",
-    "Brand Partner of the Year 2023",
-    "Top 100 Lifestyle Influencers",
-  ];
-
-  const collaborations = [
-    { brand: "Nike", campaign: "Air Max Campaign", date: "2023-06", type: "Paid" },
-    { brand: "Adidas", campaign: "Lifestyle Collection", date: "2023-08", type: "Gifted" },
-    { brand: "Puma", campaign: "Running Series", date: "2023-07", type: "Paid" },
-    { brand: "Reebok", campaign: "CrossFit Line", date: "2023-09", type: "Paid" },
-    { brand: "Under Armour", campaign: "Training Gear", date: "2023-10", type: "Gifted" },
-    { brand: "New Balance", campaign: "Marathon Essentials", date: "2023-11", type: "Paid" },
-    { brand: "Asics", campaign: "Performance Running", date: "2023-12", type: "Gifted" },
-    { brand: "Disney", campaign: "Movie Premiere", date: "2023-09", type: "Event" },
-  ];
 
   return (
     <aside className="fixed right-0 top-0 h-screen w-[320px] bg-white border-l border-border overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -299,33 +301,41 @@ function LivePreview() {
         {/* Achievements */}
         <div className="mb-6">
           <h4 className="font-semibold text-foreground mb-3">Achievements & Highlights</h4>
-          <div className="space-y-2">
-            {achievements.map((achievement, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <span className="text-sm text-muted">{achievement}</span>
-              </div>
-            ))}
-          </div>
+          {achievements.length > 0 ? (
+            <div className="space-y-2">
+              {achievements.map((achievement) => (
+                <div key={achievement.id} className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  <span className="text-sm text-muted">{achievement.title}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">No achievements yet</p>
+          )}
         </div>
 
         {/* Brand Collaborations */}
         <div>
           <h4 className="font-semibold text-foreground mb-3">Brand Collaborations</h4>
-          <div className="grid grid-cols-2 gap-3">
-            {collaborations.map((collab, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-3">
-                <p className="font-medium text-foreground text-sm">{collab.brand}</p>
-                <p className="text-xs text-muted mt-0.5">{collab.campaign}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-muted bg-white px-2 py-0.5 rounded">{collab.date}</span>
-                  <span className="text-xs text-muted bg-white px-2 py-0.5 rounded">{collab.type}</span>
+          {collaborations.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {collaborations.map((collab) => (
+                <div key={collab.id} className="bg-gray-50 rounded-xl p-3">
+                  <p className="font-medium text-foreground text-sm">{collab.brand}</p>
+                  {collab.campaign && <p className="text-xs text-muted mt-0.5">{collab.campaign}</p>}
+                  <div className="flex items-center gap-2 mt-2">
+                    {collab.date && <span className="text-xs text-muted bg-white px-2 py-0.5 rounded">{collab.date}</span>}
+                    {collab.type && <span className="text-xs text-muted bg-white px-2 py-0.5 rounded">{collab.type}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">No collaborations yet</p>
+          )}
         </div>
       </div>
     </aside>
@@ -335,17 +345,34 @@ function LivePreview() {
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [userLoading, setUserLoading] = useState(true);
 
   const refreshUser = async () => {
     try {
-      const res = await fetch("/api/user");
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data);
+      const [userRes, achievementsRes, collaborationsRes] = await Promise.all([
+        fetch("/api/user"),
+        fetch("/api/achievements"),
+        fetch("/api/collaborations"),
+      ]);
+
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUser(userData);
+      }
+
+      if (achievementsRes.ok) {
+        const achievementsData = await achievementsRes.json();
+        setAchievements(achievementsData);
+      }
+
+      if (collaborationsRes.ok) {
+        const collaborationsData = await collaborationsRes.json();
+        setCollaborations(collaborationsData);
       }
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setUserLoading(false);
     }
@@ -357,7 +384,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
-      <UserContext.Provider value={{ user, loading: userLoading, refreshUser }}>
+      <UserContext.Provider value={{ user, achievements, collaborations, loading: userLoading, refreshUser }}>
         <Sidebar />
         <main
           className={`
