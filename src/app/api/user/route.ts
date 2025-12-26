@@ -22,7 +22,9 @@ export async function GET() {
       website,
       location,
       profileImageUrl,
-      coverImageUrl
+      coverImageUrl,
+      isMediaKitPublic,
+      audienceSummary
     `)
     .eq("id", userId)
     .single();
@@ -54,11 +56,14 @@ export async function PATCH(request: NextRequest) {
       "email",
       "bio",
       "website",
+      "location",
       "engagement",
       "avgViews",
+      "isMediaKitPublic",
+      "audienceSummary",
     ];
 
-    const updates: Record<string, string | number | null> = {};
+    const updates: Record<string, string | number | boolean | null> = {};
     for (const field of allowedFields) {
       if (field in body) {
         updates[field] = body[field] ?? null;

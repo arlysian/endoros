@@ -22,6 +22,11 @@ export default function InfluenceProfile() {
   const [saving, setSaving] = useState(false);
   const [formLoaded, setFormLoaded] = useState(false);
 
+  // Username validation
+  const [userNameError, setUserNameError] = useState<string | null>(null);
+  const [checkingUserName, setCheckingUserName] = useState(false);
+  const userNameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [cropImage, setCropImage] = useState<string | null>(null);
@@ -49,13 +54,60 @@ export default function InfluenceProfile() {
         lastName: user.lastName || "",
         userName: user.userName || "",
         category: user.category || "",
-        email: user.email || "",
         website: user.website || "",
+        location: user.location || "",
         bio: user.bio || "",
       });
       setFormLoaded(true);
     }
   }, [user, formLoaded]);
+
+  // Check username availability with debounce
+  const checkUserNameAvailability = useCallback(async (userName: string) => {
+    if (!userName || userName === user?.userName) {
+      setUserNameError(null);
+      setCheckingUserName(false);
+      return;
+    }
+
+    setCheckingUserName(true);
+    try {
+      const res = await fetch(`/api/user/check-username?userName=${encodeURIComponent(userName)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.taken) {
+          setUserNameError("This username is already taken");
+        } else {
+          setUserNameError(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    } finally {
+      setCheckingUserName(false);
+    }
+  }, [user?.userName]);
+
+  // Handle username change with debounce
+  const handleUserNameChange = (value: string) => {
+    setFormData({ ...formData, userName: value });
+
+    // Clear previous timeout
+    if (userNameCheckTimeout.current) {
+      clearTimeout(userNameCheckTimeout.current);
+    }
+
+    // Clear error while typing
+    if (value === user?.userName) {
+      setUserNameError(null);
+      return;
+    }
+
+    // Debounce the check
+    userNameCheckTimeout.current = setTimeout(() => {
+      checkUserNameAvailability(value);
+    }, 500);
+  };
 
   const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -142,6 +194,12 @@ export default function InfluenceProfile() {
   };
 
   const handleSaveChanges = async () => {
+    // Prevent saving if username is taken
+    if (userNameError) {
+      alert("Please fix the username error before saving");
+      return;
+    }
+
     setSaving(true);
     try {
       // Upload pending images
@@ -241,8 +299,8 @@ export default function InfluenceProfile() {
     lastName: "",
     userName: "",
     category: "",
-    email: "",
     website: "",
+    location: "",
     bio: "",
   });
 
@@ -588,10 +646,16 @@ export default function InfluenceProfile() {
             <input
               type="text"
               value={formData.userName}
-              onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
+              onChange={(e) => handleUserNameChange(e.target.value)}
               placeholder="@yourname"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20 ${userNameError ? "border border-red-500" : ""}`}
             />
+            {checkingUserName && (
+              <p className="text-sm text-muted mt-1">Checking availability...</p>
+            )}
+            {userNameError && (
+              <p className="text-sm text-red-500 mt-1">{userNameError}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Select your primary category</label>
@@ -607,22 +671,22 @@ export default function InfluenceProfile() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="your@email.com"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium text-foreground mb-2">Website (Optional)</label>
             <input
               type="url"
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               placeholder="https://yourwebsite.com"
+              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Location (Optional)</label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Los Angeles, CA"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
             />
           </div>

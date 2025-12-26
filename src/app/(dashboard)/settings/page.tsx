@@ -1,66 +1,78 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Settings() {
-  // Account Information
-  const [email, setEmail] = useState("john_doe@gmail.com");
-  const [location, setLocation] = useState("Los Angeles, CA");
-
   // Audience Summary
-  const [audienceSummary, setAudienceSummary] = useState(
-    "My audience is mostly women in the US, aged 16-20, in college, and interested in fashion."
-  );
+  const [audienceSummary, setAudienceSummary] = useState("");
+  const [isSavingAudience, setIsSavingAudience] = useState(false);
 
   // Privacy Settings
   const [isMediaKitPublic, setIsMediaKitPublic] = useState(true);
-  const [customUrl, setCustomUrl] = useState("johndoe");
-  const [isCustomUrlPublic, setIsCustomUrlPublic] = useState(false);
+  const [isToggleLoading, setIsToggleLoading] = useState(false);
 
-  // Security
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // Fetch initial values on mount
+  useEffect(() => {
+    async function fetchUserSettings() {
+      try {
+        const res = await fetch("/api/user");
+        if (res.ok) {
+          const data = await res.json();
+          setIsMediaKitPublic(data.isMediaKitPublic ?? true);
+          setAudienceSummary(data.audienceSummary ?? "");
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      }
+    }
+    fetchUserSettings();
+  }, []);
+
+  // Handle audience summary save
+  const handleSaveAudienceSummary = async () => {
+    setIsSavingAudience(true);
+    try {
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audienceSummary }),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to save audience summary");
+      }
+    } catch (error) {
+      console.error("Error saving audience summary:", error);
+    } finally {
+      setIsSavingAudience(false);
+    }
+  };
+
+  // Handle toggle change
+  const handleToggleChange = async (checked: boolean) => {
+    setIsToggleLoading(true);
+    try {
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isMediaKitPublic: checked }),
+      });
+
+      if (res.ok) {
+        setIsMediaKitPublic(checked);
+      } else {
+        console.error("Failed to update setting");
+      }
+    } catch (error) {
+      console.error("Error updating setting:", error);
+    } finally {
+      setIsToggleLoading(false);
+    }
+  };
 
   return (
     <div className="p-8">
       <div className="space-y-6">
-        {/* Account Information */}
-        <section className="bg-white rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-6">Account Information</h2>
-
-          {/* Email */}
-          <div className="mb-5">
-            <label className="block text-sm text-foreground mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-            />
-            <p className="text-sm text-muted mt-2">
-              This email is used for account login and important notifications
-            </p>
-          </div>
-
-          {/* Location */}
-          <div className="mb-6">
-            <label className="block text-sm text-foreground mb-2">Location</label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-            />
-          </div>
-
-          <div className="flex justify-end">
-            <button className="px-6 py-2.5 bg-[#2596be] text-white rounded-xl font-medium hover:bg-[#1e7a9a] transition-colors">
-              Save Email Changes
-            </button>
-          </div>
-        </section>
-
         {/* Audience Summary */}
         <section className="bg-white rounded-xl border border-border p-6">
           <h2 className="text-lg font-semibold text-foreground mb-6">Audience Summary</h2>
@@ -78,8 +90,12 @@ export default function Settings() {
           </div>
 
           <div className="flex justify-end">
-            <button className="px-8 py-2.5 bg-[#2596be] text-white rounded-xl font-medium hover:bg-[#1e7a9a] transition-colors">
-              Save
+            <button
+              onClick={handleSaveAudienceSummary}
+              disabled={isSavingAudience}
+              className="px-8 py-2.5 bg-[#2596be] text-white rounded-xl font-medium hover:bg-[#1e7a9a] transition-colors disabled:opacity-50"
+            >
+              {isSavingAudience ? "Saving..." : "Save"}
             </button>
           </div>
         </section>
@@ -89,7 +105,7 @@ export default function Settings() {
           <h2 className="text-lg font-semibold text-foreground mb-6">Privacy Settings</h2>
 
           {/* Public Media Kit Toggle */}
-          <div className="bg-gray-50 rounded-xl p-4 mb-5">
+          <div className="bg-gray-50 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-foreground">Public Media Kit</h3>
@@ -99,84 +115,14 @@ export default function Settings() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted">Private</span>
-                <Toggle checked={isMediaKitPublic} onChange={setIsMediaKitPublic} />
-                <span className="text-sm text-muted">Public</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Custom URL */}
-          <div>
-            <h3 className="font-medium text-foreground mb-1">Custom URL</h3>
-            <p className="text-sm text-muted mb-3">
-              Allow anyone to view your media kit with your custom URL
-            </p>
-
-            <div className="flex items-center justify-between gap-4 mb-3">
-              <div className="flex items-center">
-                <span className="text-sm text-muted mr-2">endoros.com/</span>
-                <input
-                  type="text"
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
-                  className="w-48 px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+                <Toggle
+                  checked={isMediaKitPublic}
+                  onChange={handleToggleChange}
+                  disabled={isToggleLoading}
                 />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted whitespace-nowrap">Private (one time link)</span>
-                <Toggle checked={isCustomUrlPublic} onChange={setIsCustomUrlPublic} />
                 <span className="text-sm text-muted">Public</span>
               </div>
             </div>
-
-            <p className="text-sm text-muted">
-              This will be your public media kit URL that you can share with brands.
-            </p>
-          </div>
-        </section>
-
-        {/* Security */}
-        <section className="bg-white rounded-xl border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-6">Security</h2>
-
-          <div className="grid grid-cols-2 gap-4 mb-5">
-            <div>
-              <label className="block text-sm text-foreground mb-2">Old Password</label>
-              <input
-                type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-foreground mb-2">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm text-foreground mb-2">Confirm New Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-              />
-            </div>
-            <div></div>
-          </div>
-
-          <div className="flex justify-end">
-            <button className="px-6 py-2.5 bg-[#2596be] text-white rounded-xl font-medium hover:bg-[#1e7a9a] transition-colors">
-              Update Password
-            </button>
           </div>
         </section>
 
@@ -205,17 +151,21 @@ export default function Settings() {
 function Toggle({
   checked,
   onChange,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onChange(!checked)}
+      onClick={() => !disabled && onChange(!checked)}
+      disabled={disabled}
       className={`
         relative inline-flex h-6 w-11 items-center rounded-full transition-colors
         ${checked ? "bg-[#2596be]" : "bg-gray-300"}
+        ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
       `}
     >
       <span

@@ -19,7 +19,7 @@ export default function Dashboard() {
       </div>
 
       {/* Platform Selection Bar */}
-      <div className="flex items-center gap-2 mb-8 p-1 bg-white rounded-xl border border-border inline-flex">
+      <div className="flex items-center gap-1 sm:gap-2 mb-8 p-1 bg-white rounded-xl border border-border flex-wrap sm:flex-nowrap">
         {platforms.map((platform) => {
           const Icon = platform.icon;
           const isSelected = selectedPlatform === platform.id;
@@ -28,20 +28,20 @@ export default function Dashboard() {
               key={platform.id}
               onClick={() => setSelectedPlatform(platform.id)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200
-                ${isSelected 
-                  ? "bg-[#2596be]/10 text-[#2596be]" 
+                flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200
+                ${isSelected
+                  ? "bg-hover text-[#2596be]"
                   : "text-muted hover:bg-hover hover:text-foreground"
                 }
               `}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-sm font-medium">{platform.name}</span>
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium">{platform.name}</span>
             </button>
           );
         })}
-        <button className="flex items-center justify-center w-10 h-10 rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200 flex-shrink-0">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </button>

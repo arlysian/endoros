@@ -23,6 +23,10 @@ interface UserData {
 interface SidebarContextType {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
+  mobilePreviewOpen: boolean;
+  setMobilePreviewOpen: (open: boolean) => void;
 }
 
 interface Achievement {
@@ -52,6 +56,10 @@ interface UserContextType {
 const SidebarContext = createContext<SidebarContextType>({
   collapsed: false,
   setCollapsed: () => {},
+  mobileMenuOpen: false,
+  setMobileMenuOpen: () => {},
+  mobilePreviewOpen: false,
+  setMobilePreviewOpen: () => {},
 });
 
 const UserContext = createContext<UserContextType>({
@@ -106,18 +114,28 @@ const navItems = [
 ];
 
 function Sidebar() {
-  const { collapsed, setCollapsed } = useSidebar();
+  const { collapsed, setCollapsed, mobileMenuOpen, setMobileMenuOpen } = useSidebar();
   const pathname = usePathname();
   const { signOut } = useClerk();
 
   return (
-    <aside
-      className={`
-        fixed left-0 top-0 h-screen bg-sidebar border-r border-border
-        flex flex-col transition-all duration-300 ease-in-out z-50
-        ${collapsed ? "w-[52px]" : "w-[240px]"}
-      `}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      <aside
+        className={`
+          fixed left-0 top-0 h-screen bg-sidebar border-r border-border
+          flex flex-col transition-all duration-300 ease-in-out z-50
+          ${collapsed ? "lg:w-[52px]" : "lg:w-[240px]"}
+          w-[240px] -translate-x-full lg:translate-x-0
+          ${mobileMenuOpen ? "translate-x-0" : ""}
+        `}
+      >
       {/* Logo + Collapse Toggle */}
       <div className={`h-14 flex items-center border-b border-border ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}>
         <Link
@@ -150,31 +168,30 @@ function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 py-3 space-y-1 ${collapsed ? "px-2" : "px-3"}`}>
+      <nav className={`flex-1 py-3 space-y-1 ${collapsed ? "lg:px-2 px-3" : "px-3"}`}>
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
               className={`
                 flex items-center rounded-lg transition-all duration-200 group relative
-                ${collapsed ? "w-9 h-9 justify-center" : "gap-3 px-3 py-2"}
+                ${collapsed ? "lg:w-9 lg:h-9 lg:justify-center gap-3 px-3 py-2 lg:px-0" : "gap-3 px-3 py-2"}
                 ${isActive
-                  ? "bg-[#2596be]/10 text-[#2596be]"
+                  ? "text-[#2596be] bg-hover"
                   : "text-muted hover:bg-hover hover:text-foreground"
                 }
               `}
             >
               <span className="flex-shrink-0">{item.icon}</span>
-              {!collapsed && (
-                <span className="text-sm whitespace-nowrap">
-                  {item.name}
-                </span>
-              )}
-              {/* Tooltip for collapsed state */}
+              <span className={`text-sm whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>
+                {item.name}
+              </span>
+              {/* Tooltip for collapsed state - desktop only */}
               {collapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-white text-foreground text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap shadow-lg border border-border z-50">
+                <div className="absolute left-full ml-2 px-2 py-1 bg-white text-foreground text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap shadow-lg border border-border z-50 hidden lg:block">
                   {item.name}
                 </div>
               )}
@@ -184,12 +201,12 @@ function Sidebar() {
       </nav>
 
       {/* Log Out */}
-      <div className={`py-3 border-t border-border ${collapsed ? "px-2" : "px-3"}`}>
+      <div className={`py-3 border-t border-border ${collapsed ? "lg:px-2 px-3" : "px-3"}`}>
         <button
           onClick={() => signOut({ redirectUrl: "/" })}
           className={`
             flex items-center rounded-lg transition-all duration-200 group relative w-full
-            ${collapsed ? "w-9 h-9 justify-center" : "gap-3 px-3 py-2"}
+            ${collapsed ? "lg:w-9 lg:h-9 lg:justify-center gap-3 px-3 py-2 lg:px-0" : "gap-3 px-3 py-2"}
             text-muted hover:bg-hover hover:text-foreground
           `}
         >
@@ -198,58 +215,123 @@ function Sidebar() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
           </span>
-          {!collapsed && (
-            <span className="text-sm whitespace-nowrap">Log Out</span>
-          )}
-          {/* Tooltip for collapsed state */}
+          <span className={`text-sm whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>
+            Log Out
+          </span>
+          {/* Tooltip for collapsed state - desktop only */}
           {collapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-white text-foreground text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap shadow-lg border border-border z-50">
+            <div className="absolute left-full ml-2 px-2 py-1 bg-white text-foreground text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap shadow-lg border border-border z-50 hidden lg:block">
               Log Out
             </div>
           )}
         </button>
       </div>
     </aside>
+    </>
   );
 }
 
 function LivePreview() {
   const { user, achievements, collaborations, loading } = useUser();
+  const { mobilePreviewOpen, setMobilePreviewOpen } = useSidebar();
 
   return (
-    <aside className="fixed right-0 top-0 h-screen w-[320px] bg-white border-l border-border overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-      <div className="p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-3">Live Preview</h2>
-
-        {/* Profile URL Link */}
-        <a
-          href={user?.userName ? `/${user.userName}` : "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between w-full px-3 py-2 mb-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors group"
-        >
-          <span className="text-sm text-muted truncate">
-            {user?.userName ? `endoros.com/${user.userName}` : "endoros.com/username"}
-          </span>
-          <svg className="w-4 h-4 text-muted flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-        </a>
-
-        <ProfileCard
-          user={user}
-          achievements={achievements}
-          collaborations={collaborations}
-          loading={loading}
-          compact={true}
+    <>
+      {/* Mobile backdrop */}
+      {mobilePreviewOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobilePreviewOpen(false)}
         />
-      </div>
-    </aside>
+      )}
+      <aside
+        className={`
+          fixed right-0 top-0 h-screen w-[320px] bg-white border-l border-border overflow-y-auto z-50
+          transition-transform duration-300 ease-in-out
+          translate-x-full lg:translate-x-0
+          ${mobilePreviewOpen ? "translate-x-0" : ""}
+        `}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {/* Mobile close button */}
+        <button
+          onClick={() => setMobilePreviewOpen(false)}
+          className="lg:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-3">Live Preview</h2>
+
+          {/* Profile URL Link */}
+          <a
+            href={user?.userName ? `/${user.userName}` : "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between w-full px-3 py-2 mb-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors group"
+          >
+            <span className="text-sm text-muted truncate">
+              {user?.userName ? `endoros.com/${user.userName}` : "endoros.com/username"}
+            </span>
+            <svg className="w-4 h-4 text-muted flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </a>
+
+          <ProfileCard
+            user={user}
+            achievements={achievements}
+            collaborations={collaborations}
+            loading={loading}
+            compact={true}
+          />
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function MobileHeader() {
+  const { setMobileMenuOpen, setMobilePreviewOpen } = useSidebar();
+
+  return (
+    <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-sidebar border-b border-border flex items-center justify-between px-4 z-30">
+      {/* Hamburger menu button */}
+      <button
+        onClick={() => setMobileMenuOpen(true)}
+        className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Logo */}
+      <Link href="/" className="font-semibold text-lg text-foreground tracking-tight">
+        Endoros
+      </Link>
+
+      {/* Preview button */}
+      <button
+        onClick={() => setMobilePreviewOpen(true)}
+        className="w-10 h-10 flex items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      </button>
+    </header>
   );
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
@@ -289,13 +371,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
+    <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileMenuOpen, setMobileMenuOpen, mobilePreviewOpen, setMobilePreviewOpen }}>
       <UserContext.Provider value={{ user, achievements, collaborations, loading: userLoading, refreshUser }}>
+        <MobileHeader />
         <Sidebar />
         <main
           className={`
-            min-h-screen transition-all duration-300 pr-[320px]
-            ${collapsed ? "pl-[52px]" : "pl-[240px]"}
+            min-h-screen transition-all duration-300
+            pt-14 lg:pt-0
+            px-4 lg:px-0
+            lg:pr-[320px]
+            ${collapsed ? "lg:pl-[52px]" : "lg:pl-[240px]"}
           `}
         >
           {children}
