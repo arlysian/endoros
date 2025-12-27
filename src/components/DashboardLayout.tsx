@@ -168,7 +168,7 @@ function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 py-3 space-y-1 ${collapsed ? "lg:px-2 px-3" : "px-3"}`}>
+      <nav className="flex-1 py-3 space-y-1 px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -178,15 +178,15 @@ function Sidebar() {
               onClick={() => setMobileMenuOpen(false)}
               className={`
                 flex items-center rounded-lg transition-all duration-200 group relative
-                ${collapsed ? "lg:w-9 lg:h-9 lg:justify-center gap-3 px-3 py-2 lg:px-0" : "gap-3 px-3 py-2"}
+                gap-3 px-2 py-2
                 ${isActive
                   ? "text-[#768cff] bg-hover"
                   : "text-muted hover:bg-hover hover:text-foreground"
                 }
               `}
             >
-              <span className="flex-shrink-0">{item.icon}</span>
-              <span className={`text-sm whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>
+              <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">{item.icon}</span>
+              <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${collapsed ? "lg:opacity-0 lg:w-0 lg:overflow-hidden" : "opacity-100"}`}>
                 {item.name}
               </span>
               {/* Tooltip for collapsed state - desktop only */}
@@ -201,21 +201,17 @@ function Sidebar() {
       </nav>
 
       {/* Log Out */}
-      <div className={`py-3 border-t border-border ${collapsed ? "lg:px-2 px-3" : "px-3"}`}>
+      <div className="py-3 border-t border-border px-2">
         <button
           onClick={() => signOut({ redirectUrl: "/" })}
-          className={`
-            flex items-center rounded-lg transition-all duration-200 group relative w-full
-            ${collapsed ? "lg:w-9 lg:h-9 lg:justify-center gap-3 px-3 py-2 lg:px-0" : "gap-3 px-3 py-2"}
-            text-muted hover:bg-hover hover:text-foreground
-          `}
+          className="flex items-center rounded-lg transition-all duration-200 group relative w-full gap-3 px-2 py-2 text-muted hover:bg-hover hover:text-foreground"
         >
-          <span className="flex-shrink-0">
+          <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
           </span>
-          <span className={`text-sm whitespace-nowrap ${collapsed ? "lg:hidden" : ""}`}>
+          <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${collapsed ? "lg:opacity-0 lg:w-0 lg:overflow-hidden" : "opacity-100"}`}>
             Log Out
           </span>
           {/* Tooltip for collapsed state - desktop only */}
@@ -244,25 +240,64 @@ function LivePreview() {
           onClick={() => setMobilePreviewOpen(false)}
         />
       )}
-      <aside
+
+      {/* Mobile bottom sheet */}
+      <div
         className={`
-          fixed right-0 top-0 h-screen w-[320px] bg-white border-l border-border overflow-y-auto z-50
-          transition-transform duration-300 ease-in-out
-          translate-x-full lg:translate-x-0
-          ${mobilePreviewOpen ? "translate-x-0" : ""}
+          fixed inset-x-0 bottom-0 z-50 lg:hidden
+          transition-transform duration-300 ease-out
+          ${mobilePreviewOpen ? "translate-y-0" : "translate-y-full"}
         `}
+      >
+        <div className="bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto shadow-2xl hide-scrollbar">
+          {/* Handle bar */}
+          <div className="sticky top-0 bg-white pt-3 pb-2 px-6 rounded-t-3xl z-10">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3" />
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">Live Preview</h2>
+              <button
+                onClick={() => setMobilePreviewOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="px-6 pb-8">
+            {/* Profile URL Link */}
+            <a
+              href={user?.userName ? `/${user.userName}` : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between w-full px-3 py-2 mb-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors group"
+            >
+              <span className="text-sm text-muted truncate">
+                {user?.userName ? `endoros.com/${user.userName}` : "endoros.com/username"}
+              </span>
+              <svg className="w-4 h-4 text-muted flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+
+            <ProfileCard
+              user={user}
+              achievements={achievements}
+              collaborations={collaborations}
+              loading={loading}
+              compact={true}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop sidebar - unchanged */}
+      <aside
+        className="fixed right-0 top-0 h-screen w-[320px] bg-white border-l border-border overflow-y-auto z-50 hidden lg:block"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {/* Mobile close button */}
-        <button
-          onClick={() => setMobilePreviewOpen(false)}
-          className="lg:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
         <div className="p-6">
           <h2 className="text-lg font-semibold text-foreground mb-3">Live Preview</h2>
 
@@ -277,7 +312,7 @@ function LivePreview() {
               {user?.userName ? `endoros.com/${user.userName}` : "endoros.com/username"}
             </span>
             <svg className="w-4 h-4 text-muted flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
 
