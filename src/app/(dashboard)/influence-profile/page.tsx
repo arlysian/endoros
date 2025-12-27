@@ -513,7 +513,7 @@ export default function InfluenceProfile() {
       </div>
 
       {/* Basic Information */}
-      <section className="bg-white rounded-xl border border-border p-6 mb-6">
+      <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
         <h2 className="text-lg font-medium text-foreground mb-6">Basic Information</h2>
 
         {/* Cover Image Upload */}
@@ -628,7 +628,7 @@ export default function InfluenceProfile() {
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
               placeholder="Enter your first name"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
             />
           </div>
           <div>
@@ -638,7 +638,7 @@ export default function InfluenceProfile() {
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               placeholder="Enter your last name"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
             />
           </div>
           <div>
@@ -648,7 +648,7 @@ export default function InfluenceProfile() {
               value={formData.userName}
               onChange={(e) => handleUserNameChange(e.target.value)}
               placeholder="@yourname"
-              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20 ${userNameError ? "border border-red-500" : ""}`}
+              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20 ${userNameError ? "border border-red-500" : ""}`}
             />
             {checkingUserName && (
               <p className="text-sm text-muted mt-1">Checking availability...</p>
@@ -662,7 +662,7 @@ export default function InfluenceProfile() {
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20 appearance-none cursor-pointer"
+              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20 appearance-none cursor-pointer"
             >
               <option value="">Please select</option>
               {categories.map((cat) => (
@@ -677,7 +677,7 @@ export default function InfluenceProfile() {
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               placeholder="https://yourwebsite.com"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
             />
           </div>
           <div>
@@ -687,7 +687,7 @@ export default function InfluenceProfile() {
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               placeholder="Los Angeles, CA"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
             />
           </div>
         </div>
@@ -699,7 +699,7 @@ export default function InfluenceProfile() {
             onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
             rows={4}
             placeholder="Add a bio to tell brands about yourself."
-            className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20 resize-none"
+            className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20 resize-none"
           />
         </div>
 
@@ -707,7 +707,7 @@ export default function InfluenceProfile() {
           <button
             onClick={handleSaveChanges}
             disabled={saving}
-            className="px-6 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors disabled:opacity-50"
+            className="px-6 py-3 bg-[#768cff] text-white rounded-lg font-medium hover:bg-[#5a70e6] transition-colors disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
@@ -715,7 +715,7 @@ export default function InfluenceProfile() {
       </section>
 
       {/* Social Platforms */}
-      <section className="bg-white rounded-xl border border-border p-6 mb-6">
+      <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
         <h2 className="text-lg font-medium text-foreground mb-6">Social Platforms</h2>
 
         <div className="space-y-4">
@@ -785,14 +785,14 @@ export default function InfluenceProfile() {
           })}
         </div>
 
-        <button className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors">
+        <button className="flex items-center gap-2 mt-4 text-[#768cff] hover:text-[#5a70e6] transition-colors">
           <PlusCircleIcon className="w-5 h-5" />
           <span className="text-sm font-medium">Add Another Platform</span>
         </button>
       </section>
 
       {/* Achievements & Highlights */}
-      <section className="bg-white rounded-xl border border-border p-6 mb-6">
+      <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
         <h2 className="text-lg font-medium text-foreground mb-6">Achievements & Highlights</h2>
 
         <div className="space-y-4">
@@ -825,7 +825,7 @@ export default function InfluenceProfile() {
 
         <button
           onClick={() => setShowAchievementModal(true)}
-          className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors"
+          className="flex items-center gap-2 mt-4 text-[#768cff] hover:text-[#5a70e6] transition-colors"
         >
           <PlusCircleIcon className="w-5 h-5" />
           <span className="text-sm font-medium">Add Achievements</span>
@@ -833,7 +833,7 @@ export default function InfluenceProfile() {
       </section>
 
       {/* Brand Collaborations */}
-      <section className="bg-white rounded-xl border border-border p-6 mb-6">
+      <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
         <h2 className="text-lg font-medium text-foreground mb-6">Brand Collaborations</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -866,7 +866,7 @@ export default function InfluenceProfile() {
 
         <button
           onClick={() => setShowCollabModal(true)}
-          className="flex items-center gap-2 mt-4 text-[#2596be] hover:text-[#1e7a9a] transition-colors"
+          className="flex items-center gap-2 mt-4 text-[#768cff] hover:text-[#5a70e6] transition-colors"
         >
           <PlusCircleIcon className="w-5 h-5" />
           <span className="text-sm font-medium">Add Brand Collaboration</span>
@@ -895,7 +895,7 @@ export default function InfluenceProfile() {
                   value={newCollab.brand}
                   onChange={(e) => setNewCollab({ ...newCollab, brand: e.target.value })}
                   placeholder="e.g. Nike"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
                 />
               </div>
 
@@ -906,7 +906,7 @@ export default function InfluenceProfile() {
                   value={newCollab.campaign}
                   onChange={(e) => setNewCollab({ ...newCollab, campaign: e.target.value })}
                   placeholder="e.g. Summer Collection"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
                 />
               </div>
 
@@ -944,7 +944,7 @@ export default function InfluenceProfile() {
                   <select
                     value={newCollab.type}
                     onChange={(e) => setNewCollab({ ...newCollab, type: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                    className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
                   >
                     <option value="Paid">Paid</option>
                     <option value="Gifted">Gifted</option>
@@ -964,7 +964,7 @@ export default function InfluenceProfile() {
               </button>
               <button
                 onClick={addCollaboration}
-                className="flex-1 px-4 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors"
+                className="flex-1 px-4 py-3 bg-[#768cff] text-white rounded-lg font-medium hover:bg-[#5a70e6] transition-colors"
               >
                 Add Collaboration
               </button>
@@ -995,7 +995,7 @@ export default function InfluenceProfile() {
                   value={newAchievement.title}
                   onChange={(e) => setNewAchievement({ ...newAchievement, title: e.target.value })}
                   placeholder="e.g. Featured in Vogue Magazine"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
                 />
               </div>
 
@@ -1006,7 +1006,7 @@ export default function InfluenceProfile() {
                   value={newAchievement.description}
                   onChange={(e) => setNewAchievement({ ...newAchievement, description: e.target.value })}
                   placeholder="e.g. Cover story feature"
-                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                  className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
                 />
               </div>
 
@@ -1044,7 +1044,7 @@ export default function InfluenceProfile() {
                   <select
                     value={newAchievement.category}
                     onChange={(e) => setNewAchievement({ ...newAchievement, category: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#2596be]/20"
+                    className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
                   >
                     <option value="Media">Media</option>
                     <option value="Events">Events</option>
@@ -1064,7 +1064,7 @@ export default function InfluenceProfile() {
               </button>
               <button
                 onClick={addAchievement}
-                className="flex-1 px-4 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors"
+                className="flex-1 px-4 py-3 bg-[#768cff] text-white rounded-lg font-medium hover:bg-[#5a70e6] transition-colors"
               >
                 Add Achievement
               </button>
@@ -1145,7 +1145,7 @@ export default function InfluenceProfile() {
                 </button>
                 <button
                   onClick={handleCropConfirm}
-                  className="flex-1 px-4 py-3 bg-[#2596be] text-white rounded-lg font-medium hover:bg-[#1e7a9a] transition-colors"
+                  className="flex-1 px-4 py-3 bg-[#768cff] text-white rounded-lg font-medium hover:bg-[#5a70e6] transition-colors"
                 >
                   Apply Crop
                 </button>

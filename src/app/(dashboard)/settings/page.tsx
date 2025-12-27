@@ -74,7 +74,7 @@ export default function Settings() {
     <div className="p-8">
       <div className="space-y-6">
         {/* Audience Summary */}
-        <section className="bg-white rounded-xl border border-border p-6">
+        <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-semibold text-foreground mb-6">Audience Summary</h2>
 
           <div className="mb-6">
@@ -93,7 +93,7 @@ export default function Settings() {
             <button
               onClick={handleSaveAudienceSummary}
               disabled={isSavingAudience}
-              className="px-8 py-2.5 bg-[#2596be] text-white rounded-xl font-medium hover:bg-[#1e7a9a] transition-colors disabled:opacity-50"
+              className="px-8 py-2.5 bg-[#768cff] text-white rounded-xl font-medium hover:bg-[#5a70e6] transition-colors disabled:opacity-50"
             >
               {isSavingAudience ? "Saving..." : "Save"}
             </button>
@@ -101,7 +101,7 @@ export default function Settings() {
         </section>
 
         {/* Privacy Settings */}
-        <section className="bg-white rounded-xl border border-border p-6">
+        <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-semibold text-foreground mb-6">Privacy Settings</h2>
 
           {/* Public Media Kit Toggle */}
@@ -127,7 +127,7 @@ export default function Settings() {
         </section>
 
         {/* Account Actions */}
-        <section className="bg-white rounded-xl border border-border p-6">
+        <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-semibold text-foreground mb-6">Account Actions</h2>
 
           <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
@@ -164,7 +164,7 @@ function Toggle({
       disabled={disabled}
       className={`
         relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-        ${checked ? "bg-[#2596be]" : "bg-gray-300"}
+        ${checked ? "bg-[#768cff]" : "bg-gray-300"}
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
       `}
     >

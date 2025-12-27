@@ -2,9 +2,9 @@
 
 export default function AudienceInsights() {
   const genderData = [
-    { label: "Female", value: 60, color: "#2596be" },
-    { label: "Male", value: 36, color: "#2596be" },
-    { label: "Others", value: 4, color: "#2596be" },
+    { label: "Female", value: 60, color: "#768cff" },
+    { label: "Male", value: 36, color: "#768cff" },
+    { label: "Others", value: 4, color: "#768cff" },
   ];
 
   const ageData = [
@@ -40,7 +40,7 @@ export default function AudienceInsights() {
       {/* Demographics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Gender Distribution */}
-        <div className="bg-white rounded-xl border border-border p-6">
+        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-medium text-foreground mb-6">Gender Distribution</h2>
           <div className="space-y-5">
             {genderData.map((item) => (
@@ -61,7 +61,7 @@ export default function AudienceInsights() {
         </div>
 
         {/* Age Distribution */}
-        <div className="bg-white rounded-xl border border-border p-6">
+        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-medium text-foreground mb-6">Age Distribution</h2>
           <div className="space-y-5">
             {ageData.map((item) => (
@@ -72,7 +72,7 @@ export default function AudienceInsights() {
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#2596be] transition-all duration-500"
+                    className="h-full rounded-full bg-[#768cff] transition-all duration-500"
                     style={{ width: `${item.value}%` }}
                   />
                 </div>
@@ -83,7 +83,7 @@ export default function AudienceInsights() {
       </div>
 
       {/* Audience Summary */}
-      <div className="bg-white rounded-xl border border-border p-6 mb-6">
+      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
         <h2 className="text-lg font-medium text-foreground mb-4">Audience Summary</h2>
         <p className="text-foreground">
           My audience is mostly women in the US, aged 16–20, in college, and interested in fashion
@@ -91,7 +91,7 @@ export default function AudienceInsights() {
       </div>
 
       {/* Top 5 Countries */}
-      <div className="bg-white rounded-xl border border-border p-6 mb-6">
+      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
         <h2 className="text-lg font-medium text-foreground mb-6">Top 5 Countries</h2>
         <div className="space-y-4">
           {countryData.map((item) => (
@@ -100,7 +100,7 @@ export default function AudienceInsights() {
               <div className="flex-1 flex items-center gap-4">
                 <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#2596be] transition-all duration-500"
+                    className="h-full rounded-full bg-[#768cff] transition-all duration-500"
                     style={{ width: `${item.value}%` }}
                   />
                 </div>
@@ -112,7 +112,7 @@ export default function AudienceInsights() {
       </div>
 
       {/* Best Posting Times */}
-      <div className="bg-white rounded-xl border border-border p-6">
+      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
         <h2 className="text-lg font-medium text-foreground mb-6">Best Posting Times</h2>
         <div className="space-y-3">
           {postingTimes.map((item) => (

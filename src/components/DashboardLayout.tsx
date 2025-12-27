@@ -180,7 +180,7 @@ function Sidebar() {
                 flex items-center rounded-lg transition-all duration-200 group relative
                 ${collapsed ? "lg:w-9 lg:h-9 lg:justify-center gap-3 px-3 py-2 lg:px-0" : "gap-3 px-3 py-2"}
                 ${isActive
-                  ? "text-[#2596be] bg-hover"
+                  ? "text-[#768cff] bg-hover"
                   : "text-muted hover:bg-hover hover:text-foreground"
                 }
               `}

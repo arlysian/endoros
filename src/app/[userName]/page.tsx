@@ -39,9 +39,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-[#faf9f5] flex flex-col items-center justify-center px-4">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#2596be]/10 flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#768cff]/10 flex items-center justify-center">
             <svg
-              className="w-10 h-10 text-[#2596be]"
+              className="w-10 h-10 text-[#768cff]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

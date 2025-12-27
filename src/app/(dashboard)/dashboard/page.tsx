@@ -19,7 +19,7 @@ export default function Dashboard() {
       </div>
 
       {/* Platform Selection Bar */}
-      <div className="flex items-center gap-1 sm:gap-2 mb-8 p-1 bg-white rounded-xl border border-border flex-wrap sm:flex-nowrap">
+      <div className="flex items-center gap-1 sm:gap-2 mb-8 p-1 bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] flex-wrap sm:flex-nowrap">
         {platforms.map((platform) => {
           const Icon = platform.icon;
           const isSelected = selectedPlatform === platform.id;
@@ -30,7 +30,7 @@ export default function Dashboard() {
               className={`
                 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200
                 ${isSelected
-                  ? "bg-hover text-[#2596be]"
+                  ? "bg-hover text-[#768cff]"
                   : "text-muted hover:bg-hover hover:text-foreground"
                 }
               `}
@@ -82,10 +82,10 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Follower Growth */}
-        <div className="bg-white rounded-xl border border-border p-6">
+        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-medium text-foreground">Follower Growth</h2>
-            <select className="text-sm text-muted bg-transparent border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#2596be]">
+            <select className="text-sm text-muted bg-transparent border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#768cff]">
               <option>Last 7 days</option>
               <option>Last 30 days</option>
               <option>Last 90 days</option>
@@ -111,10 +111,10 @@ export default function Dashboard() {
         </div>
 
         {/* Engagement Breakdown */}
-        <div className="bg-white rounded-xl border border-border p-6">
+        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-medium text-foreground mb-6">Engagement Breakdown</h2>
           <div className="space-y-4">
-            <EngagementBar label="Likes" value={68} count="45.2K" color="#2596be" />
+            <EngagementBar label="Likes" value={68} count="45.2K" color="#768cff" />
             <EngagementBar label="Comments" value={18} count="12.1K" color="#10b981" />
             <EngagementBar label="Shares" value={9} count="6.2K" color="#f59e0b" />
             <EngagementBar label="Saves" value={5} count="3.4K" color="#8b5cf6" />
@@ -129,7 +129,7 @@ export default function Dashboard() {
       </div>
 
       {/* Platform Performance */}
-      <div className="bg-white rounded-xl border border-border p-6">
+      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
         <h2 className="text-lg font-medium text-foreground mb-6">Platform Performance Details</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -169,9 +169,9 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-border p-5 hover:shadow-sm transition-shadow">
+    <div className="bg-white rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] transition-shadow">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-lg bg-[#2596be]/10 flex items-center justify-center text-[#2596be]">
+        <div className="w-10 h-10 rounded-lg bg-[#768cff]/10 flex items-center justify-center text-[#768cff]">
           {icon}
         </div>
         <span
@@ -258,11 +258,11 @@ function FollowerGrowthChart() {
         <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
           <div className="w-full flex justify-center">
             <div
-              className="w-8 bg-[#2596be]/20 rounded-t-md relative group cursor-pointer hover:bg-[#2596be]/30 transition-colors"
+              className="w-8 bg-[#768cff]/20 rounded-t-md relative group cursor-pointer hover:bg-[#768cff]/30 transition-colors"
               style={{ height: `${(item.value / maxValue) * 160}px` }}
             >
               <div
-                className="absolute bottom-0 left-0 right-0 bg-[#2596be] rounded-t-md transition-all"
+                className="absolute bottom-0 left-0 right-0 bg-[#768cff] rounded-t-md transition-all"
                 style={{ height: `${(item.value / maxValue) * 100}%` }}
               />
             </div>

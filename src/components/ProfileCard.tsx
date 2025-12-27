@@ -106,7 +106,7 @@ export default function ProfileCard({
               {loading ? <span className="bg-gray-200 rounded w-20 h-4 inline-block animate-pulse" /> : displayUsername}
             </span>
             {!loading && user?.userName && (
-              <svg className="w-4 h-4 text-[#2596be]" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-4 h-4 text-[#768cff]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             )}
@@ -198,8 +198,8 @@ export default function ProfileCard({
             ].map((bar, i) => (
               <div key={i} className="flex-1 flex flex-col items-center">
                 <div className="w-full rounded overflow-hidden flex flex-col justify-end" style={{ height: `${bar.light}px` }}>
-                  <div className="w-full bg-[#b8e4f0]" style={{ height: `${bar.light - bar.dark}px` }} />
-                  <div className="w-full bg-[#2596be]" style={{ height: `${bar.dark}px` }} />
+                  <div className="w-full bg-[#c4cfff]" style={{ height: `${bar.light - bar.dark}px` }} />
+                  <div className="w-full bg-[#768cff]" style={{ height: `${bar.dark}px` }} />
                 </div>
               </div>
             ))}
@@ -211,7 +211,7 @@ export default function ProfileCard({
             </div>
             <div>
               <p className="text-[10px] text-[#9ca3af]">Growth</p>
-              <p className="text-sm font-semibold text-[#2596be]">+2.3%</p>
+              <p className="text-sm font-semibold text-[#768cff]">+2.3%</p>
             </div>
             <div>
               <p className="text-[10px] text-[#9ca3af]">Lost</p>
@@ -225,7 +225,7 @@ export default function ProfileCard({
           <h4 className="font-semibold text-[#1f2937] text-sm mb-3">Engagement</h4>
           <div className="space-y-2">
             {[
-              { label: "Likes", pct: 68, color: "#2596be" },
+              { label: "Likes", pct: 68, color: "#768cff" },
               { label: "Comments", pct: 18, color: "#10b981" },
               { label: "Shares", pct: 9, color: "#f59e0b" },
               { label: "Saves", pct: 5, color: "#8b5cf6" },
@@ -284,7 +284,7 @@ export default function ProfileCard({
           <h1 className="text-xl font-semibold text-[#1f2937] mt-3">{displayName}</h1>
           <div className="flex items-center justify-center gap-1 mt-1">
             <span className="text-[#6b7280]">@{user?.userName}</span>
-            <svg className="w-4 h-4 text-[#2596be]" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-4 h-4 text-[#768cff]" viewBox="0 0 24 24" fill="currentColor">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
             </svg>
           </div>
@@ -377,8 +377,8 @@ export default function ProfileCard({
             ].map((bar, i) => (
               <div key={i} className="flex-1 flex flex-col items-center">
                 <div className="w-full rounded-md overflow-hidden flex flex-col justify-end" style={{ height: `${bar.light}px` }}>
-                  <div className="w-full bg-[#b8e4f0]" style={{ height: `${bar.light - bar.dark}px` }} />
-                  <div className="w-full bg-[#2596be]" style={{ height: `${bar.dark}px` }} />
+                  <div className="w-full bg-[#c4cfff]" style={{ height: `${bar.light - bar.dark}px` }} />
+                  <div className="w-full bg-[#768cff]" style={{ height: `${bar.dark}px` }} />
                 </div>
               </div>
             ))}
@@ -395,7 +395,7 @@ export default function ProfileCard({
             </div>
             <div>
               <p className="text-[11px] text-[#9ca3af]">Growth rate</p>
-              <p className="text-lg font-semibold text-[#2596be]">+2.3%</p>
+              <p className="text-lg font-semibold text-[#768cff]">+2.3%</p>
             </div>
             <div>
               <p className="text-[11px] text-[#9ca3af]">Unfollows</p>
@@ -409,7 +409,7 @@ export default function ProfileCard({
           <h3 className="font-semibold text-[#1f2937] mb-4">Engagement Breakdown</h3>
           <div className="space-y-4">
             {[
-              { label: "Likes", pct: 68, count: "45.2K", color: "#2596be" },
+              { label: "Likes", pct: 68, count: "45.2K", color: "#768cff" },
               { label: "Comments", pct: 18, count: "12.1K", color: "#10b981" },
               { label: "Shares", pct: 9, count: "6.2K", color: "#f59e0b" },
               { label: "Saves", pct: 5, count: "3.4K", color: "#8b5cf6" },
@@ -448,7 +448,7 @@ export default function ProfileCard({
                     href={user.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#2596be] hover:underline"
+                    className="text-[#768cff] hover:underline"
                   >
                     {user.website}
                   </a>
