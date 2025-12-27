@@ -12,7 +12,7 @@ export default function Dashboard() {
   const [selectedPlatform, setSelectedPlatform] = useState("instagram");
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
