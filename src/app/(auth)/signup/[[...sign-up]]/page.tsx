@@ -17,6 +17,7 @@ export default function SignupPage() {
       <main className="flex-1 flex items-center justify-center px-8 -mt-16">
         <SignUp
           signInUrl="/login"
+          forceRedirectUrl="/onboarding"
           appearance={{
             elements: {
               rootBox: "mx-auto",
