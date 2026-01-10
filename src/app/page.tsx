@@ -81,15 +81,9 @@ export default function LandingPage() {
         <p className="text-sm text-[#9ca3af] mb-2">
           Built for creators who want to grow.
         </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-sm text-[#9ca3af]">
-          <a href="tel:+17029123736" className="hover:text-[#6b7280] transition-colors">
-            +1 (702) 912-3736
-          </a>
-          <span className="hidden sm:inline">•</span>
-          <a href="mailto:james@endoros.com" className="hover:text-[#6b7280] transition-colors">
-            james@endoros.com
-          </a>
-        </div>
+        <a href="mailto:general@endoros.com" className="text-sm text-[#9ca3af] hover:text-[#6b7280] transition-colors">
+          general@endoros.com
+        </a>
       </footer>
     </div>
   );
