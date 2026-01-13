@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { DM_Sans, Geist_Mono } from "next/font/google";
+import { FacebookSDK } from "@/components/FacebookSDK";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -30,6 +31,7 @@ export default function RootLayout({
         <body
           className={`${dmSans.className} ${geistMono.variable} antialiased`}
         >
+          <FacebookSDK />
           {children}
         </body>
       </html>
