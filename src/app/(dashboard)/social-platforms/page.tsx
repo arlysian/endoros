@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 export default function SocialPlatforms() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [instagramLoading, setInstagramLoading] = useState(true);
-  const [instagramAccessToken, setInstagramAccessToken] = useState<string | null>(null);
+  const [instagramAccount, setInstagramAccount] = useState<{ username: string } | null>(null);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   const [platforms, setPlatforms] = useState([
     {
@@ -26,35 +27,26 @@ export default function SocialPlatforms() {
     },
   ]);
 
-  // Check login status on page load (HTTPS only)
+  // Check connected accounts from database on page load
   useEffect(() => {
-    const checkLoginStatus = () => {
-      if (!window.FB) {
-        // SDK not loaded yet, retry
-        setTimeout(checkLoginStatus, 500);
-        return;
-      }
-
-      // FB.getLoginStatus requires HTTPS - skip on localhost
-      if (window.location.protocol !== "https:") {
-        setInstagramLoading(false);
-        return;
-      }
-
-      window.FB.getLoginStatus((response: {
-        status: string;
-        authResponse?: { accessToken: string; userID: string }
-      }) => {
-        if (response.status === "connected" && response.authResponse) {
-          setInstagramAccessToken(response.authResponse.accessToken);
-          setInstagramConnected(true);
-          console.log("Already connected. Access token:", response.authResponse.accessToken);
+    const checkConnectedAccounts = async () => {
+      try {
+        const res = await fetch("/api/connect/instagram");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.account) {
+            setInstagramConnected(true);
+            setInstagramAccount(data.account);
+          }
         }
+      } catch (error) {
+        console.error("Failed to check connected accounts:", error);
+      } finally {
         setInstagramLoading(false);
-      });
+      }
     };
 
-    checkLoginStatus();
+    checkConnectedAccounts();
   }, []);
 
   // Handle Facebook Login button click
@@ -69,10 +61,32 @@ export default function SocialPlatforms() {
     window.FB.login(
       (response: { authResponse?: { accessToken: string } }) => {
         if (response.authResponse) {
-          setInstagramAccessToken(response.authResponse.accessToken);
-          setInstagramConnected(true);
-          setInstagramLoading(false);
-          console.log("Access token:", response.authResponse.accessToken);
+          const connectInstagram = async () => {
+            try {
+              // Send short-lived token to backend for exchange and storage
+              const res = await fetch("/api/connect/instagram", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accessToken: response.authResponse!.accessToken }),
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                throw new Error(data.error || "Failed to connect Instagram");
+              }
+
+              setInstagramConnected(true);
+              setInstagramAccount(data.account);
+              console.log("Instagram connected:", data.account);
+            } catch (error) {
+              console.error("Failed to connect Instagram:", error);
+              alert(error instanceof Error ? error.message : "Failed to connect Instagram");
+            } finally {
+              setInstagramLoading(false);
+            }
+          };
+          connectInstagram();
         } else {
           setInstagramLoading(false);
           console.log("User cancelled login or did not fully authorize.");
@@ -84,9 +98,20 @@ export default function SocialPlatforms() {
     );
   };
 
-  const disconnectInstagram = () => {
-    setInstagramConnected(false);
-    setInstagramAccessToken(null);
+  const handleDisconnectClick = () => {
+    setShowDisconnectConfirm(true);
+  };
+
+  const confirmDisconnect = async () => {
+    try {
+      await fetch("/api/connect/instagram", { method: "DELETE" });
+      setInstagramConnected(false);
+      setInstagramAccount(null);
+    } catch (error) {
+      console.error("Failed to disconnect Instagram:", error);
+    } finally {
+      setShowDisconnectConfirm(false);
+    }
   };
 
   const removeAccount = (platformId: string, username: string) => {
@@ -128,7 +153,7 @@ export default function SocialPlatforms() {
               <div className="flex items-center gap-2">
                 {instagramConnected ? (
                   <button
-                    onClick={disconnectInstagram}
+                    onClick={handleDisconnectClick}
                     className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-hover transition-colors"
                   >
                     Disconnect
@@ -146,16 +171,16 @@ export default function SocialPlatforms() {
               </div>
             </div>
 
-            {instagramConnected && instagramAccessToken && (
+            {instagramConnected && instagramAccount && (
               <div className="mt-4">
-                <p className="text-sm font-medium text-foreground mb-2">Connection Status</p>
+                <p className="text-sm font-medium text-foreground mb-2">Connected Account</p>
                 <div className="flex items-center justify-between bg-green-50 rounded-lg px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="text-green-700 font-medium">Connected to Facebook</span>
+                    <span className="text-green-700 font-medium">@{instagramAccount.username}</span>
                   </div>
                   <button
-                    onClick={disconnectInstagram}
+                    onClick={handleDisconnectClick}
                     className="text-muted hover:text-foreground transition-colors"
                   >
                     <XIcon className="w-5 h-5" />
@@ -237,6 +262,32 @@ export default function SocialPlatforms() {
           <span className="text-sm font-medium">Add Another Platform</span>
         </button>
       </section>
+
+      {/* Disconnect Confirmation Modal */}
+      {showDisconnectConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Disconnect Instagram?</h3>
+            <p className="text-muted mb-6">
+              Are you sure you want to disconnect your Instagram account? You will need to reconnect to access your metrics again.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDisconnectConfirm(false)}
+                className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDisconnect}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
