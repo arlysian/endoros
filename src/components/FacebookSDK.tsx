@@ -29,10 +29,22 @@ declare global {
         xfbml: boolean;
         version: string;
       }) => void;
+      getLoginStatus: (
+        callback: (response: {
+          status: "connected" | "not_authorized" | "unknown";
+          authResponse?: {
+            accessToken: string;
+            expiresIn: string;
+            signedRequest: string;
+            userID: string;
+          };
+        }) => void
+      ) => void;
       login: (
         callback: (response: { authResponse?: { accessToken: string } }) => void,
         options: { scope: string }
       ) => void;
+      logout: (callback?: () => void) => void;
       api: (path: string, callback: (response: unknown) => void) => void;
     };
   }
