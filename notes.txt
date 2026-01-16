@@ -1,4 +1,6 @@
-metric[0] must be one of the following values: reach, 
+For account insights:
+
+reach - Total number of times the Business Account's media objects have been uniquely viewed: day, week, days_28
 follower_count, 
 website_clicks, 
 profile_views, 
@@ -13,14 +15,31 @@ reached_audience_demographics
 follower_demographics 
 follows_and_unfollows 
 profile_links_taps
-views
-threads_likes
-threads_replies
-reposts 
-quotes
-threads_followers
-threads_follower_demographics
-content_views 
-threads_views 
-threads_clicks
-threads_reposts
+views  - reels views
+
+
+for media insights:
+
+impressions,  - deprecated since v22.0
+reach, 
+replies, 
+saved, 
+video_views, 
+likes, 
+comments, 
+shares, 
+plays, 
+total_interactions, 
+follows, 
+profile_visits, 
+profile_activity, 
+navigation, 
+ig_reels_video_view_total_time, 
+ig_reels_avg_watch_time, 
+clips_replays_count, 
+ig_reels_aggregated_all_plays_count, 
+views - use views for FEED 
+reels_skip_rate, 
+reposts, 
+facebook_views, 
+crossposted_views

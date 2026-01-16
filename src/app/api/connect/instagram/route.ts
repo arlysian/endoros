@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { fetchInstagramMetrics, backfillFollowerHistory } from "@/lib/fetch-instagram-metrics";
 import { NextRequest, NextResponse } from "next/server";
 
 const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
@@ -148,6 +149,18 @@ export async function POST(request: NextRequest) {
       console.error("Database error:", error);
       return NextResponse.json({ error: "Failed to save account" }, { status: 500 });
     }
+
+    const accountData = {
+      id: data.id,
+      instagramBusinessId: igAccountId,
+      accessToken: longLivedToken,
+    };
+
+    // Fetch metrics and backfill history (non-blocking)
+    Promise.all([
+      fetchInstagramMetrics(accountData),
+      backfillFollowerHistory(accountData),
+    ]).catch((err) => console.error("Initial metrics/backfill error:", err));
 
     return NextResponse.json({
       success: true,

@@ -94,6 +94,36 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .eq("userId", user.id)
     .order("date", { ascending: false });
 
+  // Fetch latest platform metrics for Instagram
+  const instagramAccount = connectedAccounts?.find(acc => acc.platform === "INSTAGRAM");
+  let platformMetrics = null;
+  let followerHistory: { date: string; newFollows: number; unfollows: number }[] = [];
+
+  if (instagramAccount) {
+    // Get latest metrics
+    const { data: metrics } = await supabaseAdmin
+      .from("PlatformMetrics")
+      .select("*")
+      .eq("connectedAccountId", instagramAccount.id)
+      .order("date", { ascending: false })
+      .limit(1)
+      .single();
+
+    platformMetrics = metrics;
+
+    // Get last 7 days for chart
+    const { data: history } = await supabaseAdmin
+      .from("PlatformMetrics")
+      .select("date, newFollows, unfollows")
+      .eq("connectedAccountId", instagramAccount.id)
+      .order("date", { ascending: false })
+      .limit(7);
+
+    if (history) {
+      followerHistory = history.reverse();
+    }
+  }
+
   const totalFollowers = connectedAccounts?.reduce((sum, acc) => sum + (acc.followers || 0), 0) || 0;
 
   return (

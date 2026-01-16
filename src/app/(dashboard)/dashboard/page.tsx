@@ -1,6 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface InstagramMetrics {
+  followers: number;
+  engagementRate: number;
+  avgViews: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+}
+
+interface HistoryDay {
+  date: string;
+  followers: number;
+  newFollows: number;
+  unfollows: number;
+}
+
+interface HistorySummary {
+  totalNewFollows: number;
+  totalUnfollows: number;
+  netGrowth: number;
+}
 
 const platforms = [
   { id: "instagram", name: "Instagram", icon: InstagramIcon, color: "#E4405F" },
@@ -8,8 +32,123 @@ const platforms = [
   { id: "tiktok", name: "TikTok", icon: TikTokIcon, color: "#000000" },
 ];
 
+function formatNumber(num: number): string {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  return num.toString();
+}
+
+function formatFullNumber(num: number): string {
+  return num.toLocaleString();
+}
+
 export default function Dashboard() {
   const [selectedPlatform, setSelectedPlatform] = useState("instagram");
+  const [igMetrics, setIgMetrics] = useState<InstagramMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [historyDays, setHistoryDays] = useState<7 | 30>(7);
+  const [history, setHistory] = useState<HistoryDay[]>([]);
+  const [historySummary, setHistorySummary] = useState<HistorySummary | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyCache, setHistoryCache] = useState<Record<number, { history: HistoryDay[]; summary: HistorySummary }>>({});
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (selectedPlatform === "instagram") {
+      fetch("/api/metrics/instagram")
+        .then((res) => res.json())
+        .then((data) => {
+          setIgMetrics(data.metrics || null);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [selectedPlatform]);
+
+  useEffect(() => {
+    if (selectedPlatform === "instagram") {
+      // Check cache first
+      const cached = historyCache[historyDays];
+      if (cached) {
+        setHistory(cached.history);
+        setHistorySummary(cached.summary);
+        setHistoryLoading(false);
+        return;
+      }
+
+      setHistoryLoading(true);
+      fetch(`/api/metrics/instagram/history?days=${historyDays}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const historyData = data.history || [];
+          const summaryData = data.summary || null;
+          setHistory(historyData);
+          setHistorySummary(summaryData);
+          // Cache the result
+          if (summaryData) {
+            setHistoryCache((prev) => ({
+              ...prev,
+              [historyDays]: { history: historyData, summary: summaryData },
+            }));
+          }
+          setHistoryLoading(false);
+        })
+        .catch(() => {
+          setHistory([]);
+          setHistorySummary(null);
+          setHistoryLoading(false);
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, historyDays]);
+
+  // Mock data for TikTok and Facebook only
+  const mockData = {
+    followers: "124.5K",
+    engagementRate: "4.8%",
+    avgViews: "45.2K",
+    reach: "892K",
+    likes: { count: "45.2K", percent: 68 },
+    comments: { count: "12.1K", percent: 18 },
+    shares: { count: "6.2K", percent: 9 },
+    saves: { count: "3.4K", percent: 5 },
+  };
+
+  const isInstagram = selectedPlatform === "instagram";
+  const hasIgData = isInstagram && igMetrics && !loading;
+
+  // For Instagram: show real data or "-", for others: show mock
+  const getStatValue = (igValue: string | undefined, mockValue: string) => {
+    if (!isInstagram) return mockValue;
+    return hasIgData && igValue ? igValue : "-";
+  };
+
+  const displayData = hasIgData
+    ? {
+        followers: formatFullNumber(igMetrics.followers || 0),
+        engagementRate: (igMetrics.engagementRate || 0).toFixed(2) + "%",
+        avgViews: formatNumber(igMetrics.avgViews || 0),
+        reach: formatNumber(igMetrics.reach || 0),
+        likes: igMetrics.likes || 0,
+        comments: igMetrics.comments || 0,
+        shares: igMetrics.shares || 0,
+        saves: igMetrics.saves || 0,
+      }
+    : null;
+
+  // Calculate engagement breakdown percentages
+  const engagementBreakdown = displayData
+    ? (() => {
+        const total = displayData.likes + displayData.comments + displayData.shares + displayData.saves;
+        if (total === 0) return { likes: 0, comments: 0, shares: 0, saves: 0 };
+        return {
+          likes: Math.round((displayData.likes / total) * 100),
+          comments: Math.round((displayData.comments / total) * 100),
+          shares: Math.round((displayData.shares / total) * 100),
+          saves: Math.round((displayData.saves / total) * 100),
+        };
+      })()
+    : null;
 
   return (
     <div className="p-4 sm:p-8">
@@ -51,30 +190,22 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           title="Total Followers"
-          value="124.5K"
-          change="+2.4K"
-          positive
+          value={getStatValue(displayData?.followers, mockData.followers)}
           icon={<UsersIcon />}
         />
         <StatCard
           title="Avg. Engagement Rate"
-          value="4.8%"
-          change="+0.3%"
-          positive
+          value={getStatValue(displayData?.engagementRate, mockData.engagementRate)}
           icon={<HeartIcon />}
         />
         <StatCard
           title="Avg. Views per Post"
-          value="45.2K"
-          change="-1.2K"
-          positive={false}
+          value={getStatValue(displayData?.avgViews, mockData.avgViews)}
           icon={<EyeIcon />}
         />
         <StatCard
           title="Monthly Reach"
-          value="892K"
-          change="+12%"
-          positive
+          value={getStatValue(displayData?.reach, mockData.reach)}
           icon={<TrendingIcon />}
         />
       </div>
@@ -85,28 +216,66 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-medium text-foreground">Follower Growth</h2>
-            <select className="text-sm text-muted bg-transparent border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#768cff]">
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-              <option>Last 90 days</option>
+            <select
+              className="text-sm text-muted bg-transparent border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#768cff]"
+              value={historyDays}
+              onChange={(e) => {
+                setHistoryDays(parseInt(e.target.value) as 7 | 30);
+                setSelectedDayIndex(null);
+              }}
+            >
+              <option value={7}>Last 7 days</option>
+              <option value={30}>Last 30 days</option>
             </select>
           </div>
-          <div className="h-48">
-            <FollowerGrowthChart />
+          <div className="h-48" onClick={() => setSelectedDayIndex(null)}>
+            {isInstagram && historyLoading ? (
+              <div className="flex items-center justify-center h-full text-muted text-sm">Loading...</div>
+            ) : (
+              <FollowerGrowthChart
+                data={isInstagram ? history : []}
+                isInstagram={isInstagram}
+                days={historyDays}
+                selectedIndex={selectedDayIndex}
+                onSelectDay={(idx) => setSelectedDayIndex(idx)}
+              />
+            )}
           </div>
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-            <div>
-              <p className="text-sm text-muted">New followers</p>
-              <p className="text-xl font-semibold text-foreground">+2,847</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted">Growth rate</p>
-              <p className="text-xl font-semibold text-emerald-500">+2.3%</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted">Unfollows</p>
-              <p className="text-xl font-semibold text-red-500">-124</p>
-            </div>
+            {(() => {
+              const selectedDay = selectedDayIndex !== null ? history[selectedDayIndex] : null;
+              const dayNet = selectedDay ? selectedDay.newFollows - selectedDay.unfollows : 0;
+              const showingDay = isInstagram && selectedDay;
+
+              return (
+                <>
+                  <div>
+                    <p className="text-sm text-muted">Follows</p>
+                    <p className="text-xl font-semibold text-foreground">
+                      {isInstagram
+                        ? (historyLoading ? "-" : (showingDay ? `+${selectedDay.newFollows.toLocaleString()}` : (historySummary ? `+${historySummary.totalNewFollows.toLocaleString()}` : "-")))
+                        : "+2,847"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted">Net growth</p>
+                    <p className={`text-xl font-semibold ${(showingDay ? dayNet < 0 : (historySummary && historySummary.netGrowth < 0)) ? "text-red-500" : "text-emerald-500"}`}>
+                      {isInstagram
+                        ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${historySummary.netGrowth >= 0 ? "+" : ""}${historySummary.netGrowth.toLocaleString()}` : "-")))
+                        : "+2,723"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted">Unfollows</p>
+                    <p className="text-xl font-semibold text-red-500">
+                      {isInstagram
+                        ? (historyLoading ? "-" : (showingDay ? `-${selectedDay.unfollows.toLocaleString()}` : (historySummary ? `-${historySummary.totalUnfollows.toLocaleString()}` : "-")))
+                        : "-124"}
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -114,15 +283,41 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
           <h2 className="text-lg font-medium text-foreground mb-6">Engagement Breakdown</h2>
           <div className="space-y-4">
-            <EngagementBar label="Likes" value={68} count="45.2K" color="#768cff" />
-            <EngagementBar label="Comments" value={18} count="12.1K" color="#10b981" />
-            <EngagementBar label="Shares" value={9} count="6.2K" color="#f59e0b" />
-            <EngagementBar label="Saves" value={5} count="3.4K" color="#8b5cf6" />
+            <EngagementBar
+              label="Likes"
+              value={isInstagram ? (engagementBreakdown?.likes ?? 0) : mockData.likes.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.likes) : "-") : mockData.likes.count}
+              color="#768cff"
+            />
+            <EngagementBar
+              label="Comments"
+              value={isInstagram ? (engagementBreakdown?.comments ?? 0) : mockData.comments.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.comments) : "-") : mockData.comments.count}
+              color="#10b981"
+            />
+            <EngagementBar
+              label="Shares"
+              value={isInstagram ? (engagementBreakdown?.shares ?? 0) : mockData.shares.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.shares) : "-") : mockData.shares.count}
+              color="#f59e0b"
+            />
+            <EngagementBar
+              label="Saves"
+              value={isInstagram ? (engagementBreakdown?.saves ?? 0) : mockData.saves.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.saves) : "-") : mockData.saves.count}
+              color="#8b5cf6"
+            />
           </div>
           <div className="mt-6 pt-4 border-t border-border">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted">Total Engagements</span>
-              <span className="text-lg font-semibold text-foreground">66.9K</span>
+              <span className="text-lg font-semibold text-foreground">
+                {isInstagram
+                  ? (displayData
+                      ? formatNumber(displayData.likes + displayData.comments + displayData.shares + displayData.saves)
+                      : "-")
+                  : "66.9K"}
+              </span>
             </div>
           </div>
         </div>
@@ -142,11 +337,9 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              <PerformanceRow metric="Profile Visits" thisWeek="12,847" lastWeek="11,234" change="+14.3%" positive />
-              <PerformanceRow metric="Post Impressions" thisWeek="458K" lastWeek="412K" change="+11.2%" positive />
-              <PerformanceRow metric="Story Views" thisWeek="89.2K" lastWeek="92.1K" change="-3.1%" positive={false} />
-              <PerformanceRow metric="Link Clicks" thisWeek="2,341" lastWeek="1,987" change="+17.8%" positive />
-              <PerformanceRow metric="Avg. Time on Profile" thisWeek="2m 34s" lastWeek="2m 12s" change="+16.7%" positive />
+              <PerformanceRow metric="Profile Visits" thisWeek={isInstagram && !hasIgData ? "-" : "12,847"} lastWeek={isInstagram && !hasIgData ? "-" : "11,234"} change={isInstagram && !hasIgData ? "-" : "+14.3%"} positive />
+              <PerformanceRow metric="Post Impressions" thisWeek={isInstagram && !hasIgData ? "-" : "458K"} lastWeek={isInstagram && !hasIgData ? "-" : "412K"} change={isInstagram && !hasIgData ? "-" : "+11.2%"} positive />
+              <PerformanceRow metric="Link Clicks" thisWeek={isInstagram && !hasIgData ? "-" : "2,341"} lastWeek={isInstagram && !hasIgData ? "-" : "1,987"} change={isInstagram && !hasIgData ? "-" : "+17.8%"} positive />
             </tbody>
           </table>
         </div>
@@ -158,14 +351,10 @@ export default function Dashboard() {
 function StatCard({
   title,
   value,
-  change,
-  positive,
   icon,
 }: {
   title: string;
   value: string;
-  change: string;
-  positive: boolean;
   icon: React.ReactNode;
 }) {
   return (
@@ -174,13 +363,6 @@ function StatCard({
         <div className="w-10 h-10 rounded-lg bg-[#768cff]/10 flex items-center justify-center text-[#768cff]">
           {icon}
         </div>
-        <span
-          className={`text-sm font-medium px-2 py-0.5 rounded-full ${
-            positive ? "text-emerald-600 bg-emerald-50" : "text-red-600 bg-red-50"
-          }`}
-        >
-          {change}
-        </span>
       </div>
       <p className="text-sm text-muted mb-1">{title}</p>
       <p className="text-2xl font-semibold text-foreground">{value}</p>
@@ -207,7 +389,7 @@ function EngagementBar({
       </div>
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full transition-all duration-500"
+          className="h-full rounded-full transition-all duration-500 ease-out"
           style={{ width: `${value}%`, backgroundColor: color }}
         />
       </div>
@@ -240,8 +422,9 @@ function PerformanceRow({
   );
 }
 
-function FollowerGrowthChart() {
-  const data = [
+function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectDay }: { data: HistoryDay[]; isInstagram: boolean; days: number; selectedIndex: number | null; onSelectDay: (idx: number) => void }) {
+  // Mock data for non-Instagram
+  const mockData = [
     { day: "Mon", value: 40 },
     { day: "Tue", value: 55 },
     { day: "Wed", value: 45 },
@@ -250,26 +433,78 @@ function FollowerGrowthChart() {
     { day: "Sat", value: 85 },
     { day: "Sun", value: 75 },
   ];
-  const maxValue = Math.max(...data.map(d => d.value));
+
+  if (!isInstagram) {
+    const maxValue = Math.max(...mockData.map(d => d.value));
+    return (
+      <div className="flex items-end justify-between h-full gap-2">
+        {mockData.map((item) => (
+          <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
+            <div className="w-full flex justify-center">
+              <div
+                className="w-8 bg-[#768cff]/20 rounded-t-md relative group cursor-pointer hover:bg-[#768cff]/30 transition-colors"
+                style={{ height: `${(item.value / maxValue) * 160}px` }}
+              >
+                <div
+                  className="absolute bottom-0 left-0 right-0 bg-[#768cff] rounded-t-md transition-all"
+                  style={{ height: `${(item.value / maxValue) * 100}%` }}
+                />
+              </div>
+            </div>
+            <span className="text-xs text-muted">{item.day}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Real Instagram data
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted text-sm">
+        No data available
+      </div>
+    );
+  }
+
+  const chartData = data.map((d) => ({
+    label: days === 7
+      ? new Date(d.date).toLocaleDateString("en-US", { weekday: "short" })
+      : new Date(d.date).getDate().toString(),
+    newFollows: d.newFollows,
+    unfollows: d.unfollows,
+    net: d.newFollows - d.unfollows,
+  }));
+
+  const maxValue = Math.max(...chartData.map(d => Math.max(d.newFollows, d.unfollows)), 1);
 
   return (
-    <div className="flex items-end justify-between h-full gap-2">
-      {data.map((item) => (
-        <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-          <div className="w-full flex justify-center">
-            <div
-              className="w-8 bg-[#768cff]/20 rounded-t-md relative group cursor-pointer hover:bg-[#768cff]/30 transition-colors"
-              style={{ height: `${(item.value / maxValue) * 160}px` }}
-            >
+    <div className="flex items-end h-full gap-1 overflow-x-auto pt-2 pb-6">
+      {chartData.map((item, idx) => {
+        const isSelected = selectedIndex === idx;
+        return (
+          <div
+            key={idx}
+            className={`flex-1 min-w-[20px] flex flex-col items-center justify-end h-full cursor-pointer ${isSelected ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectDay(idx);
+            }}
+          >
+            <div className="flex items-end gap-0.5 h-[130px]">
               <div
-                className="absolute bottom-0 left-0 right-0 bg-[#768cff] rounded-t-md transition-all"
-                style={{ height: `${(item.value / maxValue) * 100}%` }}
+                className={`w-2.5 rounded-t-sm ${isSelected ? "bg-emerald-400" : "bg-emerald-500"}`}
+                style={{ height: `${Math.max((item.newFollows / maxValue) * 130, item.newFollows > 0 ? 4 : 0)}px` }}
+              />
+              <div
+                className={`w-2.5 rounded-t-sm ${isSelected ? "bg-red-300" : "bg-red-400"}`}
+                style={{ height: `${Math.max((item.unfollows / maxValue) * 130, item.unfollows > 0 ? 4 : 0)}px` }}
               />
             </div>
+            <span className={`text-[10px] whitespace-nowrap mt-1 ${isSelected ? "text-foreground font-medium" : "text-muted"}`}>{item.label}</span>
           </div>
-          <span className="text-xs text-muted">{item.day}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
