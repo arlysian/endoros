@@ -156,11 +156,15 @@ export async function POST(request: NextRequest) {
       accessToken: longLivedToken,
     };
 
-    // Fetch metrics and backfill history (non-blocking)
-    Promise.all([
-      fetchInstagramMetrics(accountData),
-      backfillFollowerHistory(accountData),
-    ]).catch((err) => console.error("Initial metrics/backfill error:", err));
+    // Fetch metrics and backfill history
+    try {
+      await Promise.all([
+        fetchInstagramMetrics(accountData),
+        backfillFollowerHistory(accountData),
+      ]);
+    } catch (err) {
+      console.error("Initial metrics/backfill error:", err);
+    }
 
     return NextResponse.json({
       success: true,
