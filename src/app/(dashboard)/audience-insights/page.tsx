@@ -2,150 +2,168 @@
 
 export default function AudienceInsights() {
   const genderData = [
-    { label: "Female", value: 60, color: "#768cff" },
-    { label: "Male", value: 36, color: "#768cff" },
-    { label: "Others", value: 4, color: "#768cff" },
+    { label: "Female", value: 60 },
+    { label: "Male", value: 36 },
+    { label: "Other", value: 4 },
   ];
 
   const ageData = [
-    { label: "18 - 24", value: 76 },
-    { label: "25 - 34", value: 30 },
-    { label: "35 - 44", value: 15 },
-    { label: "45 and above", value: 5 },
+    { label: "18-24", value: 76 },
+    { label: "25-34", value: 30 },
+    { label: "35-44", value: 15 },
+    { label: "45+", value: 5 },
   ];
 
   const countryData = [
-    { country: "United States", value: 80 },
-    { country: "Canada", value: 76 },
-    { country: "United Kingdom", value: 54 },
-    { country: "Australia", value: 30 },
-    { country: "Germany", value: 14 },
+    { country: "United States", code: "US", value: 80 },
+    { country: "Canada", code: "CA", value: 76 },
+    { country: "United Kingdom", code: "UK", value: 54 },
+    { country: "Australia", code: "AU", value: 30 },
+    { country: "Germany", code: "DE", value: 14 },
   ];
 
   const postingTimes = [
-    { day: "Monday", time: "2-4 PM", status: "Peak" as const },
-    { day: "Tuesday", time: "1-3 PM", status: "Off-Peak" as const },
-    { day: "Wednesday", time: "3-5 PM", status: "Peak" as const },
-    { day: "Thursday", time: "12-2 PM", status: "Moderate" as const },
+    { day: "Mon", time: "2-4 PM", engagement: 92 },
+    { day: "Tue", time: "1-3 PM", engagement: 67 },
+    { day: "Wed", time: "3-5 PM", engagement: 88 },
+    { day: "Thu", time: "12-2 PM", engagement: 75 },
+    { day: "Fri", time: "4-6 PM", engagement: 81 },
+    { day: "Sat", time: "11-1 PM", engagement: 45 },
+    { day: "Sun", time: "5-7 PM", engagement: 52 },
   ];
 
+  const maxEngagement = Math.max(...postingTimes.map(t => t.engagement));
+
   return (
-    <div className="p-4 sm:p-8">
+    <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Audience Insights</h1>
-        <p className="text-muted mt-1">Understand your audience demographics and engagement patterns.</p>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-black">Analytics</h1>
+        <p className="text-sm text-neutral-500 mt-1">Understand your audience demographics</p>
       </div>
 
-      {/* Demographics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Gender Distribution */}
-        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <h2 className="text-lg font-medium text-foreground mb-6">Gender Distribution</h2>
-          <div className="space-y-5">
+      {/* Key Stats */}
+      <div className="grid grid-cols-4 gap-8 mb-12">
+        <div>
+          <p className="text-xs text-neutral-400 mb-2">Total Reach</p>
+          <p className="text-2xl font-semibold text-black">892K</p>
+        </div>
+        <div>
+          <p className="text-xs text-neutral-400 mb-2">Impressions</p>
+          <p className="text-2xl font-semibold text-black">2.4M</p>
+        </div>
+        <div>
+          <p className="text-xs text-neutral-400 mb-2">Profile Views</p>
+          <p className="text-2xl font-semibold text-black">45.2K</p>
+        </div>
+        <div>
+          <p className="text-xs text-neutral-400 mb-2">Link Clicks</p>
+          <p className="text-2xl font-semibold text-black">8.7K</p>
+        </div>
+      </div>
+
+      {/* Demographics Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+        {/* Gender */}
+        <div>
+          <h2 className="text-sm font-medium text-black mb-6">Gender</h2>
+          <div className="space-y-4">
             {genderData.map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-foreground">{item.label}</span>
-                  <span className="text-muted">{item.value}%</span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div key={item.label} className="flex items-center gap-4">
+                <span className="text-sm text-black w-16">{item.label}</span>
+                <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${item.value}%`, backgroundColor: item.color }}
+                    className="h-full bg-black rounded-full"
+                    style={{ width: `${item.value}%` }}
                   />
                 </div>
+                <span className="text-sm text-neutral-400 w-10 text-right">{item.value}%</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Age Distribution */}
-        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <h2 className="text-lg font-medium text-foreground mb-6">Age Distribution</h2>
-          <div className="space-y-5">
+        {/* Age */}
+        <div>
+          <h2 className="text-sm font-medium text-black mb-6">Age</h2>
+          <div className="space-y-4">
             {ageData.map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-foreground">{item.label}</span>
-                  <span className="text-muted">{item.value}%</span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div key={item.label} className="flex items-center gap-4">
+                <span className="text-sm text-black w-16">{item.label}</span>
+                <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#768cff] transition-all duration-500"
+                    className="h-full bg-black rounded-full"
                     style={{ width: `${item.value}%` }}
                   />
                 </div>
+                <span className="text-sm text-neutral-400 w-10 text-right">{item.value}%</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Audience Summary */}
-      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
-        <h2 className="text-lg font-medium text-foreground mb-4">Audience Summary</h2>
-        <p className="text-foreground">
-          My audience is mostly women in the US, aged 16–20, in college, and interested in fashion
-        </p>
-      </div>
-
-      {/* Top 5 Countries */}
-      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] mb-6">
-        <h2 className="text-lg font-medium text-foreground mb-6">Top 5 Countries</h2>
-        <div className="space-y-4">
-          {countryData.map((item) => (
-            <div key={item.country} className="flex items-center gap-4 p-4 border border-border rounded-xl">
-              <span className="text-foreground w-40 flex-shrink-0">{item.country}</span>
-              <div className="flex-1 flex items-center gap-4">
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#768cff] transition-all duration-500"
-                    style={{ width: `${item.value}%` }}
-                  />
-                </div>
-                <span className="text-muted text-sm w-12 text-right">{item.value}%</span>
+      {/* Top Countries */}
+      <div className="mb-12">
+        <h2 className="text-sm font-medium text-black mb-6">Top Countries</h2>
+        <div className="space-y-3">
+          {countryData.map((item, idx) => (
+            <div key={item.country} className="flex items-center gap-4 py-3 border-b border-neutral-100 last:border-0">
+              <span className="text-xs text-neutral-400 w-4">{idx + 1}</span>
+              <span className="text-sm text-black flex-1">{item.country}</span>
+              <div className="w-32 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-black rounded-full"
+                  style={{ width: `${item.value}%` }}
+                />
               </div>
+              <span className="text-sm text-neutral-400 w-10 text-right">{item.value}%</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Best Posting Times */}
-      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-        <h2 className="text-lg font-medium text-foreground mb-6">Best Posting Times</h2>
-        <div className="space-y-3">
-          {postingTimes.map((item) => (
-            <div
-              key={item.day}
-              className="flex items-center justify-between p-4 border border-border rounded-xl"
-            >
-              <div>
-                <p className="font-medium text-foreground">{item.day}</p>
-                <p className="text-sm text-muted">{item.time}</p>
+      <div className="mb-12">
+        <h2 className="text-sm font-medium text-black mb-6">Best Posting Times</h2>
+        <div className="flex items-end gap-4 h-32 mb-4">
+          {postingTimes.map((item) => {
+            const height = (item.engagement / maxEngagement) * 100;
+            const isHigh = item.engagement >= 80;
+            return (
+              <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
+                <div className="w-full flex justify-center">
+                  <div
+                    className={`w-full max-w-[40px] rounded-sm ${isHigh ? "bg-black" : "bg-neutral-200"}`}
+                    style={{ height: `${height}px` }}
+                  />
+                </div>
               </div>
-              <StatusBadge status={item.status} />
+            );
+          })}
+        </div>
+        <div className="flex gap-4">
+          {postingTimes.map((item) => (
+            <div key={item.day} className="flex-1 text-center">
+              <p className="text-xs font-medium text-black">{item.day}</p>
+              <p className="text-[10px] text-neutral-400 mt-0.5">{item.time}</p>
             </div>
           ))}
         </div>
-        <p className="text-sm text-muted mt-6">
-          Note: Best posting times feature coming soon. Data will be based on your audience&apos;s activity patterns.
+        <p className="text-xs text-neutral-400 mt-6 pt-4 border-t border-neutral-100">
+          Based on when your audience is most active. Dark bars indicate peak engagement times.
+        </p>
+      </div>
+
+      {/* Audience Summary */}
+      <div>
+        <h2 className="text-sm font-medium text-black mb-4">Audience Summary</h2>
+        <p className="text-sm text-neutral-500 leading-relaxed">
+          Your audience is predominantly female (60%), based in the United States, aged 18-24.
+          They are most active on weekdays between 2-5 PM. Peak engagement days are Monday
+          and Wednesday.
         </p>
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: "Peak" | "Off-Peak" | "Moderate" }) {
-  const bgColor = status === "Peak"
-    ? "bg-emerald-600"
-    : status === "Moderate"
-      ? "bg-emerald-600"
-      : "bg-gray-800";
-
-  return (
-    <span className={`px-4 py-1.5 ${bgColor} text-white text-sm font-medium rounded-full`}>
-      {status}
-    </span>
   );
 }

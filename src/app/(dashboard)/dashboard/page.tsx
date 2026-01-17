@@ -27,9 +27,9 @@ interface HistorySummary {
 }
 
 const platforms = [
-  { id: "instagram", name: "Instagram", icon: InstagramIcon, color: "#E4405F" },
-  { id: "facebook", name: "Facebook", icon: FacebookIcon, color: "#1877F2" },
-  { id: "tiktok", name: "TikTok", icon: TikTokIcon, color: "#000000" },
+  { id: "instagram", name: "Instagram", icon: InstagramIcon },
+  { id: "facebook", name: "Facebook", icon: FacebookIcon },
+  { id: "tiktok", name: "TikTok", icon: TikTokIcon },
 ];
 
 function formatNumber(num: number): string {
@@ -67,7 +67,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (selectedPlatform === "instagram") {
-      // Check cache first
       const cached = historyCache[historyDays];
       if (cached) {
         setHistory(cached.history);
@@ -84,7 +83,6 @@ export default function Dashboard() {
           const summaryData = data.summary || null;
           setHistory(historyData);
           setHistorySummary(summaryData);
-          // Cache the result
           if (summaryData) {
             setHistoryCache((prev) => ({
               ...prev,
@@ -102,7 +100,6 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, historyDays]);
 
-  // Mock data for TikTok and Facebook only
   const mockData = {
     followers: "124.5K",
     engagementRate: "4.8%",
@@ -117,7 +114,6 @@ export default function Dashboard() {
   const isInstagram = selectedPlatform === "instagram";
   const hasIgData = isInstagram && igMetrics && !loading;
 
-  // For Instagram: show real data or "-", for others: show mock
   const getStatValue = (igValue: string | undefined, mockValue: string) => {
     if (!isInstagram) return mockValue;
     return hasIgData && igValue ? igValue : "-";
@@ -136,7 +132,6 @@ export default function Dashboard() {
       }
     : null;
 
-  // Calculate engagement breakdown percentages
   const engagementBreakdown = displayData
     ? (() => {
         const total = displayData.likes + displayData.comments + displayData.shares + displayData.saves;
@@ -151,14 +146,15 @@ export default function Dashboard() {
     : null;
 
   return (
-    <div className="p-4 sm:p-8">
+    <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-black">Dashboard</h1>
+        <p className="text-sm text-neutral-500 mt-1">Track your social media performance</p>
       </div>
 
-      {/* Platform Selection Bar */}
-      <div className="flex items-center gap-1 sm:gap-2 mb-8 p-1 bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] flex-wrap sm:flex-nowrap">
+      {/* Platform Selection */}
+      <div className="flex items-center gap-6 mb-10 border-b border-neutral-100 pb-4">
         {platforms.map((platform) => {
           const Icon = platform.icon;
           const isSelected = selectedPlatform === platform.id;
@@ -167,70 +163,67 @@ export default function Dashboard() {
               key={platform.id}
               onClick={() => setSelectedPlatform(platform.id)}
               className={`
-                flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg transition-all duration-200
+                flex items-center gap-2 pb-2 -mb-[17px] border-b-2 transition-colors
                 ${isSelected
-                  ? "bg-hover text-[#768cff]"
-                  : "text-muted hover:bg-hover hover:text-foreground"
+                  ? "border-black text-black"
+                  : "border-transparent text-neutral-400 hover:text-black"
                 }
               `}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className="text-xs sm:text-sm font-medium">{platform.name}</span>
+              <Icon className="w-4 h-4" />
+              <span className="text-sm font-medium">{platform.name}</span>
             </button>
           );
         })}
-        <button className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-muted hover:bg-hover hover:text-foreground transition-all duration-200 flex-shrink-0">
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <button className="flex items-center gap-2 pb-2 -mb-[17px] border-b-2 border-transparent text-neutral-400 hover:text-black transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
           </svg>
+          <span className="text-sm font-medium">Add</span>
         </button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
         <StatCard
-          title="Total Followers"
+          label="Followers"
           value={getStatValue(displayData?.followers, mockData.followers)}
-          icon={<UsersIcon />}
         />
         <StatCard
-          title="Avg. Engagement Rate"
+          label="Engagement"
           value={getStatValue(displayData?.engagementRate, mockData.engagementRate)}
-          icon={<HeartIcon />}
         />
         <StatCard
-          title="Avg. Views per Post"
+          label="Avg. Views"
           value={getStatValue(displayData?.avgViews, mockData.avgViews)}
-          icon={<EyeIcon />}
         />
         <StatCard
-          title="Monthly Reach"
+          label="Reach"
           value={getStatValue(displayData?.reach, mockData.reach)}
-          icon={<TrendingIcon />}
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
         {/* Follower Growth */}
-        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
+        <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-foreground">Follower Growth</h2>
+            <h2 className="text-sm font-medium text-black">Follower Growth</h2>
             <select
-              className="text-sm text-muted bg-transparent border border-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#768cff]"
+              className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
               value={historyDays}
               onChange={(e) => {
                 setHistoryDays(parseInt(e.target.value) as 7 | 30);
                 setSelectedDayIndex(null);
               }}
             >
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
+              <option value={7}>7 days</option>
+              <option value={30}>30 days</option>
             </select>
           </div>
-          <div className="h-48" onClick={() => setSelectedDayIndex(null)}>
+          <div className="h-40" onClick={() => setSelectedDayIndex(null)}>
             {isInstagram && historyLoading ? (
-              <div className="flex items-center justify-center h-full text-muted text-sm">Loading...</div>
+              <div className="flex items-center justify-center h-full text-neutral-400 text-sm">Loading...</div>
             ) : (
               <FollowerGrowthChart
                 data={isInstagram ? history : []}
@@ -241,7 +234,7 @@ export default function Dashboard() {
               />
             )}
           </div>
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+          <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
             {(() => {
               const selectedDay = selectedDayIndex !== null ? history[selectedDayIndex] : null;
               const dayNet = selectedDay ? selectedDay.newFollows - selectedDay.unfollows : 0;
@@ -250,24 +243,24 @@ export default function Dashboard() {
               return (
                 <>
                   <div>
-                    <p className="text-sm text-muted">Follows</p>
-                    <p className="text-xl font-semibold text-foreground">
+                    <p className="text-xs text-neutral-400 mb-1">Follows</p>
+                    <p className="text-lg font-semibold text-emerald-600">
                       {isInstagram
                         ? (historyLoading ? "-" : (showingDay ? `+${selectedDay.newFollows.toLocaleString()}` : (historySummary ? `+${historySummary.totalNewFollows.toLocaleString()}` : "-")))
                         : "+2,847"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted">Net growth</p>
-                    <p className={`text-xl font-semibold ${(showingDay ? dayNet < 0 : (historySummary && historySummary.netGrowth < 0)) ? "text-red-500" : "text-emerald-500"}`}>
+                    <p className="text-xs text-neutral-400 mb-1">Net</p>
+                    <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && historySummary.netGrowth < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
                       {isInstagram
                         ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${historySummary.netGrowth >= 0 ? "+" : ""}${historySummary.netGrowth.toLocaleString()}` : "-")))
                         : "+2,723"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted">Unfollows</p>
-                    <p className="text-xl font-semibold text-red-500">
+                    <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
+                    <p className="text-lg font-semibold text-rose-500">
                       {isInstagram
                         ? (historyLoading ? "-" : (showingDay ? `-${selectedDay.unfollows.toLocaleString()}` : (historySummary ? `-${historySummary.totalUnfollows.toLocaleString()}` : "-")))
                         : "-124"}
@@ -280,38 +273,34 @@ export default function Dashboard() {
         </div>
 
         {/* Engagement Breakdown */}
-        <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <h2 className="text-lg font-medium text-foreground mb-6">Engagement Breakdown</h2>
-          <div className="space-y-4">
+        <div>
+          <h2 className="text-sm font-medium text-black mb-6">Engagement Breakdown</h2>
+          <div className="space-y-5">
             <EngagementBar
               label="Likes"
               value={isInstagram ? (engagementBreakdown?.likes ?? 0) : mockData.likes.percent}
               count={isInstagram ? (displayData ? formatNumber(displayData.likes) : "-") : mockData.likes.count}
-              color="#768cff"
             />
             <EngagementBar
               label="Comments"
               value={isInstagram ? (engagementBreakdown?.comments ?? 0) : mockData.comments.percent}
               count={isInstagram ? (displayData ? formatNumber(displayData.comments) : "-") : mockData.comments.count}
-              color="#10b981"
             />
             <EngagementBar
               label="Shares"
               value={isInstagram ? (engagementBreakdown?.shares ?? 0) : mockData.shares.percent}
               count={isInstagram ? (displayData ? formatNumber(displayData.shares) : "-") : mockData.shares.count}
-              color="#f59e0b"
             />
             <EngagementBar
               label="Saves"
               value={isInstagram ? (engagementBreakdown?.saves ?? 0) : mockData.saves.percent}
               count={isInstagram ? (displayData ? formatNumber(displayData.saves) : "-") : mockData.saves.count}
-              color="#8b5cf6"
             />
           </div>
-          <div className="mt-6 pt-4 border-t border-border">
+          <div className="mt-6 pt-4 border-t border-neutral-100">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted">Total Engagements</span>
-              <span className="text-lg font-semibold text-foreground">
+              <span className="text-xs text-neutral-400">Total</span>
+              <span className="text-lg font-semibold text-black">
                 {isInstagram
                   ? (displayData
                       ? formatNumber(displayData.likes + displayData.comments + displayData.shares + displayData.saves)
@@ -323,22 +312,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Platform Performance */}
-      <div className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-        <h2 className="text-lg font-medium text-foreground mb-6">Platform Performance Details</h2>
+      {/* Performance Table */}
+      <div>
+        <h2 className="text-sm font-medium text-black mb-6">Performance</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-sm font-medium text-muted pb-4">Metric</th>
-                <th className="text-right text-sm font-medium text-muted pb-4">This Week</th>
-                <th className="text-right text-sm font-medium text-muted pb-4">Last Week</th>
-                <th className="text-right text-sm font-medium text-muted pb-4">Change</th>
+              <tr className="border-b border-neutral-100">
+                <th className="text-left text-xs font-medium text-neutral-400 pb-3">Metric</th>
+                <th className="text-right text-xs font-medium text-neutral-400 pb-3">This Week</th>
+                <th className="text-right text-xs font-medium text-neutral-400 pb-3">Last Week</th>
+                <th className="text-right text-xs font-medium text-neutral-400 pb-3">Change</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               <PerformanceRow metric="Profile Visits" thisWeek={isInstagram && !hasIgData ? "-" : "12,847"} lastWeek={isInstagram && !hasIgData ? "-" : "11,234"} change={isInstagram && !hasIgData ? "-" : "+14.3%"} positive />
-              <PerformanceRow metric="Post Impressions" thisWeek={isInstagram && !hasIgData ? "-" : "458K"} lastWeek={isInstagram && !hasIgData ? "-" : "412K"} change={isInstagram && !hasIgData ? "-" : "+11.2%"} positive />
+              <PerformanceRow metric="Impressions" thisWeek={isInstagram && !hasIgData ? "-" : "458K"} lastWeek={isInstagram && !hasIgData ? "-" : "412K"} change={isInstagram && !hasIgData ? "-" : "+11.2%"} positive />
               <PerformanceRow metric="Link Clicks" thisWeek={isInstagram && !hasIgData ? "-" : "2,341"} lastWeek={isInstagram && !hasIgData ? "-" : "1,987"} change={isInstagram && !hasIgData ? "-" : "+17.8%"} positive />
             </tbody>
           </table>
@@ -349,23 +338,16 @@ export default function Dashboard() {
 }
 
 function StatCard({
-  title,
+  label,
   value,
-  icon,
 }: {
-  title: string;
+  label: string;
   value: string;
-  icon: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.04)] transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-lg bg-[#768cff]/10 flex items-center justify-center text-[#768cff]">
-          {icon}
-        </div>
-      </div>
-      <p className="text-sm text-muted mb-1">{title}</p>
-      <p className="text-2xl font-semibold text-foreground">{value}</p>
+    <div>
+      <p className="text-xs text-neutral-400 mb-2">{label}</p>
+      <p className="text-2xl font-semibold text-black">{value}</p>
     </div>
   );
 }
@@ -374,23 +356,21 @@ function EngagementBar({
   label,
   value,
   count,
-  color,
 }: {
   label: string;
   value: number;
   count: string;
-  color: string;
 }) {
   return (
     <div>
       <div className="flex justify-between text-sm mb-2">
-        <span className="text-foreground font-medium">{label}</span>
-        <span className="text-muted">{count} ({value}%)</span>
+        <span className="text-black">{label}</span>
+        <span className="text-neutral-400">{count} ({value}%)</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1 bg-neutral-100 rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${value}%`, backgroundColor: color }}
+          className="h-full bg-black rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${value}%` }}
         />
       </div>
     </div>
@@ -411,11 +391,11 @@ function PerformanceRow({
   positive: boolean;
 }) {
   return (
-    <tr>
-      <td className="py-4 text-sm text-foreground">{metric}</td>
-      <td className="py-4 text-sm text-foreground text-right font-medium">{thisWeek}</td>
-      <td className="py-4 text-sm text-muted text-right">{lastWeek}</td>
-      <td className={`py-4 text-sm text-right font-medium ${positive ? "text-emerald-500" : "text-red-500"}`}>
+    <tr className="border-b border-neutral-50">
+      <td className="py-4 text-sm text-black">{metric}</td>
+      <td className="py-4 text-sm text-black text-right font-medium">{thisWeek}</td>
+      <td className="py-4 text-sm text-neutral-400 text-right">{lastWeek}</td>
+      <td className={`py-4 text-sm text-right font-medium ${positive ? "text-black" : "text-neutral-400"}`}>
         {change}
       </td>
     </tr>
@@ -423,7 +403,6 @@ function PerformanceRow({
 }
 
 function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectDay }: { data: HistoryDay[]; isInstagram: boolean; days: number; selectedIndex: number | null; onSelectDay: (idx: number) => void }) {
-  // Mock data for non-Instagram
   const mockData = [
     { day: "Mon", value: 40 },
     { day: "Tue", value: 55 },
@@ -442,26 +421,25 @@ function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectD
           <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
             <div className="w-full flex justify-center">
               <div
-                className="w-8 bg-[#768cff]/20 rounded-t-md relative group cursor-pointer hover:bg-[#768cff]/30 transition-colors"
-                style={{ height: `${(item.value / maxValue) * 160}px` }}
+                className="w-6 bg-neutral-100 rounded-sm relative cursor-pointer hover:bg-neutral-200 transition-colors"
+                style={{ height: `${(item.value / maxValue) * 120}px` }}
               >
                 <div
-                  className="absolute bottom-0 left-0 right-0 bg-[#768cff] rounded-t-md transition-all"
+                  className="absolute bottom-0 left-0 right-0 bg-black rounded-sm transition-all"
                   style={{ height: `${(item.value / maxValue) * 100}%` }}
                 />
               </div>
             </div>
-            <span className="text-xs text-muted">{item.day}</span>
+            <span className="text-[10px] text-neutral-400">{item.day}</span>
           </div>
         ))}
       </div>
     );
   }
 
-  // Real Instagram data
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted text-sm">
+      <div className="flex items-center justify-center h-full text-neutral-400 text-sm">
         No data available
       </div>
     );
@@ -485,23 +463,23 @@ function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectD
         return (
           <div
             key={idx}
-            className={`flex-1 min-w-[20px] flex flex-col items-center justify-end h-full cursor-pointer ${isSelected ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+            className={`flex-1 min-w-[20px] flex flex-col items-center justify-end h-full cursor-pointer ${isSelected ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
             onClick={(e) => {
               e.stopPropagation();
               onSelectDay(idx);
             }}
           >
-            <div className="flex items-end gap-0.5 h-[130px]">
+            <div className="flex items-end gap-0.5 h-[110px]">
               <div
-                className={`w-2.5 rounded-t-sm ${isSelected ? "bg-emerald-400" : "bg-emerald-500"}`}
-                style={{ height: `${Math.max((item.newFollows / maxValue) * 130, item.newFollows > 0 ? 4 : 0)}px` }}
+                className={`w-2 rounded-sm ${isSelected ? "bg-emerald-500" : "bg-emerald-600/70"}`}
+                style={{ height: `${Math.max((item.newFollows / maxValue) * 110, item.newFollows > 0 ? 4 : 0)}px` }}
               />
               <div
-                className={`w-2.5 rounded-t-sm ${isSelected ? "bg-red-300" : "bg-red-400"}`}
-                style={{ height: `${Math.max((item.unfollows / maxValue) * 130, item.unfollows > 0 ? 4 : 0)}px` }}
+                className={`w-2 rounded-sm ${isSelected ? "bg-rose-400" : "bg-rose-300/70"}`}
+                style={{ height: `${Math.max((item.unfollows / maxValue) * 110, item.unfollows > 0 ? 4 : 0)}px` }}
               />
             </div>
-            <span className={`text-[10px] whitespace-nowrap mt-1 ${isSelected ? "text-foreground font-medium" : "text-muted"}`}>{item.label}</span>
+            <span className={`text-[10px] whitespace-nowrap mt-1 ${isSelected ? "text-black font-medium" : "text-neutral-400"}`}>{item.label}</span>
           </div>
         );
       })}
@@ -530,39 +508,6 @@ function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </svg>
-  );
-}
-
-function TrendingIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
     </svg>
   );
 }

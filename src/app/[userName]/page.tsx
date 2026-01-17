@@ -37,11 +37,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
   // If profile is private, show private page
   if (!user.isMediaKitPublic) {
     return (
-      <div className="min-h-screen bg-[#faf9f5] flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#768cff]/10 flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-neutral-100 flex items-center justify-center">
             <svg
-              className="w-10 h-10 text-[#768cff]"
+              className="w-8 h-8 text-neutral-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -54,14 +54,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-[#1f2937] mb-2">
+          <h1 className="text-xl font-semibold text-black mb-2">
             This page is private
           </h1>
-          <p className="text-[#6b7280] max-w-md">
+          <p className="text-neutral-500 max-w-md text-sm">
             The creator has chosen to keep their media kit private.
           </p>
         </div>
-        <div className="absolute bottom-8 text-sm text-[#6b7280]">
+        <div className="absolute bottom-8 text-xs text-neutral-400">
           Powered by Endoros
         </div>
       </div>
@@ -127,10 +127,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const totalFollowers = connectedAccounts?.reduce((sum, acc) => sum + (acc.followers || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-black/20 pt-8 max-[574px]:pt-0 flex flex-col">
-      {/* Centered Container - 580px max, full width on mobile */}
-      <div className="w-full max-w-[580px] mx-auto max-[574px]:max-w-full flex-1 flex flex-col">
-        <div className="bg-white max-[574px]:rounded-none rounded-t-3xl max-[574px]:rounded-t-none overflow-hidden flex-1 flex flex-col shadow-2xl max-[574px]:shadow-none">
+    <div className="min-h-screen bg-neutral-50 pt-8 max-[574px]:pt-0 flex flex-col">
+      {/* Centered Container */}
+      <div className="w-full max-w-[560px] mx-auto max-[574px]:max-w-full flex-1 flex flex-col">
+        <div className="bg-white max-[574px]:rounded-none rounded-2xl overflow-hidden flex-1 flex flex-col">
           <ProfileCard
             user={user}
             achievements={achievements || []}

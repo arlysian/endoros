@@ -3,15 +3,11 @@
 import { useState, useEffect } from "react";
 
 export default function Settings() {
-  // Audience Summary
   const [audienceSummary, setAudienceSummary] = useState("");
   const [isSavingAudience, setIsSavingAudience] = useState(false);
-
-  // Privacy Settings
   const [isMediaKitPublic, setIsMediaKitPublic] = useState(true);
   const [isToggleLoading, setIsToggleLoading] = useState(false);
 
-  // Fetch initial values on mount
   useEffect(() => {
     async function fetchUserSettings() {
       try {
@@ -28,7 +24,6 @@ export default function Settings() {
     fetchUserSettings();
   }, []);
 
-  // Handle audience summary save
   const handleSaveAudienceSummary = async () => {
     setIsSavingAudience(true);
     try {
@@ -48,7 +43,6 @@ export default function Settings() {
     }
   };
 
-  // Handle toggle change
   const handleToggleChange = async (checked: boolean) => {
     setIsToggleLoading(true);
     try {
@@ -71,74 +65,68 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-4 sm:p-8">
-      <div className="space-y-6">
-        {/* Audience Summary */}
-        <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <h2 className="text-lg font-semibold text-foreground mb-6">Audience Summary</h2>
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-black">Settings</h1>
+        <p className="text-sm text-neutral-500 mt-1">Manage your account preferences</p>
+      </div>
 
-          <div className="mb-6">
-            <label className="block text-sm text-foreground mb-2">
-              Describe Your Average Audience
+      <div className="space-y-10">
+        {/* Audience Summary */}
+        <section>
+          <h2 className="text-sm font-medium text-black mb-4">Audience Summary</h2>
+          <div className="mb-4">
+            <label className="block text-xs text-neutral-400 mb-2">
+              Describe your average audience
             </label>
             <textarea
               value={audienceSummary}
               onChange={(e) => setAudienceSummary(e.target.value)}
               rows={3}
-              className="w-full px-4 py-3.5 bg-gray-100 rounded-2xl text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-accent/50"
+              className="w-full px-4 py-3 bg-neutral-50 rounded-lg text-black text-sm resize-none focus:outline-none focus:ring-1 focus:ring-black"
+              placeholder="e.g., Young professionals aged 25-34, interested in tech and lifestyle..."
             />
           </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={handleSaveAudienceSummary}
-              disabled={isSavingAudience}
-              className="px-8 py-2.5 bg-[#768cff] text-white rounded-xl font-medium hover:bg-[#5a70e6] transition-colors disabled:opacity-50"
-            >
-              {isSavingAudience ? "Saving..." : "Save"}
-            </button>
-          </div>
+          <button
+            onClick={handleSaveAudienceSummary}
+            disabled={isSavingAudience}
+            className="px-6 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+          >
+            {isSavingAudience ? "Saving..." : "Save"}
+          </button>
         </section>
 
         {/* Privacy Settings */}
-        <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <h2 className="text-lg font-semibold text-foreground mb-6">Privacy Settings</h2>
-
-          {/* Public Media Kit Toggle */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-foreground">Public Media Kit</h3>
-                <p className="text-sm text-muted mt-1">
-                  Allow anyone to view your media kit with your custom URL
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted">Private</span>
-                <Toggle
-                  checked={isMediaKitPublic}
-                  onChange={handleToggleChange}
-                  disabled={isToggleLoading}
-                />
-                <span className="text-sm text-muted">Public</span>
-              </div>
+        <section>
+          <h2 className="text-sm font-medium text-black mb-4">Privacy</h2>
+          <div className="flex items-center justify-between py-4 border-b border-neutral-100">
+            <div>
+              <p className="text-sm text-black">Public Media Kit</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Allow anyone to view your media kit
+              </p>
             </div>
+            <Toggle
+              checked={isMediaKitPublic}
+              onChange={handleToggleChange}
+              disabled={isToggleLoading}
+            />
           </div>
         </section>
 
-        {/* Account Actions */}
-        <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <h2 className="text-lg font-semibold text-foreground mb-6">Account Actions</h2>
-
-          <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+        {/* Danger Zone */}
+        <section>
+          <h2 className="text-sm font-medium text-black mb-4">Danger Zone</h2>
+          <div className="flex items-center justify-between py-4 border-b border-neutral-100">
             <div>
-              <h3 className="font-medium text-red-500">Delete Account</h3>
-              <p className="text-sm text-muted mt-1">
+              <p className="text-sm text-black">Delete Account</p>
+              <p className="text-xs text-neutral-400 mt-0.5">
                 Permanently delete your account and all data
               </p>
             </div>
-            <button className="px-6 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors">
-              Delete Account
+            <button className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-black transition-colors">
+              Delete
             </button>
           </div>
         </section>
@@ -147,7 +135,6 @@ export default function Settings() {
   );
 }
 
-// Toggle Component
 function Toggle({
   checked,
   onChange,
@@ -163,15 +150,15 @@ function Toggle({
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
       className={`
-        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-        ${checked ? "bg-[#768cff]" : "bg-gray-300"}
+        relative inline-flex h-5 w-9 items-center rounded-full transition-colors
+        ${checked ? "bg-black" : "bg-neutral-200"}
         ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
       `}
     >
       <span
         className={`
-          inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-          ${checked ? "translate-x-6" : "translate-x-1"}
+          inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
+          ${checked ? "translate-x-[18px]" : "translate-x-1"}
         `}
       />
     </button>

@@ -27,7 +27,6 @@ export default function SocialPlatforms() {
     },
   ]);
 
-  // Check connected accounts from database on page load
   useEffect(() => {
     const checkConnectedAccounts = async () => {
       try {
@@ -49,7 +48,6 @@ export default function SocialPlatforms() {
     checkConnectedAccounts();
   }, []);
 
-  // Handle Facebook Login button click
   const handleFacebookLogin = () => {
     if (!window.FB) {
       alert("Facebook SDK not loaded. Please refresh the page.");
@@ -63,7 +61,6 @@ export default function SocialPlatforms() {
         if (response.authResponse) {
           const connectInstagram = async () => {
             try {
-              // Send short-lived token to backend for exchange and storage
               const res = await fetch("/api/connect/instagram", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -124,163 +121,145 @@ export default function SocialPlatforms() {
   };
 
   return (
-    <div className="p-4 sm:p-8">
+    <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Social Platforms</h1>
-        <p className="text-muted mt-1">Connect and manage your social media accounts</p>
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-black">Platforms</h1>
+        <p className="text-sm text-neutral-500 mt-1">Connect and manage your social accounts</p>
       </div>
 
-      {/* Social Platforms */}
-      <section className="bg-white rounded-xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-        <div className="space-y-4">
-          {/* Instagram - Real FB Login */}
-          <div className="border border-border rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg border border-border flex items-center justify-center">
-                  <InstagramIcon className="w-5 h-5 text-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Instagram</p>
-                  <p className="text-sm text-muted">
-                    {instagramConnected
-                      ? "1 Account connected"
-                      : "Not connected"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {instagramConnected ? (
-                  <button
-                    onClick={handleDisconnectClick}
-                    className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-hover transition-colors"
-                  >
-                    Disconnect
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleFacebookLogin}
-                    disabled={instagramLoading}
-                    className="px-4 py-2 bg-[#1877F2] text-white rounded-lg text-sm font-medium hover:bg-[#166FE5] transition-colors flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <FacebookIcon className="w-4 h-4" />
-                    {instagramLoading ? "Connecting..." : "Connect with Facebook"}
-                  </button>
-                )}
+      {/* Platforms List */}
+      <div className="space-y-6">
+        {/* Instagram */}
+        <div className="pb-6 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <InstagramIcon className="w-5 h-5 text-black" />
+              <div>
+                <p className="text-sm font-medium text-black">Instagram</p>
+                <p className="text-xs text-neutral-400">
+                  {instagramConnected ? "Connected" : "Not connected"}
+                </p>
               </div>
             </div>
-
-            {instagramConnected && instagramAccount && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-foreground mb-2">Connected Account</p>
-                <div className="flex items-center justify-between bg-green-50 rounded-lg px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="text-green-700 font-medium">@{instagramAccount.username}</span>
-                  </div>
-                  <button
-                    onClick={handleDisconnectClick}
-                    className="text-muted hover:text-foreground transition-colors"
-                  >
-                    <XIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+            {instagramConnected ? (
+              <button
+                onClick={handleDisconnectClick}
+                className="text-sm text-neutral-500 hover:text-black transition-colors"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleFacebookLogin}
+                disabled={instagramLoading}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              >
+                {instagramLoading ? "..." : "Connect"}
+              </button>
             )}
           </div>
 
-          {/* Other Platforms - Mock Data */}
-          {platforms.map((platform) => {
-            const Icon = platform.icon;
-            return (
-              <div key={platform.id} className="border border-border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg border border-border flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{platform.name}</p>
-                      <p className="text-sm text-muted">
-                        {platform.connected
-                          ? `${platform.accounts.length} Account${platform.accounts.length !== 1 ? "s" : ""} connected`
-                          : "Not connected"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {platform.connected && (
-                      <button className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-hover transition-colors">
-                        Disconnect All
-                      </button>
-                    )}
-                    <button className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-hover transition-colors">
-                      Add Account
-                    </button>
-                  </div>
-                </div>
-
-                {platform.accounts.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-2">Connected Accounts</p>
-                    <div className="space-y-2">
-                      {platform.accounts.map((account, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-foreground font-medium">{account.username}</span>
-                            {account.primary && (
-                              <span className="px-2 py-0.5 bg-gray-200 rounded text-xs font-medium text-foreground">
-                                Primary
-                              </span>
-                            )}
-                            <span className="px-2 py-0.5 bg-gray-200 rounded text-xs font-medium text-muted">
-                              {account.followers}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => removeAccount(platform.id, account.username)}
-                            className="text-muted hover:text-foreground transition-colors"
-                          >
-                            <XIcon className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {instagramConnected && instagramAccount && (
+            <div className="mt-4 flex items-center justify-between py-3 px-4 bg-neutral-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span className="text-sm text-black">@{instagramAccount.username}</span>
               </div>
-            );
-          })}
+              <button
+                onClick={handleDisconnectClick}
+                className="text-neutral-400 hover:text-black transition-colors"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
-        <button className="flex items-center gap-2 mt-4 text-[#768cff] hover:text-[#5a70e6] transition-colors">
-          <PlusCircleIcon className="w-5 h-5" />
-          <span className="text-sm font-medium">Add Another Platform</span>
-        </button>
-      </section>
+        {/* Other Platforms */}
+        {platforms.map((platform) => {
+          const Icon = platform.icon;
+          return (
+            <div key={platform.id} className="pb-6 border-b border-neutral-100 last:border-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Icon className="w-5 h-5 text-black" />
+                  <div>
+                    <p className="text-sm font-medium text-black">{platform.name}</p>
+                    <p className="text-xs text-neutral-400">
+                      {platform.connected
+                        ? `${platform.accounts.length} connected`
+                        : "Not connected"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {platform.connected && (
+                    <button className="text-sm text-neutral-500 hover:text-black transition-colors">
+                      Disconnect
+                    </button>
+                  )}
+                  <button className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors">
+                    {platform.connected ? "Add" : "Connect"}
+                  </button>
+                </div>
+              </div>
 
-      {/* Disconnect Confirmation Modal */}
+              {platform.accounts.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {platform.accounts.map((account, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between py-3 px-4 bg-neutral-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-black">{account.username}</span>
+                        {account.primary && (
+                          <span className="px-2 py-0.5 bg-black text-white text-[10px] rounded">
+                            Primary
+                          </span>
+                        )}
+                        <span className="text-xs text-neutral-400">{account.followers}</span>
+                      </div>
+                      <button
+                        onClick={() => removeAccount(platform.id, account.username)}
+                        className="text-neutral-400 hover:text-black transition-colors"
+                      >
+                        <XIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Add Platform */}
+        <button className="flex items-center gap-2 text-neutral-500 hover:text-black transition-colors">
+          <PlusIcon className="w-4 h-4" />
+          <span className="text-sm">Add platform</span>
+        </button>
+      </div>
+
+      {/* Disconnect Modal */}
       {showDisconnectConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-foreground mb-2">Disconnect Instagram?</h3>
-            <p className="text-muted mb-6">
-              Are you sure you want to disconnect your Instagram account? You will need to reconnect to access your metrics again.
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-black mb-2">Disconnect Instagram?</h3>
+            <p className="text-sm text-neutral-500 mb-6">
+              You will need to reconnect to access your metrics again.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDisconnectConfirm(false)}
-                className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-hover transition-colors"
+                className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-black transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDisconnect}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
               >
                 Disconnect
               </button>
@@ -292,21 +271,12 @@ export default function SocialPlatforms() {
   );
 }
 
-// Icons
 function InstagramIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
       <rect x="2" y="2" width="20" height="20" rx="5" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="18" cy="6" r="1.5" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function FacebookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
     </svg>
   );
 }
@@ -336,10 +306,10 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-function PlusCircleIcon({ className }: { className?: string }) {
+function PlusIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
     </svg>
   );
 }
