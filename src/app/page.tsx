@@ -32,7 +32,7 @@ export default function LandingPage() {
           <h1 className="text-5xl sm:text-6xl font-semibold text-black leading-[1.1] tracking-tight">
             Your influence,
             <br />
-            <span className="text-neutral-400">measured.</span>
+            <span className="text-neutral-400">beautifully measured.</span>
           </h1>
           <p className="text-lg text-neutral-500 mt-6 max-w-xl mx-auto leading-relaxed">
             Track growth across platforms, understand your audience,
@@ -184,7 +184,7 @@ export default function LandingPage() {
           <span className="text-sm font-medium text-black">endoros</span>
           <div className="flex items-center gap-6 text-sm text-neutral-400">
             <Link href="/privacy" className="hover:text-black transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
+            <Link href="/tos" className="hover:text-black transition-colors">Terms</Link>
             <a href="mailto:hello@endoros.com" className="hover:text-black transition-colors">Contact</a>
           </div>
           <p className="text-sm text-neutral-400">© 2025 Endoros</p>

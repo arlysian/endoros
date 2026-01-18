@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -105,93 +106,104 @@ export default function Onboarding() {
   const isFormValid = formData.userName && formData.category && !userNameError && !checkingUserName;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold text-foreground mb-2">
-            Let's create your profile
-          </h1>
-          <p className="text-muted">
-            Tell us a bit about yourself to get started
-          </p>
-        </div>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Header */}
+      <header className="flex items-center px-6 h-16">
+        <Link href="/">
+          <span className="text-base font-semibold text-black tracking-tight">
+            endoros
+          </span>
+        </Link>
+      </header>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
-          <div className="space-y-5">
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Username <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted">@</span>
-                <input
-                  type="text"
-                  value={formData.userName}
-                  onChange={(e) => handleUserNameChange(e.target.value)}
-                  placeholder="yourname"
-                  className={`w-full pl-8 pr-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20 ${userNameError ? "ring-2 ring-red-500/20" : ""}`}
-                />
-              </div>
-              {checkingUserName && (
-                <p className="text-sm text-muted mt-1">Checking availability...</p>
-              )}
-              {userNameError && (
-                <p className="text-sm text-red-500 mt-1">{userNameError}</p>
-              )}
-              {formData.userName && !checkingUserName && !userNameError && (
-                <p className="text-sm text-green-600 mt-1">Username available</p>
-              )}
-            </div>
-
-            {/* City */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                City
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Los Angeles, CA"
-                className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20"
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Primary Category <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#768cff]/20 appearance-none cursor-pointer"
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+      <div className="flex-1 flex items-center justify-center p-4 -mt-16">
+        <div className="w-full max-w-md">
+          {/* Title */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-semibold text-black mb-2">
+              Let's create your profile
+            </h1>
+            <p className="text-neutral-500">
+              Tell us a bit about yourself to get started
+            </p>
           </div>
 
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !isFormValid}
-            className="w-full mt-6 px-6 py-3 bg-[#768cff] text-white rounded-lg font-medium hover:bg-[#5a70e6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? "Creating profile..." : "Continue"}
-          </button>
-        </div>
+        {/* Form Card */}
+          <div className="bg-neutral-50 rounded-2xl p-6">
+            <div className="space-y-5">
+              {/* Username */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  Username <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">@</span>
+                  <input
+                    type="text"
+                    value={formData.userName}
+                    onChange={(e) => handleUserNameChange(e.target.value)}
+                    placeholder="yourname"
+                    className={`w-full pl-8 pr-4 py-3 bg-white border border-neutral-200 rounded-lg text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 ${userNameError ? "ring-2 ring-red-500/20" : ""}`}
+                  />
+                </div>
+                {checkingUserName && (
+                  <p className="text-sm text-neutral-500 mt-1">Checking availability...</p>
+                )}
+                {userNameError && (
+                  <p className="text-sm text-red-500 mt-1">{userNameError}</p>
+                )}
+                {formData.userName && !checkingUserName && !userNameError && (
+                  <p className="text-sm text-green-600 mt-1">Username available</p>
+                )}
+              </div>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-muted mt-6">
-          You can always update these later in settings
-        </p>
+              {/* City */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  City
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="Los Angeles, CA"
+                  className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  Primary Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-neutral-200 appearance-none cursor-pointer"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={saving || !isFormValid}
+              className="w-full mt-6 px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Creating profile..." : "Continue"}
+            </button>
+          </div>
+
+          {/* Footer */}
+          <p className="text-center text-sm text-neutral-500 mt-6">
+            You can always update these later in settings
+          </p>
+        </div>
       </div>
     </div>
   );

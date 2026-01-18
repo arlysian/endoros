@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import ProfileCard from "@/components/ProfileCard";
+import MediaKitDesktop from "@/components/MediaKitDesktop";
 
 interface PageProps {
   params: Promise<{ userName: string }>;
@@ -127,19 +128,35 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const totalFollowers = connectedAccounts?.reduce((sum, acc) => sum + (acc.followers || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-neutral-50 pt-8 max-[574px]:pt-0 flex flex-col">
-      {/* Centered Container */}
-      <div className="w-full max-w-[560px] mx-auto max-[574px]:max-w-full flex-1 flex flex-col">
-        <div className="bg-white max-[574px]:rounded-none rounded-2xl overflow-hidden flex-1 flex flex-col">
-          <ProfileCard
-            user={user}
-            achievements={achievements || []}
-            collaborations={collaborations || []}
-            totalFollowers={totalFollowers}
-            compact={false}
-          />
+    <>
+      {/* Desktop View - hidden on mobile */}
+      <div className="hidden lg:block">
+        <MediaKitDesktop
+          user={user}
+          achievements={achievements || []}
+          collaborations={collaborations || []}
+          connectedAccounts={connectedAccounts || []}
+          platformMetrics={platformMetrics}
+          followerHistory={followerHistory}
+        />
+      </div>
+
+      {/* Mobile View - hidden on desktop */}
+      <div className="lg:hidden min-h-screen bg-neutral-50 pt-8 max-[574px]:pt-0 flex flex-col">
+        <div className="w-full max-w-[560px] mx-auto max-[574px]:max-w-full flex-1 flex flex-col">
+          <div className="bg-white max-[574px]:rounded-none rounded-2xl overflow-hidden flex-1 flex flex-col">
+            <ProfileCard
+              user={user}
+              achievements={achievements || []}
+              collaborations={collaborations || []}
+              totalFollowers={totalFollowers}
+              compact={false}
+              platformMetrics={platformMetrics}
+              followerHistory={followerHistory}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

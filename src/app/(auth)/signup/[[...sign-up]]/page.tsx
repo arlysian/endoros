@@ -3,12 +3,12 @@ import Link from "next/link";
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl font-semibold text-[#2d2d2d] tracking-tight">
-            Endoros
+      <header className="flex items-center justify-between px-6 h-16">
+        <Link href="/">
+          <span className="text-base font-semibold text-black tracking-tight">
+            endoros
           </span>
         </Link>
       </header>
