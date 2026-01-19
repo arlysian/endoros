@@ -8,6 +8,11 @@ export default function SocialPlatforms() {
   const [instagramAccount, setInstagramAccount] = useState<{ username: string } | null>(null);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
+  const [tiktokConnected, setTiktokConnected] = useState(false);
+  const [tiktokLoading, setTiktokLoading] = useState(true);
+  const [tiktokAccount, setTiktokAccount] = useState<{ username: string } | null>(null);
+  const [showTiktokDisconnectConfirm, setShowTiktokDisconnectConfirm] = useState(false);
+
   const [platforms, setPlatforms] = useState([
     {
       id: "youtube",
@@ -18,30 +23,40 @@ export default function SocialPlatforms() {
         { username: "@sample_creater", primary: true, followers: "125K" },
       ],
     },
-    {
-      id: "tiktok",
-      name: "Tiktok",
-      icon: TikTokIcon,
-      connected: false,
-      accounts: [],
-    },
   ]);
 
   useEffect(() => {
     const checkConnectedAccounts = async () => {
       try {
-        const res = await fetch("/api/connect/instagram");
-        if (res.ok) {
-          const data = await res.json();
+        // Check Instagram
+        const igRes = await fetch("/api/connect/instagram");
+        if (igRes.ok) {
+          const data = await igRes.json();
           if (data.account) {
             setInstagramConnected(true);
             setInstagramAccount(data.account);
           }
         }
       } catch (error) {
-        console.error("Failed to check connected accounts:", error);
+        console.error("Failed to check Instagram:", error);
       } finally {
         setInstagramLoading(false);
+      }
+
+      try {
+        // Check TikTok
+        const ttRes = await fetch("/api/connect/tiktok");
+        if (ttRes.ok) {
+          const data = await ttRes.json();
+          if (data.account) {
+            setTiktokConnected(true);
+            setTiktokAccount(data.account);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check TikTok:", error);
+      } finally {
+        setTiktokLoading(false);
       }
     };
 
@@ -111,6 +126,27 @@ export default function SocialPlatforms() {
     }
   };
 
+  const handleTiktokConnect = () => {
+    // Redirect to TikTok authorization endpoint
+    window.location.href = "/api/connect/tiktok/authorize";
+  };
+
+  const handleTiktokDisconnectClick = () => {
+    setShowTiktokDisconnectConfirm(true);
+  };
+
+  const confirmTiktokDisconnect = async () => {
+    try {
+      await fetch("/api/connect/tiktok", { method: "DELETE" });
+      setTiktokConnected(false);
+      setTiktokAccount(null);
+    } catch (error) {
+      console.error("Failed to disconnect TikTok:", error);
+    } finally {
+      setShowTiktokDisconnectConfirm(false);
+    }
+  };
+
   const removeAccount = (platformId: string, username: string) => {
     setPlatforms(platforms.map(p => {
       if (p.id === platformId) {
@@ -168,6 +204,52 @@ export default function SocialPlatforms() {
               </div>
               <button
                 onClick={handleDisconnectClick}
+                className="text-neutral-400 hover:text-black transition-colors"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* TikTok */}
+        <div className="pb-6 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <TikTokIcon className="w-5 h-5 text-black" />
+              <div>
+                <p className="text-sm font-medium text-black">TikTok</p>
+                <p className="text-xs text-neutral-400">
+                  {tiktokConnected ? "Connected" : "Not connected"}
+                </p>
+              </div>
+            </div>
+            {tiktokConnected ? (
+              <button
+                onClick={handleTiktokDisconnectClick}
+                className="text-sm text-neutral-500 hover:text-black transition-colors"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleTiktokConnect}
+                disabled={tiktokLoading}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              >
+                {tiktokLoading ? "..." : "Connect"}
+              </button>
+            )}
+          </div>
+
+          {tiktokConnected && tiktokAccount && (
+            <div className="mt-4 flex items-center justify-between py-3 px-4 bg-neutral-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span className="text-sm text-black">@{tiktokAccount.username}</span>
+              </div>
+              <button
+                onClick={handleTiktokDisconnectClick}
                 className="text-neutral-400 hover:text-black transition-colors"
               >
                 <XIcon className="w-4 h-4" />
@@ -242,7 +324,7 @@ export default function SocialPlatforms() {
         </button>
       </div>
 
-      {/* Disconnect Modal */}
+      {/* Disconnect Instagram Modal */}
       {showDisconnectConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
@@ -259,6 +341,32 @@ export default function SocialPlatforms() {
               </button>
               <button
                 onClick={confirmDisconnect}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disconnect TikTok Modal */}
+      {showTiktokDisconnectConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-black mb-2">Disconnect TikTok?</h3>
+            <p className="text-sm text-neutral-500 mb-6">
+              You will need to reconnect to access your metrics again.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowTiktokDisconnectConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-black transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmTiktokDisconnect}
                 className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
               >
                 Disconnect
