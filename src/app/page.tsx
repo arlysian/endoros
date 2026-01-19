@@ -6,9 +6,9 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-base font-semibold text-black tracking-tight">
+          <Link href="/" className="text-base font-semibold text-black tracking-tight">
             endoros
-          </span>
+          </Link>
           <div className="flex items-center gap-6">
             <Link
               href="/login"

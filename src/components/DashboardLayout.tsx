@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 
 interface UserData {
@@ -17,6 +17,7 @@ interface UserData {
   location: string | null;
   profileImageUrl: string | null;
   coverImageUrl: string | null;
+  onboardingCompleted: boolean;
 }
 
 interface SidebarContextType {
@@ -257,6 +258,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [userLoading, setUserLoading] = useState(true);
+  const router = useRouter();
+
+  // Redirect to onboarding if not completed
+  useEffect(() => {
+    if (!userLoading && user && !user.onboardingCompleted) {
+      router.replace("/onboarding");
+    }
+  }, [user, userLoading, router]);
 
   const refreshUser = async () => {
     try {

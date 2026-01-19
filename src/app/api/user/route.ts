@@ -24,7 +24,8 @@ export async function GET() {
       profileImageUrl,
       coverImageUrl,
       isMediaKitPublic,
-      audienceSummary
+      audienceSummary,
+      onboardingCompleted
     `)
     .eq("id", userId)
     .single();
@@ -61,6 +62,7 @@ export async function PATCH(request: NextRequest) {
       "avgViews",
       "isMediaKitPublic",
       "audienceSummary",
+      "onboardingCompleted",
     ];
 
     const updates: Record<string, string | number | boolean | null> = {};

@@ -30,9 +30,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: "No accounts to process" });
     }
 
+    // Filter to only accounts with valid credentials (TypeScript narrowing)
+    const validAccounts = accounts.filter(
+      (acc): acc is { id: string; instagramBusinessId: string; accessToken: string } =>
+        acc.instagramBusinessId !== null && acc.accessToken !== null
+    );
+
     const results = [];
 
-    for (const account of accounts) {
+    for (const account of validAccounts) {
       try {
         const metrics = await fetchInstagramMetrics(account);
         results.push({ accountId: account.id, success: true, metrics });
@@ -43,7 +49,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      processed: accounts.length,
+      processed: validAccounts.length,
       results,
     });
   } catch (error) {

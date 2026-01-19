@@ -86,6 +86,7 @@ export default function Onboarding() {
           userName: formData.userName,
           location: formData.location,
           category: formData.category,
+          onboardingCompleted: true,
         }),
       });
 
@@ -108,11 +109,9 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <header className="flex items-center px-6 h-16">
-        <Link href="/">
-          <span className="text-base font-semibold text-black tracking-tight">
-            endoros
-          </span>
+      <header className="flex items-center px-6 h-16 relative z-10">
+        <Link href="/" className="text-base font-semibold text-black tracking-tight">
+          endoros
         </Link>
       </header>
 
