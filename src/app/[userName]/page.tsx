@@ -76,7 +76,6 @@ export default async function PublicProfilePage({ params }: PageProps) {
       id,
       platform,
       username,
-      followers,
       isPrimary
     `)
     .eq("userId", user.id);
@@ -110,7 +109,21 @@ export default async function PublicProfilePage({ params }: PageProps) {
       .limit(1)
       .single();
 
-    platformMetrics = metrics;
+    if (metrics) {
+      platformMetrics = {
+        followers: metrics.followers ?? undefined,
+        reach: metrics.reach ?? undefined,
+        engagementRate: metrics.engagementRate ?? undefined,
+        avgViews: metrics.avgViews ?? undefined,
+        likes: metrics.likes ?? undefined,
+        comments: metrics.comments ?? undefined,
+        shares: metrics.shares ?? undefined,
+        saves: metrics.saves ?? undefined,
+        profileVisits: metrics.profileVisits ?? undefined,
+        newFollows: metrics.newFollows ?? undefined,
+        unfollows: metrics.unfollows ?? undefined,
+      };
+    }
 
     // Get last 7 days for chart
     const { data: history } = await supabaseAdmin
@@ -121,11 +134,33 @@ export default async function PublicProfilePage({ params }: PageProps) {
       .limit(7);
 
     if (history) {
-      followerHistory = history.reverse();
+      followerHistory = history.reverse().map(h => ({
+        date: h.date,
+        newFollows: h.newFollows ?? 0,
+        unfollows: h.unfollows ?? 0,
+      }));
     }
   }
 
-  const totalFollowers = connectedAccounts?.reduce((sum, acc) => sum + (acc.followers || 0), 0) || 0;
+  // Get latest followers count for each connected account
+  const accountsWithFollowers = await Promise.all(
+    (connectedAccounts || []).map(async (acc) => {
+      const { data: latestMetrics } = await supabaseAdmin
+        .from("PlatformMetrics")
+        .select("followers")
+        .eq("connectedAccountId", acc.id)
+        .order("date", { ascending: false })
+        .limit(1)
+        .single();
+
+      return {
+        ...acc,
+        followers: latestMetrics?.followers || null,
+      };
+    })
+  );
+
+  const totalFollowers = accountsWithFollowers.reduce((sum, acc) => sum + (acc.followers || 0), 0);
 
   return (
     <>
@@ -135,7 +170,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           user={user}
           achievements={achievements || []}
           collaborations={collaborations || []}
-          connectedAccounts={connectedAccounts || []}
+          connectedAccounts={accountsWithFollowers}
           platformMetrics={platformMetrics}
           followerHistory={followerHistory}
         />

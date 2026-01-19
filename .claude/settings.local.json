@@ -9,7 +9,8 @@
       "Bash(findstr:*)",
       "WebFetch(domain:developers.facebook.com)",
       "WebSearch",
-      "Bash(dir /b \"C:\\\\Users\\\\StudyWork\\\\Desktop\\\\endoros\\\\src\\\\app\\\\\\(dashboard\\)\")"
+      "Bash(dir /b \"C:\\\\Users\\\\StudyWork\\\\Desktop\\\\endoros\\\\src\\\\app\\\\\\(dashboard\\)\")",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
