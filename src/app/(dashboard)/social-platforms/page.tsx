@@ -2,15 +2,54 @@
 
 import { useState, useEffect } from "react";
 
+const CACHE_KEY = "connected_accounts_cache";
+
+type CachedAccounts = {
+  instagram: { username: string } | null;
+  tiktok: { username: string } | null;
+};
+
+function getCachedAccounts(): CachedAccounts {
+  if (typeof window === "undefined") return { instagram: null, tiktok: null };
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return { instagram: null, tiktok: null };
+}
+
+function setCachedAccounts(accounts: CachedAccounts) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(accounts));
+  } catch {}
+}
+
 export default function SocialPlatforms() {
-  const [instagramConnected, setInstagramConnected] = useState(false);
-  const [instagramLoading, setInstagramLoading] = useState(true);
-  const [instagramAccount, setInstagramAccount] = useState<{ username: string } | null>(null);
+  // Initialize from cache to prevent flash
+  const [instagramConnected, setInstagramConnected] = useState(() => {
+    const cached = getCachedAccounts();
+    return !!cached.instagram;
+  });
+  const [instagramLoading, setInstagramLoading] = useState(() => {
+    const cached = getCachedAccounts();
+    return !cached.instagram;
+  });
+  const [instagramAccount, setInstagramAccount] = useState<{ username: string } | null>(() => {
+    return getCachedAccounts().instagram;
+  });
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
-  const [tiktokConnected, setTiktokConnected] = useState(false);
-  const [tiktokLoading, setTiktokLoading] = useState(true);
-  const [tiktokAccount, setTiktokAccount] = useState<{ username: string } | null>(null);
+  const [tiktokConnected, setTiktokConnected] = useState(() => {
+    const cached = getCachedAccounts();
+    return !!cached.tiktok;
+  });
+  const [tiktokLoading, setTiktokLoading] = useState(() => {
+    const cached = getCachedAccounts();
+    return !cached.tiktok;
+  });
+  const [tiktokAccount, setTiktokAccount] = useState<{ username: string } | null>(() => {
+    return getCachedAccounts().tiktok;
+  });
   const [showTiktokDisconnectConfirm, setShowTiktokDisconnectConfirm] = useState(false);
 
   const [platforms, setPlatforms] = useState([
@@ -27,14 +66,21 @@ export default function SocialPlatforms() {
 
   useEffect(() => {
     const checkConnectedAccounts = async () => {
+      let igAccount: { username: string } | null = null;
+      let ttAccount: { username: string } | null = null;
+
       try {
         // Check Instagram
         const igRes = await fetch("/api/connect/instagram");
         if (igRes.ok) {
           const data = await igRes.json();
           if (data.account) {
+            igAccount = data.account;
             setInstagramConnected(true);
             setInstagramAccount(data.account);
+          } else {
+            setInstagramConnected(false);
+            setInstagramAccount(null);
           }
         }
       } catch (error) {
@@ -49,8 +95,12 @@ export default function SocialPlatforms() {
         if (ttRes.ok) {
           const data = await ttRes.json();
           if (data.account) {
+            ttAccount = data.account;
             setTiktokConnected(true);
             setTiktokAccount(data.account);
+          } else {
+            setTiktokConnected(false);
+            setTiktokAccount(null);
           }
         }
       } catch (error) {
@@ -58,6 +108,9 @@ export default function SocialPlatforms() {
       } finally {
         setTiktokLoading(false);
       }
+
+      // Update cache
+      setCachedAccounts({ instagram: igAccount, tiktok: ttAccount });
     };
 
     checkConnectedAccounts();
@@ -90,6 +143,9 @@ export default function SocialPlatforms() {
 
               setInstagramConnected(true);
               setInstagramAccount(data.account);
+              // Update cache
+              const cached = getCachedAccounts();
+              setCachedAccounts({ ...cached, instagram: data.account });
               console.log("Instagram connected:", data.account);
             } catch (error) {
               console.error("Failed to connect Instagram:", error);
@@ -119,6 +175,9 @@ export default function SocialPlatforms() {
       await fetch("/api/connect/instagram", { method: "DELETE" });
       setInstagramConnected(false);
       setInstagramAccount(null);
+      // Update cache
+      const cached = getCachedAccounts();
+      setCachedAccounts({ ...cached, instagram: null });
     } catch (error) {
       console.error("Failed to disconnect Instagram:", error);
     } finally {
@@ -140,6 +199,9 @@ export default function SocialPlatforms() {
       await fetch("/api/connect/tiktok", { method: "DELETE" });
       setTiktokConnected(false);
       setTiktokAccount(null);
+      // Update cache
+      const cached = getCachedAccounts();
+      setCachedAccounts({ ...cached, tiktok: null });
     } catch (error) {
       console.error("Failed to disconnect TikTok:", error);
     } finally {
