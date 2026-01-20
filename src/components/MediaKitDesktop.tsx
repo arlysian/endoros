@@ -34,6 +34,7 @@ interface ConnectedAccount {
   id: string;
   platform: string;
   username: string | null;
+  profileLink?: string | null;
   followers: number | null;
   isPrimary: boolean | null;
 }
@@ -257,21 +258,35 @@ export default function MediaKitDesktop({
             {/* Platform Selector */}
             <div className="flex items-center gap-2 mb-8">
               {connectedAccounts.map((account) => (
-                <button
-                  key={account.id}
-                  onClick={() => setSelectedPlatform(account.platform)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    selectedPlatform === account.platform
-                      ? "bg-black text-white"
-                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                  }`}
-                >
-                  {platformIcons[account.platform]}
-                  <span>{account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}</span>
-                  {account.followers && (
-                    <span className="text-xs opacity-70">{formatNumber(account.followers)}</span>
+                <div key={account.id} className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSelectedPlatform(account.platform)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedPlatform === account.platform
+                        ? "bg-black text-white"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    }`}
+                  >
+                    {platformIcons[account.platform]}
+                    <span>{account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}</span>
+                    {account.followers && (
+                      <span className="text-xs opacity-70">{formatNumber(account.followers)}</span>
+                    )}
+                  </button>
+                  {account.profileLink && (
+                    <a
+                      href={account.profileLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-lg bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-black transition-colors"
+                      title={`View ${account.platform.toLowerCase()} profile`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                    </a>
                   )}
-                </button>
+                </div>
               ))}
               {connectedAccounts.length === 0 && (
                 <div className="text-sm text-neutral-400">No platforms connected</div>

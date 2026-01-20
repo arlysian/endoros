@@ -107,6 +107,7 @@ export type Database = {
           pageId: string | null
           platform: Database["public"]["Enums"]["Platform"]
           platformUserId: string
+          profileLink: string | null
           refreshToken: string | null
           scopes: string[] | null
           tokenExpiresAt: string | null
@@ -124,6 +125,7 @@ export type Database = {
           pageId?: string | null
           platform: Database["public"]["Enums"]["Platform"]
           platformUserId: string
+          profileLink?: string | null
           refreshToken?: string | null
           scopes?: string[] | null
           tokenExpiresAt?: string | null
@@ -141,6 +143,7 @@ export type Database = {
           pageId?: string | null
           platform?: Database["public"]["Enums"]["Platform"]
           platformUserId?: string
+          profileLink?: string | null
           refreshToken?: string | null
           scopes?: string[] | null
           tokenExpiresAt?: string | null
@@ -177,6 +180,7 @@ export type Database = {
           saves: number | null
           shares: number | null
           unfollows: number | null
+          videoCount: number | null
         }
         Insert: {
           avgViews?: number | null
@@ -196,6 +200,7 @@ export type Database = {
           saves?: number | null
           shares?: number | null
           unfollows?: number | null
+          videoCount?: number | null
         }
         Update: {
           avgViews?: number | null
@@ -215,6 +220,7 @@ export type Database = {
           saves?: number | null
           shares?: number | null
           unfollows?: number | null
+          videoCount?: number | null
         }
         Relationships: [
           {

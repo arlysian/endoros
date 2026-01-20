@@ -76,6 +76,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       id,
       platform,
       username,
+      profileLink,
       isPrimary
     `)
     .eq("userId", user.id);

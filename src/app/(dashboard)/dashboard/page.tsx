@@ -20,6 +20,15 @@ interface InstagramMetrics {
   saves: number;
 }
 
+interface TikTokMetrics {
+  followers: number;
+  engagementRate: number;
+  avgViews: number;
+  likes: number;
+  comments: number;
+  shares: number;
+}
+
 interface HistoryDay {
   date: string;
   followers: number;
@@ -27,9 +36,18 @@ interface HistoryDay {
   unfollows: number;
 }
 
+interface TikTokHistoryDay {
+  date: string;
+  followers: number;
+}
+
 interface HistorySummary {
   totalNewFollows: number;
   totalUnfollows: number;
+  netGrowth: number;
+}
+
+interface TikTokHistorySummary {
   netGrowth: number;
 }
 
@@ -61,6 +79,14 @@ export default function Dashboard() {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [chartType, setChartType] = useState<"bar" | "net">("bar");
 
+  // TikTok state
+  const [ttMetrics, setTtMetrics] = useState<TikTokMetrics | null>(null);
+  const [ttLoading, setTtLoading] = useState(false);
+  const [ttHistory, setTtHistory] = useState<TikTokHistoryDay[]>([]);
+  const [ttHistorySummary, setTtHistorySummary] = useState<TikTokHistorySummary | null>(null);
+  const [ttHistoryLoading, setTtHistoryLoading] = useState(false);
+  const [ttHistoryCache, setTtHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
+
   useEffect(() => {
     if (selectedPlatform === "instagram") {
       fetch("/api/metrics/instagram")
@@ -71,6 +97,21 @@ export default function Dashboard() {
         })
         .catch(() => setLoading(false));
     }
+  }, [selectedPlatform]);
+
+  // Fetch TikTok metrics
+  useEffect(() => {
+    if (selectedPlatform === "tiktok" && !ttMetrics) {
+      setTtLoading(true);
+      fetch("/api/metrics/tiktok")
+        .then((res) => res.json())
+        .then((data) => {
+          setTtMetrics(data.metrics || null);
+          setTtLoading(false);
+        })
+        .catch(() => setTtLoading(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform]);
 
   useEffect(() => {
@@ -108,6 +149,44 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, historyDays]);
 
+  // Fetch TikTok history
+  useEffect(() => {
+    if (selectedPlatform === "tiktok") {
+      const cached = ttHistoryCache[historyDays];
+      if (cached) {
+        setTtHistory(cached.history);
+        setTtHistorySummary(cached.summary);
+        setTtHistoryLoading(false);
+        return;
+      }
+
+      if (ttHistory.length === 0) {
+        setTtHistoryLoading(true);
+      }
+      fetch(`/api/metrics/tiktok/history?days=${historyDays}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const historyData = data.history || [];
+          const summaryData = data.summary || null;
+          setTtHistory(historyData);
+          setTtHistorySummary(summaryData);
+          if (summaryData) {
+            setTtHistoryCache((prev) => ({
+              ...prev,
+              [historyDays]: { history: historyData, summary: summaryData },
+            }));
+          }
+          setTtHistoryLoading(false);
+        })
+        .catch(() => {
+          setTtHistory([]);
+          setTtHistorySummary(null);
+          setTtHistoryLoading(false);
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, historyDays]);
+
   const mockData = {
     followers: "124.5K",
     engagementRate: "4.8%",
@@ -120,12 +199,9 @@ export default function Dashboard() {
   };
 
   const isInstagram = selectedPlatform === "instagram";
+  const isTikTok = selectedPlatform === "tiktok";
   const hasIgData = isInstagram && igMetrics && !loading;
-
-  const getStatValue = (igValue: string | undefined, mockValue: string) => {
-    if (!isInstagram) return mockValue;
-    return hasIgData && igValue ? igValue : "-";
-  };
+  const hasTtData = isTikTok && ttMetrics && !ttLoading;
 
   const displayData = hasIgData
     ? {
@@ -140,6 +216,17 @@ export default function Dashboard() {
       }
     : null;
 
+  const ttDisplayData = hasTtData
+    ? {
+        followers: formatFullNumber(ttMetrics.followers || 0),
+        engagementRate: (ttMetrics.engagementRate || 0).toFixed(2) + "%",
+        avgViews: formatNumber(ttMetrics.avgViews || 0),
+        likes: ttMetrics.likes || 0,
+        comments: ttMetrics.comments || 0,
+        shares: ttMetrics.shares || 0,
+      }
+    : null;
+
   const engagementBreakdown = displayData
     ? (() => {
         const total = displayData.likes + displayData.comments + displayData.shares + displayData.saves;
@@ -149,6 +236,18 @@ export default function Dashboard() {
           comments: Math.round((displayData.comments / total) * 100),
           shares: Math.round((displayData.shares / total) * 100),
           saves: Math.round((displayData.saves / total) * 100),
+        };
+      })()
+    : null;
+
+  const ttEngagementBreakdown = ttDisplayData
+    ? (() => {
+        const total = ttDisplayData.likes + ttDisplayData.comments + ttDisplayData.shares;
+        if (total === 0) return { likes: 0, comments: 0, shares: 0 };
+        return {
+          likes: Math.round((ttDisplayData.likes / total) * 100),
+          comments: Math.round((ttDisplayData.comments / total) * 100),
+          shares: Math.round((ttDisplayData.shares / total) * 100),
         };
       })()
     : null;
@@ -195,20 +294,22 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
         <StatCard
           label="Followers"
-          value={getStatValue(displayData?.followers, mockData.followers)}
+          value={isInstagram ? (hasIgData ? displayData?.followers ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.followers ?? "-" : "-") : mockData.followers}
         />
         <StatCard
           label="Engagement"
-          value={getStatValue(displayData?.engagementRate, mockData.engagementRate)}
+          value={isInstagram ? (hasIgData ? displayData?.engagementRate ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.engagementRate ?? "-" : "-") : mockData.engagementRate}
         />
         <StatCard
           label="Avg. Views"
-          value={getStatValue(displayData?.avgViews, mockData.avgViews)}
+          value={isInstagram ? (hasIgData ? displayData?.avgViews ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.avgViews ?? "-" : "-") : mockData.avgViews}
         />
-        <StatCard
-          label="Reach"
-          value={getStatValue(displayData?.reach, mockData.reach)}
-        />
+{!isTikTok && (
+          <StatCard
+            label="Reach"
+            value={isInstagram ? (hasIgData ? displayData?.reach ?? "-" : "-") : mockData.reach}
+          />
+        )}
       </div>
 
       {/* Charts Row */}
@@ -218,17 +319,19 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-medium text-black">Follower Growth</h2>
             <div className="flex items-center gap-3">
-              <select
-                className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
-                value={chartType}
-                onChange={(e) => {
-                  setChartType(e.target.value as "bar" | "net");
-                  setSelectedDayIndex(null);
-                }}
-              >
-                <option value="bar">Follows/Unfollows</option>
-                <option value="net">Follower Count</option>
-              </select>
+              {!isTikTok && (
+                <select
+                  className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
+                  value={chartType}
+                  onChange={(e) => {
+                    setChartType(e.target.value as "bar" | "net");
+                    setSelectedDayIndex(null);
+                  }}
+                >
+                  <option value="bar">Follows/Unfollows</option>
+                  <option value="net">Follower Count</option>
+                </select>
+              )}
               <select
                 className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
                 value={historyDays}
@@ -243,20 +346,39 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="h-40" onClick={() => setSelectedDayIndex(null)}>
-            {isInstagram && historyLoading ? (
+            {(isInstagram && historyLoading) || (isTikTok && ttHistoryLoading) ? (
               <div className="flex items-center justify-center h-full text-neutral-400 text-sm">Loading...</div>
             ) : (
               <FollowerGrowthChart
-                data={isInstagram ? history : []}
-                isInstagram={isInstagram}
+                data={isInstagram ? history : isTikTok ? ttHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : []}
+                isRealData={isInstagram || isTikTok}
                 days={historyDays}
-                selectedIndex={selectedDayIndex}
-                onSelectDay={(idx) => setSelectedDayIndex(idx)}
-                chartType={chartType}
+                chartType={isTikTok ? "net" : chartType}
               />
             )}
           </div>
-          {chartType === "bar" ? (
+          {(isTikTok || chartType === "net") ? (
+            <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+              {(() => {
+                const historyData = isTikTok ? ttHistory : history;
+                const isLoading = isTikTok ? ttHistoryLoading : historyLoading;
+                const netChange = historyData.length > 0
+                  ? historyData[historyData.length - 1].followers - historyData[0].followers
+                  : 0;
+
+                return (
+                  <div>
+                    <p className="text-xs text-neutral-400 mb-1">Net Growth</p>
+                    <p className={`text-lg font-semibold ${netChange < 0 ? "text-rose-500" : "text-emerald-600"}`}>
+                      {(isInstagram || isTikTok)
+                        ? (isLoading ? "-" : (historyData.length > 0 ? `${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()}` : "-"))
+                        : "+2,723"}
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
             <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
               {(() => {
                 const selectedDay = selectedDayIndex !== null ? history[selectedDayIndex] : null;
@@ -274,14 +396,6 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-neutral-400 mb-1">Net</p>
-                      <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && (historySummary.totalNewFollows - historySummary.totalUnfollows) < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
-                        {isInstagram
-                          ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${(historySummary.totalNewFollows - historySummary.totalUnfollows) >= 0 ? "+" : ""}${(historySummary.totalNewFollows - historySummary.totalUnfollows).toLocaleString()}` : "-")))
-                          : "+2,723"}
-                      </p>
-                    </div>
-                    <div>
                       <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
                       <p className="text-lg font-semibold text-rose-500">
                         {isInstagram
@@ -289,26 +403,15 @@ export default function Dashboard() {
                           : "-124"}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Net</p>
+                      <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && (historySummary.totalNewFollows - historySummary.totalUnfollows) < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
+                        {isInstagram
+                          ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${(historySummary.totalNewFollows - historySummary.totalUnfollows) >= 0 ? "+" : ""}${(historySummary.totalNewFollows - historySummary.totalUnfollows).toLocaleString()}` : "-")))
+                          : "+2,723"}
+                      </p>
+                    </div>
                   </>
-                );
-              })()}
-            </div>
-          ) : (
-            <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
-              {(() => {
-                const netChange = history.length > 0
-                  ? history[history.length - 1].followers - history[0].followers
-                  : 0;
-
-                return (
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Follows</p>
-                    <p className={`text-lg font-semibold ${netChange < 0 ? "text-rose-500" : "text-emerald-600"}`}>
-                      {isInstagram
-                        ? (historyLoading ? "-" : (history.length > 0 ? `${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()}` : "-"))
-                        : "+2,723"}
-                    </p>
-                  </div>
                 );
               })()}
             </div>
@@ -321,24 +424,26 @@ export default function Dashboard() {
           <div className="space-y-5">
             <EngagementBar
               label="Likes"
-              value={isInstagram ? (engagementBreakdown?.likes ?? 0) : mockData.likes.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.likes) : "-") : mockData.likes.count}
+              value={isInstagram ? (engagementBreakdown?.likes ?? 0) : isTikTok ? (ttEngagementBreakdown?.likes ?? 0) : mockData.likes.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.likes) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.likes) : "-") : mockData.likes.count}
             />
             <EngagementBar
               label="Comments"
-              value={isInstagram ? (engagementBreakdown?.comments ?? 0) : mockData.comments.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.comments) : "-") : mockData.comments.count}
+              value={isInstagram ? (engagementBreakdown?.comments ?? 0) : isTikTok ? (ttEngagementBreakdown?.comments ?? 0) : mockData.comments.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.comments) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.comments) : "-") : mockData.comments.count}
             />
             <EngagementBar
               label="Shares"
-              value={isInstagram ? (engagementBreakdown?.shares ?? 0) : mockData.shares.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.shares) : "-") : mockData.shares.count}
+              value={isInstagram ? (engagementBreakdown?.shares ?? 0) : isTikTok ? (ttEngagementBreakdown?.shares ?? 0) : mockData.shares.percent}
+              count={isInstagram ? (displayData ? formatNumber(displayData.shares) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.shares) : "-") : mockData.shares.count}
             />
-            <EngagementBar
-              label="Saves"
-              value={isInstagram ? (engagementBreakdown?.saves ?? 0) : mockData.saves.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.saves) : "-") : mockData.saves.count}
-            />
+            {!isTikTok && (
+              <EngagementBar
+                label="Saves"
+                value={isInstagram ? (engagementBreakdown?.saves ?? 0) : mockData.saves.percent}
+                count={isInstagram ? (displayData ? formatNumber(displayData.saves) : "-") : mockData.saves.count}
+              />
+            )}
           </div>
           <div className="mt-6 pt-4 border-t border-neutral-100">
             <div className="flex items-center justify-between">
@@ -348,34 +453,40 @@ export default function Dashboard() {
                   ? (displayData
                       ? formatNumber(displayData.likes + displayData.comments + displayData.shares + displayData.saves)
                       : "-")
-                  : "66.9K"}
+                  : isTikTok
+                    ? (ttDisplayData
+                        ? formatNumber(ttDisplayData.likes + ttDisplayData.comments + ttDisplayData.shares)
+                        : "-")
+                    : "66.9K"}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Performance Table */}
-      <div>
-        <h2 className="text-sm font-medium text-black mb-6">Performance</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-100">
-                <th className="text-left text-xs font-medium text-neutral-400 pb-3">Metric</th>
-                <th className="text-right text-xs font-medium text-neutral-400 pb-3">This Week</th>
-                <th className="text-right text-xs font-medium text-neutral-400 pb-3">Last Week</th>
-                <th className="text-right text-xs font-medium text-neutral-400 pb-3">Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              <PerformanceRow metric="Profile Visits" thisWeek={isInstagram && !hasIgData ? "-" : "12,847"} lastWeek={isInstagram && !hasIgData ? "-" : "11,234"} change={isInstagram && !hasIgData ? "-" : "+14.3%"} positive />
-              <PerformanceRow metric="Impressions" thisWeek={isInstagram && !hasIgData ? "-" : "458K"} lastWeek={isInstagram && !hasIgData ? "-" : "412K"} change={isInstagram && !hasIgData ? "-" : "+11.2%"} positive />
-              <PerformanceRow metric="Link Clicks" thisWeek={isInstagram && !hasIgData ? "-" : "2,341"} lastWeek={isInstagram && !hasIgData ? "-" : "1,987"} change={isInstagram && !hasIgData ? "-" : "+17.8%"} positive />
-            </tbody>
-          </table>
+      {/* Performance Table - Hidden for TikTok */}
+      {!isTikTok && (
+        <div>
+          <h2 className="text-sm font-medium text-black mb-6">Performance</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-100">
+                  <th className="text-left text-xs font-medium text-neutral-400 pb-3">Metric</th>
+                  <th className="text-right text-xs font-medium text-neutral-400 pb-3">This Week</th>
+                  <th className="text-right text-xs font-medium text-neutral-400 pb-3">Last Week</th>
+                  <th className="text-right text-xs font-medium text-neutral-400 pb-3">Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                <PerformanceRow metric="Profile Visits" thisWeek={isInstagram && !hasIgData ? "-" : "12,847"} lastWeek={isInstagram && !hasIgData ? "-" : "11,234"} change={isInstagram && !hasIgData ? "-" : "+14.3%"} positive />
+                <PerformanceRow metric="Impressions" thisWeek={isInstagram && !hasIgData ? "-" : "458K"} lastWeek={isInstagram && !hasIgData ? "-" : "412K"} change={isInstagram && !hasIgData ? "-" : "+11.2%"} positive />
+                <PerformanceRow metric="Link Clicks" thisWeek={isInstagram && !hasIgData ? "-" : "2,341"} lastWeek={isInstagram && !hasIgData ? "-" : "1,987"} change={isInstagram && !hasIgData ? "-" : "+17.8%"} positive />
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -445,7 +556,7 @@ function PerformanceRow({
   );
 }
 
-function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectDay, chartType }: { data: HistoryDay[]; isInstagram: boolean; days: number; selectedIndex: number | null; onSelectDay: (idx: number) => void; chartType: "bar" | "net" }) {
+function FollowerGrowthChart({ data, isRealData, days, chartType }: { data: HistoryDay[]; isRealData: boolean; days: number; chartType: "bar" | "net" }) {
   const mockData = [
     { day: "Mon", value: 40 },
     { day: "Tue", value: 55 },
@@ -456,7 +567,7 @@ function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectD
     { day: "Sun", value: 75 },
   ];
 
-  if (!isInstagram) {
+  if (!isRealData) {
     const maxValue = Math.max(...mockData.map(d => d.value));
     return (
       <div className="flex items-end justify-between h-full gap-2">
@@ -563,7 +674,7 @@ function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectD
   return (
     <div className="w-full h-full overflow-hidden">
       <ChartContainer config={areaChartConfig} className="h-[140px] w-full">
-        <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
           <defs>
             <linearGradient id="fillFollowers" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />

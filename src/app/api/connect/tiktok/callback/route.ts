@@ -85,7 +85,7 @@ export async function GET(request: Request) {
 
     // Fetch user info from TikTok
     const userResponse = await fetch(
-      "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,follower_count,following_count,likes_count,video_count",
+      "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url,profile_deep_link,follower_count,following_count,likes_count,video_count",
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -122,6 +122,7 @@ export async function GET(request: Request) {
           platform: "TIKTOK",
           platformUserId: openId,
           username: userInfo.display_name,
+          profileLink: userInfo.profile_deep_link,
           accessToken,
           refreshToken,
           tokenExpiresAt: tokenExpiresAt.toISOString(),
