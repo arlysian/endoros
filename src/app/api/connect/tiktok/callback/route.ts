@@ -115,7 +115,7 @@ export async function GET(request: Request) {
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Upsert ConnectedAccount
-    const { error: dbError } = await supabaseAdmin
+    const { data, error: dbError } = await supabaseAdmin
       .from("ConnectedAccount")
       .upsert(
         {
@@ -133,30 +133,26 @@ export async function GET(request: Request) {
         {
           onConflict: "userId,platform,platformUserId",
         }
-      );
+      )
+      .select()
+      .single();
 
-    if (dbError) {
+    if (dbError || !data) {
       console.error("Database error:", dbError);
       return NextResponse.redirect(
         new URL("/social-platforms?error=Failed+to+save+account", request.url)
       );
     }
 
-    // Fetch account to get ID for metrics fetch
-    const { data: account } = await supabaseAdmin
-      .from("ConnectedAccount")
-      .select("id")
-      .eq("userId", userId)
-      .eq("platform", "TIKTOK")
-      .single();
-
-    // Fetch metrics immediately (don't wait for cron)
-    if (account) {
-      fetchTikTokMetrics({
-        id: account.id,
+    // Fetch metrics immediately (await like Instagram does)
+    try {
+      await fetchTikTokMetrics({
+        id: data.id,
         platformUserId: openId,
         accessToken,
-      }).catch((err) => console.error("Initial TikTok metrics fetch failed:", err));
+      });
+    } catch (err) {
+      console.error("Initial TikTok metrics fetch failed:", err);
     }
 
     // Redirect back to social platforms page with success and clear the cookie
