@@ -275,9 +275,9 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="text-xs text-neutral-400 mb-1">Net</p>
-                      <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && historySummary.netGrowth < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
+                      <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && (historySummary.totalNewFollows - historySummary.totalUnfollows) < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
                         {isInstagram
-                          ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${historySummary.netGrowth >= 0 ? "+" : ""}${historySummary.netGrowth.toLocaleString()}` : "-")))
+                          ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${(historySummary.totalNewFollows - historySummary.totalUnfollows) >= 0 ? "+" : ""}${(historySummary.totalNewFollows - historySummary.totalUnfollows).toLocaleString()}` : "-")))
                           : "+2,723"}
                       </p>
                     </div>
@@ -294,7 +294,24 @@ export default function Dashboard() {
               })()}
             </div>
           ) : (
-            <div className="mt-6 border-t border-neutral-100" />
+            <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+              {(() => {
+                const netChange = history.length > 0
+                  ? history[history.length - 1].followers - history[0].followers
+                  : 0;
+
+                return (
+                  <div>
+                    <p className="text-xs text-neutral-400 mb-1">Follows</p>
+                    <p className={`text-lg font-semibold ${netChange < 0 ? "text-rose-500" : "text-emerald-600"}`}>
+                      {isInstagram
+                        ? (historyLoading ? "-" : (history.length > 0 ? `${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()}` : "-"))
+                        : "+2,723"}
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
           )}
         </div>
 
