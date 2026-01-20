@@ -43,3 +43,26 @@ reels_skip_rate,
 reposts, 
 facebook_views, 
 crossposted_views
+
+
+
+Tiktok:
+
+● User info (not fetched):                                                                                                                                      
+  - bio_description - profile bio
+  - profile_deep_link - TikTok profile URL                                                                                                                        - is_verified - blue checkmark
+  - username - @handle                                                                                                                                          
+  
+  Video data (not stored individually):
+  - id, title, video_description
+  - create_time - when posted
+  - duration - video length
+  - cover_image_url - thumbnail
+  - share_url - link to video
+
+  Could calculate:
+  - Average video duration
+  - Last post date
+  - Top performing video (most views/engagement)
+  - Posting frequency (videos per week/month)
+  - Net follower change (vs yesterday)

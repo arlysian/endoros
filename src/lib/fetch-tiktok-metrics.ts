@@ -84,6 +84,9 @@ export async function fetchTikTokMetrics(account: Account) {
   if (metrics.videoCount > 0) {
     metrics.avgViews = Math.round(totalViews / metrics.videoCount);
   }
+  if (totalViews > 0) {
+    metrics.engagementRate = Math.round(((totalLikes + totalComments + totalShares) / totalViews) * 10000) / 100;
+  }
 
   // Upsert into PlatformMetrics
   const todayStr = new Date().toISOString().split("T")[0];

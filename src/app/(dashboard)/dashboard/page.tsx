@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface InstagramMetrics {
   followers: number;
@@ -52,6 +59,7 @@ export default function Dashboard() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyCache, setHistoryCache] = useState<Record<number, { history: HistoryDay[]; summary: HistorySummary }>>({});
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+  const [chartType, setChartType] = useState<"bar" | "net">("bar");
 
   useEffect(() => {
     if (selectedPlatform === "instagram") {
@@ -209,17 +217,30 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-medium text-black">Follower Growth</h2>
-            <select
-              className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
-              value={historyDays}
-              onChange={(e) => {
-                setHistoryDays(parseInt(e.target.value) as 7 | 30);
-                setSelectedDayIndex(null);
-              }}
-            >
-              <option value={7}>7 days</option>
-              <option value={30}>30 days</option>
-            </select>
+            <div className="flex items-center gap-3">
+              <select
+                className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
+                value={chartType}
+                onChange={(e) => {
+                  setChartType(e.target.value as "bar" | "net");
+                  setSelectedDayIndex(null);
+                }}
+              >
+                <option value="bar">Follows/Unfollows</option>
+                <option value="net">Follower Count</option>
+              </select>
+              <select
+                className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
+                value={historyDays}
+                onChange={(e) => {
+                  setHistoryDays(parseInt(e.target.value) as 7 | 30);
+                  setSelectedDayIndex(null);
+                }}
+              >
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+              </select>
+            </div>
           </div>
           <div className="h-40" onClick={() => setSelectedDayIndex(null)}>
             {isInstagram && historyLoading ? (
@@ -231,45 +252,50 @@ export default function Dashboard() {
                 days={historyDays}
                 selectedIndex={selectedDayIndex}
                 onSelectDay={(idx) => setSelectedDayIndex(idx)}
+                chartType={chartType}
               />
             )}
           </div>
-          <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
-            {(() => {
-              const selectedDay = selectedDayIndex !== null ? history[selectedDayIndex] : null;
-              const dayNet = selectedDay ? selectedDay.newFollows - selectedDay.unfollows : 0;
-              const showingDay = isInstagram && selectedDay;
+          {chartType === "bar" ? (
+            <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+              {(() => {
+                const selectedDay = selectedDayIndex !== null ? history[selectedDayIndex] : null;
+                const dayNet = selectedDay ? selectedDay.newFollows - selectedDay.unfollows : 0;
+                const showingDay = isInstagram && selectedDay;
 
-              return (
-                <>
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Follows</p>
-                    <p className="text-lg font-semibold text-emerald-600">
-                      {isInstagram
-                        ? (historyLoading ? "-" : (showingDay ? `+${selectedDay.newFollows.toLocaleString()}` : (historySummary ? `+${historySummary.totalNewFollows.toLocaleString()}` : "-")))
-                        : "+2,847"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Net</p>
-                    <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && historySummary.netGrowth < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
-                      {isInstagram
-                        ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${historySummary.netGrowth >= 0 ? "+" : ""}${historySummary.netGrowth.toLocaleString()}` : "-")))
-                        : "+2,723"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
-                    <p className="text-lg font-semibold text-rose-500">
-                      {isInstagram
-                        ? (historyLoading ? "-" : (showingDay ? `-${selectedDay.unfollows.toLocaleString()}` : (historySummary ? `-${historySummary.totalUnfollows.toLocaleString()}` : "-")))
-                        : "-124"}
-                    </p>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
+                return (
+                  <>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Follows</p>
+                      <p className="text-lg font-semibold text-emerald-600">
+                        {isInstagram
+                          ? (historyLoading ? "-" : (showingDay ? `+${selectedDay.newFollows.toLocaleString()}` : (historySummary ? `+${historySummary.totalNewFollows.toLocaleString()}` : "-")))
+                          : "+2,847"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Net</p>
+                      <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && historySummary.netGrowth < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
+                        {isInstagram
+                          ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${historySummary.netGrowth >= 0 ? "+" : ""}${historySummary.netGrowth.toLocaleString()}` : "-")))
+                          : "+2,723"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
+                      <p className="text-lg font-semibold text-rose-500">
+                        {isInstagram
+                          ? (historyLoading ? "-" : (showingDay ? `-${selectedDay.unfollows.toLocaleString()}` : (historySummary ? `-${historySummary.totalUnfollows.toLocaleString()}` : "-")))
+                          : "-124"}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="mt-6 border-t border-neutral-100" />
+          )}
         </div>
 
         {/* Engagement Breakdown */}
@@ -402,7 +428,7 @@ function PerformanceRow({
   );
 }
 
-function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectDay }: { data: HistoryDay[]; isInstagram: boolean; days: number; selectedIndex: number | null; onSelectDay: (idx: number) => void }) {
+function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectDay, chartType }: { data: HistoryDay[]; isInstagram: boolean; days: number; selectedIndex: number | null; onSelectDay: (idx: number) => void; chartType: "bar" | "net" }) {
   const mockData = [
     { day: "Mon", value: 40 },
     { day: "Tue", value: 55 },
@@ -449,40 +475,126 @@ function FollowerGrowthChart({ data, isInstagram, days, selectedIndex, onSelectD
     label: days === 7
       ? new Date(d.date).toLocaleDateString("en-US", { weekday: "short" })
       : new Date(d.date).getDate().toString(),
+    fullDate: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     newFollows: d.newFollows,
     unfollows: d.unfollows,
     net: d.newFollows - d.unfollows,
+    followers: d.followers,
+    date: d.date,
   }));
 
-  const maxValue = Math.max(...chartData.map(d => Math.max(d.newFollows, d.unfollows)), 1);
+  // Bar chart mode
+  if (chartType === "bar") {
+    const barChartConfig = {
+      newFollows: {
+        label: "Follows",
+        color: "#10b981",
+      },
+      unfollows: {
+        label: "Unfollows",
+        color: "#ef4444",
+      },
+    } satisfies ChartConfig;
+
+    return (
+      <div className="w-full h-full overflow-hidden">
+        <ChartContainer config={barChartConfig} className="h-[140px] w-full">
+          <BarChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }} barGap={2}>
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fontSize: 10, fill: "#a3a3a3" }}
+              interval={days === 30 ? 2 : 0}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  indicator="dashed"
+                  labelFormatter={(value, payload) => {
+                    if (days === 30 && payload?.[0]?.payload?.fullDate) {
+                      return payload[0].payload.fullDate;
+                    }
+                    return value;
+                  }}
+                />
+              }
+            />
+            <Bar dataKey="newFollows" fill="var(--color-newFollows)" radius={3} />
+            <Bar dataKey="unfollows" fill="var(--color-unfollows)" radius={3} />
+          </BarChart>
+        </ChartContainer>
+      </div>
+    );
+  }
+
+  // Follower growth area chart mode using recharts
+  const areaChartConfig = {
+    followers: {
+      label: "Followers",
+      color: "#10b981",
+    },
+  } satisfies ChartConfig;
+
+  const followerValues = chartData.map(d => d.followers);
+  const minFollowers = Math.min(...followerValues);
+  const maxFollowers = Math.max(...followerValues);
+  const padding = Math.max((maxFollowers - minFollowers) * 0.15, 5);
 
   return (
-    <div className="flex items-end h-full gap-1 overflow-x-auto pt-2 pb-6">
-      {chartData.map((item, idx) => {
-        const isSelected = selectedIndex === idx;
-        return (
-          <div
-            key={idx}
-            className={`flex-1 min-w-[20px] flex flex-col items-center justify-end h-full cursor-pointer ${isSelected ? "opacity-100" : "opacity-60 hover:opacity-100"}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectDay(idx);
-            }}
-          >
-            <div className="flex items-end gap-0.5 h-[110px]">
-              <div
-                className={`w-2 rounded-sm ${isSelected ? "bg-emerald-500" : "bg-emerald-600/70"}`}
-                style={{ height: `${Math.max((item.newFollows / maxValue) * 110, item.newFollows > 0 ? 4 : 0)}px` }}
+    <div className="w-full h-full overflow-hidden">
+      <ChartContainer config={areaChartConfig} className="h-[140px] w-full">
+        <AreaChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }}>
+          <defs>
+            <linearGradient id="fillFollowers" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tick={{ fontSize: 10, fill: "#a3a3a3" }}
+            interval={days === 30 ? 2 : 0}
+          />
+          <YAxis
+            hide
+            domain={[minFollowers - padding, maxFollowers + padding]}
+          />
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                labelFormatter={(value, payload) => {
+                  if (days === 30 && payload?.[0]?.payload?.fullDate) {
+                    return payload[0].payload.fullDate;
+                  }
+                  return value;
+                }}
+                formatter={(value) => (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-neutral-500">Followers</span>
+                    <span className="font-medium">{Number(value).toLocaleString()}</span>
+                  </div>
+                )}
               />
-              <div
-                className={`w-2 rounded-sm ${isSelected ? "bg-rose-400" : "bg-rose-300/70"}`}
-                style={{ height: `${Math.max((item.unfollows / maxValue) * 110, item.unfollows > 0 ? 4 : 0)}px` }}
-              />
-            </div>
-            <span className={`text-[10px] whitespace-nowrap mt-1 ${isSelected ? "text-black font-medium" : "text-neutral-400"}`}>{item.label}</span>
-          </div>
-        );
-      })}
+            }
+          />
+          <Area
+            dataKey="followers"
+            type="monotone"
+            fill="url(#fillFollowers)"
+            stroke="#10b981"
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ChartContainer>
     </div>
   );
 }
