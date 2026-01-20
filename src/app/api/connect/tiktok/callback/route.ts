@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { fetchTikTokMetrics } from "@/lib/fetch-tiktok-metrics";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -139,6 +140,23 @@ export async function GET(request: Request) {
       return NextResponse.redirect(
         new URL("/social-platforms?error=Failed+to+save+account", request.url)
       );
+    }
+
+    // Fetch account to get ID for metrics fetch
+    const { data: account } = await supabaseAdmin
+      .from("ConnectedAccount")
+      .select("id")
+      .eq("userId", userId)
+      .eq("platform", "TIKTOK")
+      .single();
+
+    // Fetch metrics immediately (don't wait for cron)
+    if (account) {
+      fetchTikTokMetrics({
+        id: account.id,
+        platformUserId: openId,
+        accessToken,
+      }).catch((err) => console.error("Initial TikTok metrics fetch failed:", err));
     }
 
     // Redirect back to social platforms page with success and clear the cookie
