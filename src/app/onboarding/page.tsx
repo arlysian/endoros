@@ -120,7 +120,7 @@ export default function Onboarding() {
           {/* Title */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold text-black mb-2">
-              Let's create your profile
+              Let&apos;s create your profile
             </h1>
             <p className="text-neutral-500">
               Tell us a bit about yourself to get started

@@ -66,3 +66,56 @@ Tiktok:
   - Top performing video (most views/engagement)
   - Posting frequency (videos per week/month)
   - Net follower change (vs yesterday)
+
+
+1. Accent Color/Theme
+
+  Let creators pick a brand color that tints buttons, progress bars, and highlights. Currently everything is black/neutral - a custom color would instantly feel
+   personal.
+
+  2. Category Badge
+
+  The category field is fetched but not displayed anywhere. Show it prominently as a tag near the username (e.g., "Fashion & Style" badge).
+
+  3. Featured Content/Portfolio
+
+  Add a gallery section showing actual posts or content thumbnails. Let creators pin their best-performing content.
+
+  4. Rates/Services Section
+
+  Many influencers share pricing. Add fields like:
+  - Starting rates for sponsored posts, stories, reels
+  - Package pricing
+  - "Open for collaborations" status
+
+  5. Custom Links (Linktree-style)
+
+  Add a section for multiple external links (other socials, merch, newsletter, etc.)
+
+  6. Video Introduction
+
+  Short video clip where the creator introduces themselves - very personal touch.
+
+  7. Testimonials/Reviews
+
+  Brands could leave reviews. Social proof from past collaborations.
+
+  8. Contact CTA
+
+  More prominent "Work with me" button - currently website link is subtle.
+
+  9. Custom Section Ordering
+
+  Let users drag-and-drop to reorder sections (show achievements first vs collaborations vs stats).
+
+  10. Background Patterns/Gradients
+
+  Beyond cover image - subtle background patterns or gradient options.
+
+  11. PDF Export
+
+  "Download Media Kit" button that generates a clean PDF.
+
+  12. QR Code
+
+  Shareable QR code for the profile - useful for in-person networking.
