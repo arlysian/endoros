@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchInstagramMetrics } from "@/lib/fetch-instagram-metrics";
+import { fetchTikTokMetrics } from "@/lib/fetch-tiktok-metrics";
 import { NextResponse } from "next/server";
 
 // Vercel Cron or manual trigger
@@ -36,21 +37,51 @@ export async function GET(request: Request) {
         acc.instagramBusinessId !== null && acc.accessToken !== null
     );
 
-    const results = [];
+    const instagramResults = [];
 
     for (const account of validAccounts) {
       try {
         const metrics = await fetchInstagramMetrics(account);
-        results.push({ accountId: account.id, success: true, metrics });
+        instagramResults.push({ accountId: account.id, success: true, metrics });
       } catch (err) {
-        console.error(`Error processing account ${account.id}:`, err);
-        results.push({ accountId: account.id, success: false, error: String(err) });
+        console.error(`Error processing Instagram account ${account.id}:`, err);
+        instagramResults.push({ accountId: account.id, success: false, error: String(err) });
+      }
+    }
+
+    // Get all TikTok accounts
+    const { data: tiktokAccounts, error: tiktokError } = await supabaseAdmin
+      .from("ConnectedAccount")
+      .select("id, platformUserId, accessToken")
+      .eq("platform", "TIKTOK")
+      .not("accessToken", "is", null);
+
+    if (tiktokError) {
+      console.error("Error fetching TikTok accounts:", tiktokError);
+    }
+
+    const tiktokResults = [];
+
+    if (tiktokAccounts) {
+      const validTiktokAccounts = tiktokAccounts.filter(
+        (acc): acc is { id: string; platformUserId: string; accessToken: string } =>
+          acc.platformUserId !== null && acc.accessToken !== null
+      );
+
+      for (const account of validTiktokAccounts) {
+        try {
+          const metrics = await fetchTikTokMetrics(account);
+          tiktokResults.push({ accountId: account.id, success: true, metrics });
+        } catch (err) {
+          console.error(`Error processing TikTok account ${account.id}:`, err);
+          tiktokResults.push({ accountId: account.id, success: false, error: String(err) });
+        }
       }
     }
 
     return NextResponse.json({
-      processed: validAccounts.length,
-      results,
+      instagram: { processed: validAccounts.length, results: instagramResults },
+      tiktok: { processed: tiktokResults.length, results: tiktokResults },
     });
   } catch (error) {
     console.error("Cron job error:", error);
