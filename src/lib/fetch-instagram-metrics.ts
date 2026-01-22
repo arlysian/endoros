@@ -211,25 +211,30 @@ export async function fetchInstagramMetrics(account: Account) {
     metrics.totalInteractions = interactionsData.data[0].total_value.value;
   }
 
-  // Follows and unfollows (yesterday's data - API needs since/until as dates)
+  // Follows and unfollows (day before yesterday → yesterday to avoid lag)
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
+  const dayBeforeYesterday = new Date(today);
+  dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
   const todayStr = today.toISOString().split("T")[0];
   const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const dayBeforeYesterdayStr = dayBeforeYesterday.toISOString().split("T")[0];
 
   const followsRes = await fetch(
-    `${baseUrl}?metric=follows_and_unfollows&metric_type=total_value&period=day&breakdown=follow_type&since=${yesterdayStr}&until=${todayStr}&access_token=${token}`
+    `${baseUrl}?metric=follows_and_unfollows&metric_type=total_value&period=day&breakdown=follow_type&since=${dayBeforeYesterdayStr}&until=${yesterdayStr}&access_token=${token}`
   );
   const followsData = await followsRes.json();
 
+  let newFollows = 0;
+  let unfollows = 0;
   if (followsData.data?.[0]?.total_value?.breakdowns?.[0]?.results) {
     const results = followsData.data[0].total_value.breakdowns[0].results;
     for (const result of results) {
       if (result.dimension_values[0] === "FOLLOWER") {
-        metrics.newFollows = result.value;
+        newFollows = result.value;
       } else if (result.dimension_values[0] === "NON_FOLLOWER") {
-        metrics.unfollows = result.value;
+        unfollows = result.value;
       }
     }
   }
@@ -242,9 +247,8 @@ export async function fetchInstagramMetrics(account: Account) {
       .eq("id", id);
   }
 
-  // Upsert into PlatformMetrics
-
-  const { error: upsertError } = await supabaseAdmin
+  // Upsert today's metrics (followers, reach, engagement, etc.)
+  const { error: todayError } = await supabaseAdmin
     .from("PlatformMetrics")
     .upsert(
       {
@@ -256,9 +260,27 @@ export async function fetchInstagramMetrics(account: Account) {
       { onConflict: "connectedAccountId,date" }
     );
 
-  if (upsertError) {
-    throw new Error(upsertError.message);
+  if (todayError) {
+    throw new Error(todayError.message);
   }
 
-  return metrics;
+  // Upsert day-before-yesterday's follows/unfollows (matches the data date)
+  const { error: followsError } = await supabaseAdmin
+    .from("PlatformMetrics")
+    .upsert(
+      {
+        connectedAccountId: id,
+        date: dayBeforeYesterdayStr,
+        newFollows,
+        unfollows,
+        createdAt: new Date().toISOString(),
+      },
+      { onConflict: "connectedAccountId,date" }
+    );
+
+  if (followsError) {
+    throw new Error(followsError.message);
+  }
+
+  return { ...metrics, newFollows, unfollows };
 }

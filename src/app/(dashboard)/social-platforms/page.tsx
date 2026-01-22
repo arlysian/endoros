@@ -272,6 +272,50 @@ export default function SocialPlatforms() {
               </button>
             </div>
           )}
+
+          {!instagramConnected && !instagramLoading && (
+            <div className="mt-4 p-4 bg-neutral-50 rounded-lg">
+              <p className="text-sm font-medium text-black mb-2">You must have the following to continue:</p>
+              <ul className="space-y-1.5 text-sm text-neutral-600">
+                <li>
+                  <span className="mr-1">&bull;</span>
+                  A published Facebook Page (this is different than your Facebook profile).{" "}
+                  <a
+                    href="https://www.facebook.com/business/help/1199464373557428"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-black underline hover:no-underline"
+                  >
+                    How to create a new Page on Facebook
+                  </a>
+                </li>
+                <li>
+                  <span className="mr-1">&bull;</span>
+                  An Instagram professional account.{" "}
+                  <a
+                    href="https://help.instagram.com/2358103564437429"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-black underline hover:no-underline"
+                  >
+                    How to set up a professional creator account on Instagram
+                  </a>
+                </li>
+                <li>
+                  <span className="mr-1">&bull;</span>
+                  Link your Facebook Page and Instagram professional accounts.{" "}
+                  <a
+                    href="https://www.facebook.com/business/help/898752960195806"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-black underline hover:no-underline"
+                  >
+                    How to connect a Facebook Page and Instagram account
+                  </a>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* TikTok */}
@@ -443,10 +487,19 @@ export default function SocialPlatforms() {
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <rect x="2" y="2" width="20" height="20" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="18" cy="6" r="1.5" fill="currentColor" stroke="none" />
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <defs>
+        <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="25%" stopColor="#FA7E1E" />
+          <stop offset="50%" stopColor="#D62976" />
+          <stop offset="75%" stopColor="#962FBF" />
+          <stop offset="100%" stopColor="#4F5BD5" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#instagram-gradient)" strokeWidth={1.5} />
+      <circle cx="12" cy="12" r="4" stroke="url(#instagram-gradient)" strokeWidth={1.5} />
+      <circle cx="18" cy="6" r="1.5" fill="url(#instagram-gradient)" />
     </svg>
   );
 }

@@ -12,7 +12,8 @@
       "Bash(dir /b \"C:\\\\Users\\\\StudyWork\\\\Desktop\\\\endoros\\\\src\\\\app\\\\\\(dashboard\\)\")",
       "mcp__ide__getDiagnostics",
       "Bash(npm run lint:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
