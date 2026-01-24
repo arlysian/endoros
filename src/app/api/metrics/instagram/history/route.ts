@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   const days = parseInt(request.nextUrl.searchParams.get("days") || "7");
-  const validDays = [7, 14, 30].includes(days) ? days : 7;
+  const validDays = [1, 7, 14, 30].includes(days) ? days : 7;
 
   // Get connected account
   const { data: account } = await supabaseAdmin
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   // Get last N days of metrics
   const { data: metrics, error } = await supabaseAdmin
     .from("PlatformMetrics")
-    .select("date, followers, newFollows, unfollows, profileVisits, linkClicks")
+    .select("date, followers, newFollows, unfollows, profileVisits, linkClicks, likes, comments, shares, saves")
     .eq("connectedAccountId", account.id)
     .order("date", { ascending: false })
     .limit(validDays);
@@ -45,6 +45,10 @@ export async function GET(request: NextRequest) {
     unfollows: row.unfollows || 0,
     profileVisits: row.profileVisits || 0,
     linkClicks: row.linkClicks || 0,
+    likes: row.likes || 0,
+    comments: row.comments || 0,
+    shares: row.shares || 0,
+    saves: row.saves || 0,
   }));
 
   // Calculate totals
@@ -52,6 +56,10 @@ export async function GET(request: NextRequest) {
   const totalUnfollows = history.reduce((sum, row) => sum + row.unfollows, 0);
   const totalProfileVisits = history.reduce((sum, row) => sum + row.profileVisits, 0);
   const totalLinkClicks = history.reduce((sum, row) => sum + row.linkClicks, 0);
+  const totalLikes = history.reduce((sum, row) => sum + row.likes, 0);
+  const totalComments = history.reduce((sum, row) => sum + row.comments, 0);
+  const totalShares = history.reduce((sum, row) => sum + row.shares, 0);
+  const totalSaves = history.reduce((sum, row) => sum + row.saves, 0);
 
   // Net growth from actual follower count change (more accurate)
   const firstWithFollowers = history.find((row) => row.followers > 0);
@@ -68,6 +76,10 @@ export async function GET(request: NextRequest) {
       netGrowth,
       totalProfileVisits,
       totalLinkClicks,
+      totalLikes,
+      totalComments,
+      totalShares,
+      totalSaves,
     },
   });
 }

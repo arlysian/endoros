@@ -39,6 +39,10 @@ interface HistoryDay {
   unfollows: number;
   profileVisits?: number;
   linkClicks?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  saves?: number;
 }
 
 interface TikTokHistoryDay {
@@ -52,6 +56,10 @@ interface HistorySummary {
   netGrowth: number;
   totalProfileVisits: number;
   totalLinkClicks: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalSaves: number;
 }
 
 interface TikTokHistorySummary {
@@ -116,6 +124,16 @@ export default function Dashboard() {
     thisWeek: { profileVisits: number; linkClicks: number };
     lastWeek: { profileVisits: number; linkClicks: number };
   } | null>(null);
+
+  // Engagement data state (period-based)
+  const [engagementData, setEngagementData] = useState<{
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+  } | null>(null);
+  const [engagementLoading, setEngagementLoading] = useState(false);
+  const [engagementCache, setEngagementCache] = useState<Record<string, { likes: number; comments: number; shares: number; saves: number }>>({});
 
   // TikTok state
   const [ttMetrics, setTtMetrics] = useState<TikTokMetrics | null>(null);
@@ -304,6 +322,54 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, historyDays]);
 
+  // Fetch engagement data based on period
+  useEffect(() => {
+    if (selectedPlatform === "instagram" && igConnected) {
+      // For "total", use the total_* columns from igMetrics
+      if (engagementPeriod === "total") {
+        if (igMetrics) {
+          setEngagementData({
+            likes: igMetrics.total_likes || 0,
+            comments: igMetrics.total_comments || 0,
+            shares: igMetrics.total_shares || 0,
+            saves: igMetrics.total_saves || 0,
+          });
+        }
+        return;
+      }
+
+      // For other periods, fetch from history and aggregate
+      const days = engagementPeriod === "today" ? 1 : parseInt(engagementPeriod);
+      const cacheKey = `ig_${days}`;
+
+      if (engagementCache[cacheKey]) {
+        setEngagementData(engagementCache[cacheKey]);
+        return;
+      }
+
+      setEngagementLoading(true);
+      fetch(`/api/metrics/instagram/history?days=${days}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const historyData: HistoryDay[] = data.history || [];
+          const aggregated = {
+            likes: historyData.reduce((sum, d) => sum + (d.likes || 0), 0),
+            comments: historyData.reduce((sum, d) => sum + (d.comments || 0), 0),
+            shares: historyData.reduce((sum, d) => sum + (d.shares || 0), 0),
+            saves: historyData.reduce((sum, d) => sum + (d.saves || 0), 0),
+          };
+          setEngagementData(aggregated);
+          setEngagementCache((prev) => ({ ...prev, [cacheKey]: aggregated }));
+          setEngagementLoading(false);
+        })
+        .catch(() => {
+          setEngagementData(null);
+          setEngagementLoading(false);
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, engagementPeriod, igConnected, igMetrics]);
+
   const mockData = {
     followers: "124.5K",
     engagementRate: "4.8%",
@@ -344,15 +410,16 @@ export default function Dashboard() {
       }
     : null;
 
-  const engagementBreakdown = displayData
+  const engagementBreakdown = engagementData
     ? (() => {
-        const total = displayData.likes + displayData.comments + displayData.shares + displayData.saves;
-        if (total === 0) return { likes: 0, comments: 0, shares: 0, saves: 0 };
+        const total = engagementData.likes + engagementData.comments + engagementData.shares + engagementData.saves;
+        if (total === 0) return { likes: 0, comments: 0, shares: 0, saves: 0, total: 0 };
         return {
-          likes: Math.round((displayData.likes / total) * 100),
-          comments: Math.round((displayData.comments / total) * 100),
-          shares: Math.round((displayData.shares / total) * 100),
-          saves: Math.round((displayData.saves / total) * 100),
+          likes: Math.round((engagementData.likes / total) * 100),
+          comments: Math.round((engagementData.comments / total) * 100),
+          shares: Math.round((engagementData.shares / total) * 100),
+          saves: Math.round((engagementData.saves / total) * 100),
+          total,
         };
       })()
     : null;
@@ -588,23 +655,23 @@ export default function Dashboard() {
             <EngagementBar
               label="Likes"
               value={isInstagram ? (engagementBreakdown?.likes ?? 0) : isTikTok ? (ttEngagementBreakdown?.likes ?? 0) : mockData.likes.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.likes) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.likes) : "-") : mockData.likes.count}
+              count={isInstagram ? (engagementData ? formatNumber(engagementData.likes) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.likes) : "-") : mockData.likes.count}
             />
             <EngagementBar
               label="Comments"
               value={isInstagram ? (engagementBreakdown?.comments ?? 0) : isTikTok ? (ttEngagementBreakdown?.comments ?? 0) : mockData.comments.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.comments) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.comments) : "-") : mockData.comments.count}
+              count={isInstagram ? (engagementData ? formatNumber(engagementData.comments) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.comments) : "-") : mockData.comments.count}
             />
             <EngagementBar
               label="Shares"
               value={isInstagram ? (engagementBreakdown?.shares ?? 0) : isTikTok ? (ttEngagementBreakdown?.shares ?? 0) : mockData.shares.percent}
-              count={isInstagram ? (displayData ? formatNumber(displayData.shares) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.shares) : "-") : mockData.shares.count}
+              count={isInstagram ? (engagementData ? formatNumber(engagementData.shares) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.shares) : "-") : mockData.shares.count}
             />
             {!isTikTok && (
               <EngagementBar
                 label="Saves"
                 value={isInstagram ? (engagementBreakdown?.saves ?? 0) : mockData.saves.percent}
-                count={isInstagram ? (displayData ? formatNumber(displayData.saves) : "-") : mockData.saves.count}
+                count={isInstagram ? (engagementData ? formatNumber(engagementData.saves) : "-") : mockData.saves.count}
               />
             )}
           </div>
@@ -613,8 +680,8 @@ export default function Dashboard() {
               <span className="text-xs text-neutral-400">Total</span>
               <span className="text-lg font-semibold text-black">
                 {isInstagram
-                  ? (displayData
-                      ? formatNumber(displayData.likes + displayData.comments + displayData.shares + displayData.saves)
+                  ? (engagementBreakdown?.total !== undefined
+                      ? formatNumber(engagementBreakdown.total)
                       : "-")
                   : isTikTok
                     ? (ttDisplayData
