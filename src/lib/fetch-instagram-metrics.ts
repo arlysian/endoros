@@ -40,6 +40,11 @@ export async function backfillFollowerHistory(account: Account) {
   );
   const batchData = await batchRes.json();
 
+  if (!Array.isArray(batchData)) {
+    console.error("Batch API error in backfillFollowerHistory:", batchData);
+    return 0;
+  }
+
   // Process each day's response
   const rows: { connectedAccountId: string; date: string; newFollows?: number; unfollows?: number; createdAt: string }[] = [];
 
@@ -125,6 +130,11 @@ export async function backfillProfileVisits(account: Account) {
   );
   const batchData = await batchRes.json();
 
+  if (!Array.isArray(batchData)) {
+    console.error("Batch API error in backfillProfileVisits:", batchData);
+    return 0;
+  }
+
   // Process each day's response
   const rows: { connectedAccountId: string; date: string; profileVisits?: number; createdAt: string }[] = [];
 
@@ -196,6 +206,11 @@ export async function backfillLinkClicks(account: Account) {
     }
   );
   const batchData = await batchRes.json();
+
+  if (!Array.isArray(batchData)) {
+    console.error("Batch API error in backfillLinkClicks:", batchData);
+    return 0;
+  }
 
   // Process each day's response
   const rows: { connectedAccountId: string; date: string; linkClicks?: number; createdAt: string }[] = [];
@@ -293,7 +308,11 @@ export async function backfillEngagement(account: Account) {
       }
     );
     const batchData = await batchRes.json();
-    allResponses.push(...batchData);
+    if (Array.isArray(batchData)) {
+      allResponses.push(...batchData);
+    } else {
+      console.error("Batch API error:", batchData);
+    }
   }
 
   // Process responses - 4 responses per day
@@ -437,15 +456,19 @@ export async function fetchInstagramMetrics(account: Account) {
     let totalShares = 0;
     let totalSaves = 0;
 
-    for (const response of batchData) {
-      if (response.code === 200) {
-        const body = JSON.parse(response.body);
-        if (body.data?.[0]?.values?.[0]?.value) {
-          const metricName = body.data[0].name;
-          const value = body.data[0].values[0].value;
-          if (metricName === "views") totalViews += value;
-          else if (metricName === "shares") totalShares += value;
-          else if (metricName === "saved") totalSaves += value;
+    if (!Array.isArray(batchData)) {
+      console.error("Batch API error in fetchInstagramMetrics:", batchData);
+    } else {
+      for (const response of batchData) {
+        if (response.code === 200) {
+          const body = JSON.parse(response.body);
+          if (body.data?.[0]?.values?.[0]?.value) {
+            const metricName = body.data[0].name;
+            const value = body.data[0].values[0].value;
+            if (metricName === "views") totalViews += value;
+            else if (metricName === "shares") totalShares += value;
+            else if (metricName === "saved") totalSaves += value;
+          }
         }
       }
     }
