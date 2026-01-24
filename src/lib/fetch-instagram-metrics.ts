@@ -442,33 +442,40 @@ export async function fetchInstagramMetrics(account: Account) {
       { method: "GET", relative_url: `${media.id}/insights?metric=saved` },
     ]);
 
-    const batchRes = await fetch(
-      `https://graph.facebook.com/v24.0/?access_token=${token}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ batch: batchRequests }),
+    // Split into batches of 50 (Meta limit)
+    const batchSize = 50;
+    const allResponses: { code: number; body: string }[] = [];
+    for (let i = 0; i < batchRequests.length; i += batchSize) {
+      const batch = batchRequests.slice(i, i + batchSize);
+      const batchRes = await fetch(
+        `https://graph.facebook.com/v24.0/?access_token=${token}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batch }),
+        }
+      );
+      const batchData = await batchRes.json();
+      if (Array.isArray(batchData)) {
+        allResponses.push(...batchData);
+      } else {
+        console.error("Batch API error in fetchInstagramMetrics:", batchData);
       }
-    );
-    const batchData = await batchRes.json();
+    }
 
     let totalViews = 0;
     let totalShares = 0;
     let totalSaves = 0;
 
-    if (!Array.isArray(batchData)) {
-      console.error("Batch API error in fetchInstagramMetrics:", batchData);
-    } else {
-      for (const response of batchData) {
-        if (response.code === 200) {
-          const body = JSON.parse(response.body);
-          if (body.data?.[0]?.values?.[0]?.value) {
-            const metricName = body.data[0].name;
-            const value = body.data[0].values[0].value;
-            if (metricName === "views") totalViews += value;
-            else if (metricName === "shares") totalShares += value;
-            else if (metricName === "saved") totalSaves += value;
-          }
+    for (const response of allResponses) {
+      if (response.code === 200) {
+        const body = JSON.parse(response.body);
+        if (body.data?.[0]?.values?.[0]?.value) {
+          const metricName = body.data[0].name;
+          const value = body.data[0].values[0].value;
+          if (metricName === "views") totalViews += value;
+          else if (metricName === "shares") totalShares += value;
+          else if (metricName === "saved") totalSaves += value;
         }
       }
     }
