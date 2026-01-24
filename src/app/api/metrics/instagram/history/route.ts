@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   const days = parseInt(request.nextUrl.searchParams.get("days") || "7");
-  const validDays = [7, 30].includes(days) ? days : 7;
+  const validDays = [7, 14, 30].includes(days) ? days : 7;
 
   // Get connected account
   const { data: account } = await supabaseAdmin
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   // Get last N days of metrics
   const { data: metrics, error } = await supabaseAdmin
     .from("PlatformMetrics")
-    .select("date, followers, newFollows, unfollows")
+    .select("date, followers, newFollows, unfollows, profileVisits, linkClicks")
     .eq("connectedAccountId", account.id)
     .order("date", { ascending: false })
     .limit(validDays);
@@ -43,11 +43,15 @@ export async function GET(request: NextRequest) {
     followers: row.followers || 0,
     newFollows: row.newFollows || 0,
     unfollows: row.unfollows || 0,
+    profileVisits: row.profileVisits || 0,
+    linkClicks: row.linkClicks || 0,
   }));
 
   // Calculate totals
   const totalNewFollows = history.reduce((sum, row) => sum + row.newFollows, 0);
   const totalUnfollows = history.reduce((sum, row) => sum + row.unfollows, 0);
+  const totalProfileVisits = history.reduce((sum, row) => sum + row.profileVisits, 0);
+  const totalLinkClicks = history.reduce((sum, row) => sum + row.linkClicks, 0);
 
   // Net growth from actual follower count change (more accurate)
   const firstWithFollowers = history.find((row) => row.followers > 0);
@@ -62,6 +66,8 @@ export async function GET(request: NextRequest) {
       totalNewFollows,
       totalUnfollows,
       netGrowth,
+      totalProfileVisits,
+      totalLinkClicks,
     },
   });
 }

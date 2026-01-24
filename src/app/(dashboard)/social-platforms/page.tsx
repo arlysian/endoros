@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 const CACHE_KEY = "connected_accounts_cache";
+const DASHBOARD_CACHE_KEY = "dashboard_cache";
 
 type CachedAccounts = {
   instagram: { username: string } | null;
@@ -21,6 +22,12 @@ function getCachedAccounts(): CachedAccounts {
 function setCachedAccounts(accounts: CachedAccounts) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(accounts));
+  } catch {}
+}
+
+function clearDashboardCache() {
+  try {
+    localStorage.removeItem(DASHBOARD_CACHE_KEY);
   } catch {}
 }
 
@@ -166,6 +173,7 @@ export default function SocialPlatforms() {
       // Update cache
       const cached = getCachedAccounts();
       setCachedAccounts({ ...cached, instagram: null });
+      clearDashboardCache();
     } catch (error) {
       console.error("Failed to disconnect Instagram:", error);
     } finally {
@@ -190,6 +198,7 @@ export default function SocialPlatforms() {
       // Update cache
       const cached = getCachedAccounts();
       setCachedAccounts({ ...cached, tiktok: null });
+      clearDashboardCache();
     } catch (error) {
       console.error("Failed to disconnect TikTok:", error);
     } finally {

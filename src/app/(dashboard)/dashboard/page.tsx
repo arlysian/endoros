@@ -19,6 +19,8 @@ interface InstagramMetrics {
   comments: number;
   shares: number;
   saves: number;
+  profileVisits: number;
+  linkClicks: number;
 }
 
 interface TikTokMetrics {
@@ -35,6 +37,8 @@ interface HistoryDay {
   followers: number;
   newFollows: number;
   unfollows: number;
+  profileVisits?: number;
+  linkClicks?: number;
 }
 
 interface TikTokHistoryDay {
@@ -46,6 +50,8 @@ interface HistorySummary {
   totalNewFollows: number;
   totalUnfollows: number;
   netGrowth: number;
+  totalProfileVisits: number;
+  totalLinkClicks: number;
 }
 
 interface TikTokHistorySummary {
@@ -56,6 +62,30 @@ const allPlatforms = [
   { id: "instagram", name: "Instagram", icon: InstagramIcon },
   { id: "tiktok", name: "TikTok", icon: TikTokIcon },
 ];
+
+const DASHBOARD_CACHE_KEY = "dashboard_cache";
+
+type DashboardCache = {
+  igConnected: boolean;
+  ttConnected: boolean;
+  igMetrics: InstagramMetrics | null;
+  ttMetrics: TikTokMetrics | null;
+};
+
+function getCachedDashboard(): DashboardCache | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return null;
+}
+
+function setCachedDashboard(data: DashboardCache) {
+  try {
+    localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(data));
+  } catch {}
+}
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -68,6 +98,7 @@ function formatFullNumber(num: number): string {
 }
 
 export default function Dashboard() {
+  // Initialize with defaults (cache loaded in useEffect to avoid hydration mismatch)
   const [selectedPlatform, setSelectedPlatform] = useState("instagram");
   const [igMetrics, setIgMetrics] = useState<InstagramMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +109,13 @@ export default function Dashboard() {
   const [historyCache, setHistoryCache] = useState<Record<number, { history: HistoryDay[]; summary: HistorySummary }>>({});
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [chartType, setChartType] = useState<"bar" | "net">("bar");
+  const [engagementPeriod, setEngagementPeriod] = useState<"today" | "7" | "30" | "total">("total");
+
+  // Performance table state (this week vs last week)
+  const [performanceData, setPerformanceData] = useState<{
+    thisWeek: { profileVisits: number; linkClicks: number };
+    lastWeek: { profileVisits: number; linkClicks: number };
+  } | null>(null);
 
   // TikTok state
   const [ttMetrics, setTtMetrics] = useState<TikTokMetrics | null>(null);
@@ -92,6 +130,20 @@ export default function Dashboard() {
   const [ttConnected, setTtConnected] = useState<boolean | null>(null);
   const router = useRouter();
 
+  // Load from cache on mount (client-side only to avoid hydration mismatch)
+  useEffect(() => {
+    const cached = getCachedDashboard();
+    if (cached) {
+      setIgConnected(cached.igConnected);
+      setTtConnected(cached.ttConnected);
+      if (cached.igMetrics) setIgMetrics(cached.igMetrics);
+      if (cached.ttMetrics) setTtMetrics(cached.ttMetrics);
+      if (cached.igConnected) setSelectedPlatform("instagram");
+      else if (cached.ttConnected) setSelectedPlatform("tiktok");
+      setLoading(false);
+    }
+  }, []);
+
   // Build connected platforms list dynamically
   const connectedPlatforms = allPlatforms.filter(p => {
     if (p.id === "instagram") return igConnected;
@@ -99,7 +151,7 @@ export default function Dashboard() {
     return false;
   });
 
-  // Check connected accounts on mount
+  // Fetch and update connected accounts (refresh in background)
   useEffect(() => {
     Promise.all([
       fetch("/api/metrics/instagram").then(res => ({ ok: res.ok, data: res.json() })),
@@ -110,20 +162,36 @@ export default function Dashboard() {
 
       const igIsConnected = igRes.ok && !igData.error;
       const ttIsConnected = ttRes.ok && !ttData.error;
+      const igMetricsData = igIsConnected ? (igData.metrics || null) : null;
+      const ttMetricsData = ttIsConnected ? (ttData.metrics || null) : null;
 
       setIgConnected(igIsConnected);
       setTtConnected(ttIsConnected);
 
-      // Auto-select first connected platform
+      // Auto-select first connected platform (only if no cache existed)
+      if (!getCachedDashboard()) {
+        if (igIsConnected) {
+          setSelectedPlatform("instagram");
+        } else if (ttIsConnected) {
+          setSelectedPlatform("tiktok");
+        }
+      }
+
       if (igIsConnected) {
-        setSelectedPlatform("instagram");
-        setIgMetrics(igData.metrics || null);
-      } else if (ttIsConnected) {
-        setSelectedPlatform("tiktok");
+        setIgMetrics(igMetricsData);
       }
       if (ttIsConnected) {
-        setTtMetrics(ttData.metrics || null);
+        setTtMetrics(ttMetricsData);
       }
+
+      // Update cache
+      setCachedDashboard({
+        igConnected: igIsConnected,
+        ttConnected: ttIsConnected,
+        igMetrics: igMetricsData,
+        ttMetrics: ttMetricsData,
+      });
+
       setLoading(false);
       setTtLoading(false);
     }).catch(() => {
@@ -169,6 +237,34 @@ export default function Dashboard() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, historyDays]);
+
+  // Fetch 14 days for performance table (this week vs last week)
+  useEffect(() => {
+    if (selectedPlatform === "instagram" && igConnected) {
+      fetch("/api/metrics/instagram/history?days=14")
+        .then((res) => res.json())
+        .then((data) => {
+          const history14 = data.history || [];
+          if (history14.length >= 7) {
+            // Split into this week (last 7 days) and last week (7 days before)
+            const thisWeekData = history14.slice(-7);
+            const lastWeekData = history14.slice(0, Math.min(7, history14.length - 7));
+
+            const thisWeek = {
+              profileVisits: thisWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.profileVisits || 0), 0),
+              linkClicks: thisWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.linkClicks || 0), 0),
+            };
+            const lastWeek = {
+              profileVisits: lastWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.profileVisits || 0), 0),
+              linkClicks: lastWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.linkClicks || 0), 0),
+            };
+
+            setPerformanceData({ thisWeek, lastWeek });
+          }
+        })
+        .catch(() => setPerformanceData(null));
+    }
+  }, [selectedPlatform, igConnected]);
 
   // Fetch TikTok history
   useEffect(() => {
@@ -475,7 +571,19 @@ export default function Dashboard() {
 
         {/* Engagement Breakdown */}
         <div>
-          <h2 className="text-sm font-medium text-black mb-6">Engagement Breakdown</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-medium text-black">Engagement Breakdown</h2>
+            <select
+              className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
+              value={engagementPeriod}
+              onChange={(e) => setEngagementPeriod(e.target.value as "today" | "7" | "30" | "total")}
+            >
+              <option value="today">Today</option>
+              <option value="7">7 days</option>
+              <option value="30">30 days</option>
+              <option value="total">Total</option>
+            </select>
+          </div>
           <div className="space-y-5">
             <EngagementBar
               label="Likes"
@@ -534,9 +642,45 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                <PerformanceRow metric="Profile Visits" thisWeek={isInstagram && !hasIgData ? "-" : "12,847"} lastWeek={isInstagram && !hasIgData ? "-" : "11,234"} change={isInstagram && !hasIgData ? "-" : "+14.3%"} positive />
-                <PerformanceRow metric="Impressions" thisWeek={isInstagram && !hasIgData ? "-" : "458K"} lastWeek={isInstagram && !hasIgData ? "-" : "412K"} change={isInstagram && !hasIgData ? "-" : "+11.2%"} positive />
-                <PerformanceRow metric="Link Clicks" thisWeek={isInstagram && !hasIgData ? "-" : "2,341"} lastWeek={isInstagram && !hasIgData ? "-" : "1,987"} change={isInstagram && !hasIgData ? "-" : "+17.8%"} positive />
+                {(() => {
+                  const thisWeekVisits = performanceData?.thisWeek.profileVisits || 0;
+                  const lastWeekVisits = performanceData?.lastWeek.profileVisits || 0;
+                  const visitsChange = lastWeekVisits > 0 ? ((thisWeekVisits - lastWeekVisits) / lastWeekVisits) * 100 : 0;
+
+                  const thisWeekClicks = performanceData?.thisWeek.linkClicks || 0;
+                  const lastWeekClicks = performanceData?.lastWeek.linkClicks || 0;
+                  const clicksChange = lastWeekClicks > 0 ? ((thisWeekClicks - lastWeekClicks) / lastWeekClicks) * 100 : 0;
+
+                  const thisWeekCTR = thisWeekVisits > 0 ? (thisWeekClicks / thisWeekVisits) * 100 : 0;
+                  const lastWeekCTR = lastWeekVisits > 0 ? (lastWeekClicks / lastWeekVisits) * 100 : 0;
+                  const ctrChange = lastWeekCTR > 0 ? ((thisWeekCTR - lastWeekCTR) / lastWeekCTR) * 100 : 0;
+
+                  return (
+                    <>
+                      <PerformanceRow
+                        metric="Profile Visits"
+                        thisWeek={performanceData ? formatNumber(thisWeekVisits) : "-"}
+                        lastWeek={performanceData ? formatNumber(lastWeekVisits) : "-"}
+                        change={performanceData && lastWeekVisits > 0 ? `${visitsChange >= 0 ? "+" : ""}${visitsChange.toFixed(1)}%` : "-"}
+                        positive={visitsChange >= 0}
+                      />
+                      <PerformanceRow
+                        metric="Link Clicks"
+                        thisWeek={performanceData ? formatNumber(thisWeekClicks) : "-"}
+                        lastWeek={performanceData ? formatNumber(lastWeekClicks) : "-"}
+                        change={performanceData && lastWeekClicks > 0 ? `${clicksChange >= 0 ? "+" : ""}${clicksChange.toFixed(1)}%` : "-"}
+                        positive={clicksChange >= 0}
+                      />
+                      <PerformanceRow
+                        metric="Link CTR"
+                        thisWeek={performanceData ? `${thisWeekCTR.toFixed(2)}%` : "-"}
+                        lastWeek={performanceData ? `${lastWeekCTR.toFixed(2)}%` : "-"}
+                        change={performanceData && lastWeekCTR > 0 ? `${ctrChange >= 0 ? "+" : ""}${ctrChange.toFixed(1)}%` : "-"}
+                        positive={ctrChange >= 0}
+                      />
+                    </>
+                  );
+                })()}
               </tbody>
             </table>
           </div>
@@ -606,7 +750,7 @@ function PerformanceRow({
       <td className="py-4 text-sm text-black">{metric}</td>
       <td className="py-4 text-sm text-black text-right font-medium">{thisWeek}</td>
       <td className="py-4 text-sm text-neutral-400 text-right">{lastWeek}</td>
-      <td className={`py-4 text-sm text-right font-medium ${positive ? "text-black" : "text-neutral-400"}`}>
+      <td className={`py-4 text-sm text-right font-medium ${positive ? "text-emerald-600" : "text-rose-500"}`}>
         {change}
       </td>
     </tr>
