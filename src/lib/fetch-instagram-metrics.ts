@@ -511,20 +511,6 @@ export async function fetchInstagramMetrics(account: Account) {
     linkClicksValue = websiteClicksData.data[0].total_value.value;
   }
 
-  // Accounts engaged
-  const engagedRes = await fetch(`${baseUrl}?metric=accounts_engaged&metric_type=total_value&period=day&access_token=${token}`);
-  const engagedData = await engagedRes.json();
-  if (engagedData.data?.[0]?.total_value?.value) {
-    metrics.accountsEngaged = engagedData.data[0].total_value.value;
-  }
-
-  // Total interactions
-  const interactionsRes = await fetch(`${baseUrl}?metric=total_interactions&metric_type=total_value&period=day&access_token=${token}`);
-  const interactionsData = await interactionsRes.json();
-  if (interactionsData.data?.[0]?.total_value?.value) {
-    metrics.totalInteractions = interactionsData.data[0].total_value.value;
-  }
-
   // Follows and unfollows (day before yesterday → yesterday to avoid lag)
   const today = new Date();
   const yesterday = new Date(today);
