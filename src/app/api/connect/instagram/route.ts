@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { fetchInstagramMetrics, backfillFollowerHistory } from "@/lib/fetch-instagram-metrics";
+import { fetchInstagramMetrics, backfillFollowerHistory, backfillProfileVisits } from "@/lib/fetch-instagram-metrics";
 import { NextRequest, NextResponse } from "next/server";
 
 const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
       await Promise.all([
         fetchInstagramMetrics(accountData),
         backfillFollowerHistory(accountData),
+        backfillProfileVisits(accountData),
       ]);
     } catch (err) {
       console.error("Initial metrics/backfill error:", err);

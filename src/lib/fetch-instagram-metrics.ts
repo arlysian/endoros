@@ -87,6 +87,80 @@ export async function backfillFollowerHistory(account: Account) {
   return rows.length;
 }
 
+// Backfill last 30 days of profile visits on initial connect
+export async function backfillProfileVisits(account: Account) {
+  const { id, instagramBusinessId, accessToken: token } = account;
+
+  // Generate last 30 days
+  const days: { date: string; since: number; until: number }[] = [];
+  for (let i = 30; i >= 1; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    days.push({
+      date: date.toISOString().split("T")[0],
+      since: Math.floor(date.getTime() / 1000),
+      until: Math.floor(nextDate.getTime() / 1000),
+    });
+  }
+
+  const baseUrl = `https://graph.facebook.com/v24.0/${instagramBusinessId}/insights`;
+
+  // Batch API request for all 30 days
+  const batchRequests = days.map((d) => ({
+    method: "GET",
+    relative_url: `${instagramBusinessId}/insights?metric=profile_views&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
+  }));
+
+  const batchRes = await fetch(
+    `https://graph.facebook.com/v24.0/?access_token=${token}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batch: batchRequests }),
+    }
+  );
+  const batchData = await batchRes.json();
+
+  // Process each day's response
+  const rows: { connectedAccountId: string; date: string; profileVisits?: number; createdAt: string }[] = [];
+
+  for (let i = 0; i < batchData.length; i++) {
+    const response = batchData[i];
+    let profileVisits = 0;
+
+    if (response.code === 200) {
+      const body = JSON.parse(response.body);
+      if (body.data?.[0]?.total_value?.value !== undefined) {
+        profileVisits = body.data[0].total_value.value;
+      }
+    }
+
+    rows.push({
+      connectedAccountId: id,
+      date: days[i].date,
+      profileVisits,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Upsert all rows
+  if (rows.length > 0) {
+    const { error } = await supabaseAdmin
+      .from("PlatformMetrics")
+      .upsert(rows, { onConflict: "connectedAccountId,date" });
+
+    if (error) {
+      console.error("Backfill profile visits upsert error:", error);
+    }
+  }
+
+  return rows.length;
+}
+
 export async function fetchInstagramMetrics(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
@@ -181,13 +255,19 @@ export async function fetchInstagramMetrics(account: Account) {
     metrics.avgViews = Math.round(totalViews / postCount);
   }
 
-  // Profile views (last 7 days)
-  const now = Math.floor(Date.now() / 1000);
-  const sevenDaysAgo = now - 7 * 24 * 60 * 60;
-  const profileViewsRes = await fetch(`${baseUrl}?metric=profile_views&period=day&metric_type=total_value&since=${sevenDaysAgo}&until=${now}&access_token=${token}`);
+  // Profile views (yesterday, 24h lag for data consistency)
+  const profileViewsDate = new Date();
+  profileViewsDate.setDate(profileViewsDate.getDate() - 1);
+  profileViewsDate.setHours(0, 0, 0, 0);
+  const profileViewsNextDate = new Date(profileViewsDate);
+  profileViewsNextDate.setDate(profileViewsNextDate.getDate() + 1);
+  const profileViewsSince = Math.floor(profileViewsDate.getTime() / 1000);
+  const profileViewsUntil = Math.floor(profileViewsNextDate.getTime() / 1000);
+  const profileViewsRes = await fetch(`${baseUrl}?metric=profile_views&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}&access_token=${token}`);
   const profileViewsData = await profileViewsRes.json();
+  let profileVisitsValue = 0;
   if (profileViewsData.data?.[0]?.total_value?.value !== undefined) {
-    metrics.profileVisits = profileViewsData.data[0].total_value.value;
+    profileVisitsValue = profileViewsData.data[0].total_value.value;
   }
 
   // Website clicks
@@ -282,5 +362,22 @@ export async function fetchInstagramMetrics(account: Account) {
     throw new Error(followsError.message);
   }
 
-  return { ...metrics, newFollows, unfollows };
+  // Upsert yesterday's profile visits (24h lag)
+  const { error: profileVisitsError } = await supabaseAdmin
+    .from("PlatformMetrics")
+    .upsert(
+      {
+        connectedAccountId: id,
+        date: yesterdayStr,
+        profileVisits: profileVisitsValue,
+        createdAt: new Date().toISOString(),
+      },
+      { onConflict: "connectedAccountId,date" }
+    );
+
+  if (profileVisitsError) {
+    throw new Error(profileVisitsError.message);
+  }
+
+  return { ...metrics, newFollows, unfollows, profileVisits: profileVisitsValue };
 }

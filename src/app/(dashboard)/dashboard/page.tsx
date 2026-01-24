@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -51,9 +52,8 @@ interface TikTokHistorySummary {
   netGrowth: number;
 }
 
-const platforms = [
+const allPlatforms = [
   { id: "instagram", name: "Instagram", icon: InstagramIcon },
-  { id: "facebook", name: "Facebook", icon: FacebookIcon },
   { id: "tiktok", name: "TikTok", icon: TikTokIcon },
 ];
 
@@ -87,32 +87,53 @@ export default function Dashboard() {
   const [ttHistoryLoading, setTtHistoryLoading] = useState(false);
   const [ttHistoryCache, setTtHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
 
-  useEffect(() => {
-    if (selectedPlatform === "instagram") {
-      fetch("/api/metrics/instagram")
-        .then((res) => res.json())
-        .then((data) => {
-          setIgMetrics(data.metrics || null);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
-  }, [selectedPlatform]);
+  // Connected accounts state
+  const [igConnected, setIgConnected] = useState<boolean | null>(null);
+  const [ttConnected, setTtConnected] = useState<boolean | null>(null);
+  const router = useRouter();
 
-  // Fetch TikTok metrics
+  // Build connected platforms list dynamically
+  const connectedPlatforms = allPlatforms.filter(p => {
+    if (p.id === "instagram") return igConnected;
+    if (p.id === "tiktok") return ttConnected;
+    return false;
+  });
+
+  // Check connected accounts on mount
   useEffect(() => {
-    if (selectedPlatform === "tiktok" && !ttMetrics) {
-      setTtLoading(true);
-      fetch("/api/metrics/tiktok")
-        .then((res) => res.json())
-        .then((data) => {
-          setTtMetrics(data.metrics || null);
-          setTtLoading(false);
-        })
-        .catch(() => setTtLoading(false));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform]);
+    Promise.all([
+      fetch("/api/metrics/instagram").then(res => ({ ok: res.ok, data: res.json() })),
+      fetch("/api/metrics/tiktok").then(res => ({ ok: res.ok, data: res.json() })),
+    ]).then(async ([igRes, ttRes]) => {
+      const igData = await igRes.data;
+      const ttData = await ttRes.data;
+
+      const igIsConnected = igRes.ok && !igData.error;
+      const ttIsConnected = ttRes.ok && !ttData.error;
+
+      setIgConnected(igIsConnected);
+      setTtConnected(ttIsConnected);
+
+      // Auto-select first connected platform
+      if (igIsConnected) {
+        setSelectedPlatform("instagram");
+        setIgMetrics(igData.metrics || null);
+      } else if (ttIsConnected) {
+        setSelectedPlatform("tiktok");
+      }
+      if (ttIsConnected) {
+        setTtMetrics(ttData.metrics || null);
+      }
+      setLoading(false);
+      setTtLoading(false);
+    }).catch(() => {
+      setIgConnected(false);
+      setTtConnected(false);
+      setLoading(false);
+      setTtLoading(false);
+    });
+  }, []);
+
 
   useEffect(() => {
     if (selectedPlatform === "instagram") {
@@ -262,7 +283,7 @@ export default function Dashboard() {
 
       {/* Platform Selection */}
       <div className="flex items-center gap-6 mb-10 border-b border-neutral-100 pb-4">
-        {platforms.map((platform) => {
+        {connectedPlatforms.map((platform) => {
           const Icon = platform.icon;
           const isSelected = selectedPlatform === platform.id;
           return (
@@ -282,7 +303,10 @@ export default function Dashboard() {
             </button>
           );
         })}
-        <button className="flex items-center gap-2 pb-2 -mb-[17px] border-b-2 border-transparent text-neutral-400 hover:text-black transition-colors">
+        <button
+          onClick={() => router.push("/social-platforms")}
+          className="flex items-center gap-2 pb-2 -mb-[17px] border-b-2 border-transparent text-neutral-400 hover:text-black transition-colors"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
           </svg>
@@ -290,6 +314,37 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* Loading state while checking connection status */}
+      {igConnected === null && ttConnected === null && (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-neutral-400 text-sm">Loading...</div>
+        </div>
+      )}
+
+      {/* No platforms connected state */}
+      {igConnected === false && ttConnected === false && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-6">
+            <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-black mb-2">No platforms connected</h2>
+          <p className="text-sm text-neutral-500 mb-6 text-center max-w-sm">
+            Connect at least one social media platform to start tracking your analytics
+          </p>
+          <button
+            onClick={() => router.push("/social-platforms")}
+            className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors"
+          >
+            Connect Platform
+          </button>
+        </div>
+      )}
+
+      {/* Dashboard content - only show when at least one platform is connected */}
+      {(igConnected || ttConnected) && (
+        <>
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
         <StatCard
@@ -486,6 +541,8 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
@@ -732,14 +789,6 @@ function InstagramIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-    </svg>
-  );
-}
-
-function FacebookIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
     </svg>
   );
 }
