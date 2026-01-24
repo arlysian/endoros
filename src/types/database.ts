@@ -179,6 +179,10 @@ export type Database = {
           reach: number | null
           saves: number | null
           shares: number | null
+          total_comments: number | null
+          total_likes: number | null
+          total_saves: number | null
+          total_shares: number | null
           unfollows: number | null
           videoCount: number | null
         }
@@ -199,6 +203,10 @@ export type Database = {
           reach?: number | null
           saves?: number | null
           shares?: number | null
+          total_comments?: number | null
+          total_likes?: number | null
+          total_saves?: number | null
+          total_shares?: number | null
           unfollows?: number | null
           videoCount?: number | null
         }
@@ -219,6 +227,10 @@ export type Database = {
           reach?: number | null
           saves?: number | null
           shares?: number | null
+          total_comments?: number | null
+          total_likes?: number | null
+          total_saves?: number | null
+          total_shares?: number | null
           unfollows?: number | null
           videoCount?: number | null
         }

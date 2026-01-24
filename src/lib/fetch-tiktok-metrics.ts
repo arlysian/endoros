@@ -78,9 +78,9 @@ export async function fetchTikTokMetrics(account: Account) {
     cursor = videoData.data?.cursor;
   }
 
-  metrics.likes = totalLikes;
-  metrics.comments = totalComments;
-  metrics.shares = totalShares;
+  metrics.total_likes = totalLikes;
+  metrics.total_comments = totalComments;
+  metrics.total_shares = totalShares;
   if (metrics.videoCount > 0) {
     metrics.avgViews = Math.round(totalViews / metrics.videoCount);
   }

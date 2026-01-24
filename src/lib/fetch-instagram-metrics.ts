@@ -233,6 +233,144 @@ export async function backfillLinkClicks(account: Account) {
   return rows.length;
 }
 
+// Backfill last 30 days of engagement metrics (likes, comments, shares, saves) on initial connect
+export async function backfillEngagement(account: Account) {
+  const { id, instagramBusinessId, accessToken: token } = account;
+
+  // Generate last 30 days (with 24h lag, so day 2-31 ago)
+  const days: { date: string; since: number; until: number }[] = [];
+  for (let i = 31; i >= 2; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    date.setHours(0, 0, 0, 0);
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    days.push({
+      date: date.toISOString().split("T")[0],
+      since: Math.floor(date.getTime() / 1000),
+      until: Math.floor(nextDate.getTime() / 1000),
+    });
+  }
+
+  // Batch API requests - 4 metrics per day, so 4 requests per day
+  // Meta batch limit is 50, so we need to split into multiple batches
+  const allBatchRequests = days.flatMap((d) => [
+    {
+      method: "GET",
+      relative_url: `${instagramBusinessId}/insights?metric=likes&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
+    },
+    {
+      method: "GET",
+      relative_url: `${instagramBusinessId}/insights?metric=comments&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
+    },
+    {
+      method: "GET",
+      relative_url: `${instagramBusinessId}/insights?metric=shares&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
+    },
+    {
+      method: "GET",
+      relative_url: `${instagramBusinessId}/insights?metric=saves&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
+    },
+  ]);
+
+  // Split into batches of 50
+  const batchSize = 50;
+  const batches: typeof allBatchRequests[] = [];
+  for (let i = 0; i < allBatchRequests.length; i += batchSize) {
+    batches.push(allBatchRequests.slice(i, i + batchSize));
+  }
+
+  // Execute all batches
+  const allResponses: { code: number; body: string }[] = [];
+  for (const batch of batches) {
+    const batchRes = await fetch(
+      `https://graph.facebook.com/v24.0/?access_token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch }),
+      }
+    );
+    const batchData = await batchRes.json();
+    allResponses.push(...batchData);
+  }
+
+  // Process responses - 4 responses per day
+  const rows: {
+    connectedAccountId: string;
+    date: string;
+    likes?: number;
+    comments?: number;
+    shares?: number;
+    saves?: number;
+    createdAt: string;
+  }[] = [];
+
+  for (let i = 0; i < days.length; i++) {
+    const baseIndex = i * 4;
+    let likes = 0;
+    let comments = 0;
+    let shares = 0;
+    let saves = 0;
+
+    // Likes
+    if (allResponses[baseIndex]?.code === 200) {
+      const body = JSON.parse(allResponses[baseIndex].body);
+      if (body.data?.[0]?.total_value?.value !== undefined) {
+        likes = body.data[0].total_value.value;
+      }
+    }
+
+    // Comments
+    if (allResponses[baseIndex + 1]?.code === 200) {
+      const body = JSON.parse(allResponses[baseIndex + 1].body);
+      if (body.data?.[0]?.total_value?.value !== undefined) {
+        comments = body.data[0].total_value.value;
+      }
+    }
+
+    // Shares
+    if (allResponses[baseIndex + 2]?.code === 200) {
+      const body = JSON.parse(allResponses[baseIndex + 2].body);
+      if (body.data?.[0]?.total_value?.value !== undefined) {
+        shares = body.data[0].total_value.value;
+      }
+    }
+
+    // Saves
+    if (allResponses[baseIndex + 3]?.code === 200) {
+      const body = JSON.parse(allResponses[baseIndex + 3].body);
+      if (body.data?.[0]?.total_value?.value !== undefined) {
+        saves = body.data[0].total_value.value;
+      }
+    }
+
+    rows.push({
+      connectedAccountId: id,
+      date: days[i].date,
+      likes,
+      comments,
+      shares,
+      saves,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Upsert all rows
+  if (rows.length > 0) {
+    const { error } = await supabaseAdmin
+      .from("PlatformMetrics")
+      .upsert(rows, { onConflict: "connectedAccountId,date" });
+
+    if (error) {
+      console.error("Backfill engagement upsert error:", error);
+    }
+  }
+
+  return rows.length;
+}
+
 export async function fetchInstagramMetrics(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
@@ -261,7 +399,7 @@ export async function fetchInstagramMetrics(account: Account) {
 
   // Fetch recent media for engagement metrics
   const mediaRes = await fetch(
-    `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=30&access_token=${token}`
+    `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=500&access_token=${token}`
   );
   const mediaData = await mediaRes.json();
 
@@ -275,8 +413,8 @@ export async function fetchInstagramMetrics(account: Account) {
     }
 
     const totalEngagements = totalLikes + totalComments;
-    metrics.likes = totalLikes;
-    metrics.comments = totalComments;
+    metrics.total_likes = totalLikes;
+    metrics.total_comments = totalComments;
 
     // Batch request for views, shares, and saves
     const batchRequests = mediaData.data.flatMap((media: { id: string }) => [
@@ -312,8 +450,8 @@ export async function fetchInstagramMetrics(account: Account) {
       }
     }
 
-    metrics.shares = totalShares;
-    metrics.saves = totalSaves;
+    metrics.total_shares = totalShares;
+    metrics.total_saves = totalSaves;
 
     const postCount = mediaData.data.length;
 

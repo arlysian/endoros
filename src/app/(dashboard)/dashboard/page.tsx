@@ -15,10 +15,10 @@ interface InstagramMetrics {
   engagementRate: number;
   avgViews: number;
   reach: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  saves: number;
+  total_likes: number;
+  total_comments: number;
+  total_shares: number;
+  total_saves: number;
   profileVisits: number;
   linkClicks: number;
 }
@@ -27,9 +27,9 @@ interface TikTokMetrics {
   followers: number;
   engagementRate: number;
   avgViews: number;
-  likes: number;
-  comments: number;
-  shares: number;
+  total_likes: number;
+  total_comments: number;
+  total_shares: number;
 }
 
 interface HistoryDay {
@@ -326,10 +326,10 @@ export default function Dashboard() {
         engagementRate: (igMetrics.engagementRate || 0).toFixed(2) + "%",
         avgViews: formatNumber(igMetrics.avgViews || 0),
         reach: formatNumber(igMetrics.reach || 0),
-        likes: igMetrics.likes || 0,
-        comments: igMetrics.comments || 0,
-        shares: igMetrics.shares || 0,
-        saves: igMetrics.saves || 0,
+        likes: igMetrics.total_likes || 0,
+        comments: igMetrics.total_comments || 0,
+        shares: igMetrics.total_shares || 0,
+        saves: igMetrics.total_saves || 0,
       }
     : null;
 
@@ -338,9 +338,9 @@ export default function Dashboard() {
         followers: formatFullNumber(ttMetrics.followers || 0),
         engagementRate: (ttMetrics.engagementRate || 0).toFixed(2) + "%",
         avgViews: formatNumber(ttMetrics.avgViews || 0),
-        likes: ttMetrics.likes || 0,
-        comments: ttMetrics.comments || 0,
-        shares: ttMetrics.shares || 0,
+        likes: ttMetrics.total_likes || 0,
+        comments: ttMetrics.total_comments || 0,
+        shares: ttMetrics.total_shares || 0,
       }
     : null;
 
@@ -578,7 +578,7 @@ export default function Dashboard() {
               value={engagementPeriod}
               onChange={(e) => setEngagementPeriod(e.target.value as "today" | "7" | "30" | "total")}
             >
-              <option value="today">Today</option>
+              <option value="today">Yesterday</option>
               <option value="7">7 days</option>
               <option value="30">30 days</option>
               <option value="total">Total</option>
