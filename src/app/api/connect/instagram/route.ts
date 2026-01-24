@@ -93,20 +93,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No Facebook Pages found. You need a Facebook Page connected to an Instagram Business account." }, { status: 400 });
     }
 
-    // 3. Get Instagram Business Account linked to the first page
-    const page = pagesData.data[0];
+    // 3. Find Instagram Business Account across ALL pages
+    let igAccountId: string | null = null;
+    let selectedPage: { id: string; access_token: string } | null = null;
 
-    const igAccountResponse = await fetch(
-      `https://graph.facebook.com/v24.0/${page.id}?fields=instagram_business_account&access_token=${longLivedToken}`
-    );
-    const igAccountData = await igAccountResponse.json();
+    for (const page of pagesData.data) {
+      const igAccountResponse = await fetch(
+        `https://graph.facebook.com/v24.0/${page.id}?fields=instagram_business_account&access_token=${longLivedToken}`
+      );
+      const igAccountData = await igAccountResponse.json();
 
-    if (igAccountData.error || !igAccountData.instagram_business_account) {
-      console.error("IG account error:", igAccountData.error || "No IG business account");
-      return NextResponse.json({ error: "No Instagram Business account linked to your Facebook Page." }, { status: 400 });
+      if (igAccountData.instagram_business_account?.id) {
+        igAccountId = igAccountData.instagram_business_account.id;
+        selectedPage = page;
+        break;
+      }
     }
 
-    const igAccountId = igAccountData.instagram_business_account.id;
+    if (!igAccountId || !selectedPage) {
+      console.error("No IG business account found on any page");
+      return NextResponse.json({ error: "No Instagram Business account linked to any of your Facebook Pages." }, { status: 400 });
+    }
 
     // 4. Get Instagram account details
     const igDetailsResponse = await fetch(
@@ -134,7 +141,7 @@ export async function POST(request: NextRequest) {
           accessToken: longLivedToken,
           tokenExpiresAt: tokenExpiresAt.toISOString(),
           isPrimary: true,
-          pageId: page.id,
+          pageId: selectedPage.id,
           instagramBusinessId: igAccountId,
           scopes: ["instagram_basic", "pages_read_engagement", "instagram_manage_insights", "pages_show_list", "business_management"],
         },
