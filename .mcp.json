@@ -6,6 +6,13 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "nia": {
+      "type": "http",
+      "url": "https://apigcp.trynia.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer nk_FEmgFzz1rD0Vot7B7vZIhgHPSi0fSR6Q"
+      }
     }
   }
 }

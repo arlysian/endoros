@@ -9,15 +9,16 @@ type CachedAccounts = {
   instagram: { username: string } | null;
   facebook: { username: string } | null;
   tiktok: { username: string } | null;
+  youtube: { username: string } | null;
 };
 
 function getCachedAccounts(): CachedAccounts {
-  if (typeof window === "undefined") return { instagram: null, facebook: null, tiktok: null };
+  if (typeof window === "undefined") return { instagram: null, facebook: null, tiktok: null, youtube: null };
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) return JSON.parse(cached);
   } catch {}
-  return { instagram: null, facebook: null, tiktok: null };
+  return { instagram: null, facebook: null, tiktok: null, youtube: null };
 }
 
 function setCachedAccounts(accounts: CachedAccounts) {
@@ -73,11 +74,25 @@ export default function SocialPlatforms() {
   });
   const [showTiktokDisconnectConfirm, setShowTiktokDisconnectConfirm] = useState(false);
 
+  const [youtubeConnected, setYoutubeConnected] = useState(() => {
+    const cached = getCachedAccounts();
+    return !!cached.youtube;
+  });
+  const [youtubeLoading, setYoutubeLoading] = useState(() => {
+    const cached = getCachedAccounts();
+    return !cached.youtube;
+  });
+  const [youtubeAccount, setYoutubeAccount] = useState<{ username: string } | null>(() => {
+    return getCachedAccounts().youtube;
+  });
+  const [showYoutubeDisconnectConfirm, setShowYoutubeDisconnectConfirm] = useState(false);
+
   useEffect(() => {
     const checkConnectedAccounts = async () => {
       let igAccount: { username: string } | null = null;
       let fbAccount: { username: string } | null = null;
       let ttAccount: { username: string } | null = null;
+      let ytAccount: { username: string } | null = null;
 
       try {
         // Check Instagram
@@ -139,8 +154,28 @@ export default function SocialPlatforms() {
         setTiktokLoading(false);
       }
 
+      try {
+        // Check YouTube
+        const ytRes = await fetch("/api/connect/youtube");
+        if (ytRes.ok) {
+          const data = await ytRes.json();
+          if (data.account) {
+            ytAccount = data.account;
+            setYoutubeConnected(true);
+            setYoutubeAccount(data.account);
+          } else {
+            setYoutubeConnected(false);
+            setYoutubeAccount(null);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check YouTube:", error);
+      } finally {
+        setYoutubeLoading(false);
+      }
+
       // Update cache
-      setCachedAccounts({ instagram: igAccount, facebook: fbAccount, tiktok: ttAccount });
+      setCachedAccounts({ instagram: igAccount, facebook: fbAccount, tiktok: ttAccount, youtube: ytAccount });
     };
 
     checkConnectedAccounts();
@@ -307,6 +342,28 @@ export default function SocialPlatforms() {
     }
   };
 
+  const handleYoutubeConnect = () => {
+    window.location.href = "/api/connect/youtube/authorize";
+  };
+
+  const handleYoutubeDisconnectClick = () => {
+    setShowYoutubeDisconnectConfirm(true);
+  };
+
+  const confirmYoutubeDisconnect = async () => {
+    try {
+      await fetch("/api/connect/youtube", { method: "DELETE" });
+      setYoutubeConnected(false);
+      setYoutubeAccount(null);
+      const cached = getCachedAccounts();
+      setCachedAccounts({ ...cached, youtube: null });
+      clearDashboardCache();
+    } catch (error) {
+      console.error("Failed to disconnect YouTube:", error);
+    } finally {
+      setShowYoutubeDisconnectConfirm(false);
+    }
+  };
 
   return (
     <div>
@@ -520,6 +577,52 @@ export default function SocialPlatforms() {
           )}
         </div>
 
+        {/* YouTube */}
+        <div className="pb-6 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <YouTubeIcon className="w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium text-black">YouTube</p>
+                <p className="text-xs text-neutral-400">
+                  {youtubeConnected ? "Connected" : "Not connected"}
+                </p>
+              </div>
+            </div>
+            {youtubeConnected ? (
+              <button
+                onClick={handleYoutubeDisconnectClick}
+                className="text-sm text-neutral-500 hover:text-black transition-colors"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleYoutubeConnect}
+                disabled={youtubeLoading}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              >
+                {youtubeLoading ? "..." : "Connect"}
+              </button>
+            )}
+          </div>
+
+          {youtubeConnected && youtubeAccount && (
+            <div className="mt-4 flex items-center justify-between py-3 px-4 bg-neutral-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span className="text-sm text-black">{youtubeAccount.username}</span>
+              </div>
+              <button
+                onClick={handleYoutubeDisconnectClick}
+                className="text-neutral-400 hover:text-black transition-colors"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Disconnect Instagram Modal */}
@@ -565,6 +668,32 @@ export default function SocialPlatforms() {
               </button>
               <button
                 onClick={confirmFacebookDisconnect}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disconnect YouTube Modal */}
+      {showYoutubeDisconnectConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-black mb-2">Disconnect YouTube?</h3>
+            <p className="text-sm text-neutral-500 mb-6">
+              You will need to reconnect to access your metrics again.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowYoutubeDisconnectConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-black transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmYoutubeDisconnect}
                 className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
               >
                 Disconnect
@@ -634,6 +763,14 @@ function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+    </svg>
+  );
+}
+
+function YouTubeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#FF0000">
+      <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
     </svg>
   );
 }
