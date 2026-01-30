@@ -21,6 +21,14 @@ function getCachedAccounts(): CachedAccounts {
   return { instagram: null, facebook: null, tiktok: null, youtube: null };
 }
 
+function hasCacheKey(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return !!localStorage.getItem(CACHE_KEY);
+  } catch {}
+  return false;
+}
+
 function setCachedAccounts(accounts: CachedAccounts) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(accounts));
@@ -39,10 +47,7 @@ export default function SocialPlatforms() {
     const cached = getCachedAccounts();
     return !!cached.instagram;
   });
-  const [instagramLoading, setInstagramLoading] = useState(() => {
-    const cached = getCachedAccounts();
-    return !cached.instagram;
-  });
+  const [instagramLoading, setInstagramLoading] = useState(() => !hasCacheKey());
   const [instagramAccount, setInstagramAccount] = useState<{ username: string } | null>(() => {
     return getCachedAccounts().instagram;
   });
@@ -52,10 +57,7 @@ export default function SocialPlatforms() {
     const cached = getCachedAccounts();
     return !!cached.facebook;
   });
-  const [facebookLoading, setFacebookLoading] = useState(() => {
-    const cached = getCachedAccounts();
-    return !cached.facebook;
-  });
+  const [facebookLoading, setFacebookLoading] = useState(() => !hasCacheKey());
   const [facebookAccount, setFacebookAccount] = useState<{ username: string } | null>(() => {
     return getCachedAccounts().facebook;
   });
@@ -65,10 +67,7 @@ export default function SocialPlatforms() {
     const cached = getCachedAccounts();
     return !!cached.tiktok;
   });
-  const [tiktokLoading, setTiktokLoading] = useState(() => {
-    const cached = getCachedAccounts();
-    return !cached.tiktok;
-  });
+  const [tiktokLoading, setTiktokLoading] = useState(() => !hasCacheKey());
   const [tiktokAccount, setTiktokAccount] = useState<{ username: string } | null>(() => {
     return getCachedAccounts().tiktok;
   });
@@ -78,10 +77,7 @@ export default function SocialPlatforms() {
     const cached = getCachedAccounts();
     return !!cached.youtube;
   });
-  const [youtubeLoading, setYoutubeLoading] = useState(() => {
-    const cached = getCachedAccounts();
-    return !cached.youtube;
-  });
+  const [youtubeLoading, setYoutubeLoading] = useState(() => !hasCacheKey());
   const [youtubeAccount, setYoutubeAccount] = useState<{ username: string } | null>(() => {
     return getCachedAccounts().youtube;
   });
