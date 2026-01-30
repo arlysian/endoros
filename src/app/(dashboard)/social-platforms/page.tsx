@@ -7,16 +7,17 @@ const DASHBOARD_CACHE_KEY = "dashboard_cache";
 
 type CachedAccounts = {
   instagram: { username: string } | null;
+  facebook: { username: string } | null;
   tiktok: { username: string } | null;
 };
 
 function getCachedAccounts(): CachedAccounts {
-  if (typeof window === "undefined") return { instagram: null, tiktok: null };
+  if (typeof window === "undefined") return { instagram: null, facebook: null, tiktok: null };
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) return JSON.parse(cached);
   } catch {}
-  return { instagram: null, tiktok: null };
+  return { instagram: null, facebook: null, tiktok: null };
 }
 
 function setCachedAccounts(accounts: CachedAccounts) {
@@ -46,6 +47,19 @@ export default function SocialPlatforms() {
   });
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
+  const [facebookConnected, setFacebookConnected] = useState(() => {
+    const cached = getCachedAccounts();
+    return !!cached.facebook;
+  });
+  const [facebookLoading, setFacebookLoading] = useState(() => {
+    const cached = getCachedAccounts();
+    return !cached.facebook;
+  });
+  const [facebookAccount, setFacebookAccount] = useState<{ username: string } | null>(() => {
+    return getCachedAccounts().facebook;
+  });
+  const [showFacebookDisconnectConfirm, setShowFacebookDisconnectConfirm] = useState(false);
+
   const [tiktokConnected, setTiktokConnected] = useState(() => {
     const cached = getCachedAccounts();
     return !!cached.tiktok;
@@ -62,6 +76,7 @@ export default function SocialPlatforms() {
   useEffect(() => {
     const checkConnectedAccounts = async () => {
       let igAccount: { username: string } | null = null;
+      let fbAccount: { username: string } | null = null;
       let ttAccount: { username: string } | null = null;
 
       try {
@@ -85,6 +100,26 @@ export default function SocialPlatforms() {
       }
 
       try {
+        // Check Facebook
+        const fbRes = await fetch("/api/connect/facebook");
+        if (fbRes.ok) {
+          const data = await fbRes.json();
+          if (data.account) {
+            fbAccount = data.account;
+            setFacebookConnected(true);
+            setFacebookAccount(data.account);
+          } else {
+            setFacebookConnected(false);
+            setFacebookAccount(null);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check Facebook:", error);
+      } finally {
+        setFacebookLoading(false);
+      }
+
+      try {
         // Check TikTok
         const ttRes = await fetch("/api/connect/tiktok");
         if (ttRes.ok) {
@@ -105,7 +140,7 @@ export default function SocialPlatforms() {
       }
 
       // Update cache
-      setCachedAccounts({ instagram: igAccount, tiktok: ttAccount });
+      setCachedAccounts({ instagram: igAccount, facebook: fbAccount, tiktok: ttAccount });
     };
 
     checkConnectedAccounts();
@@ -159,6 +194,72 @@ export default function SocialPlatforms() {
         scope: "instagram_basic,pages_read_engagement,instagram_manage_insights,pages_show_list,business_management",
       }
     );
+  };
+
+  const handleFacebookPageLogin = () => {
+    if (!window.FB) {
+      alert("Facebook SDK not loaded. Please refresh the page.");
+      return;
+    }
+
+    setFacebookLoading(true);
+
+    window.FB.login(
+      (response: { authResponse?: { accessToken: string } }) => {
+        if (response.authResponse) {
+          const connectFacebook = async () => {
+            try {
+              const res = await fetch("/api/connect/facebook", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accessToken: response.authResponse!.accessToken }),
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                throw new Error(data.error || "Failed to connect Facebook");
+              }
+
+              setFacebookConnected(true);
+              setFacebookAccount(data.account);
+              const cached = getCachedAccounts();
+              setCachedAccounts({ ...cached, facebook: data.account });
+            } catch (error) {
+              console.error("Failed to connect Facebook:", error);
+              alert(error instanceof Error ? error.message : "Failed to connect Facebook");
+            } finally {
+              setFacebookLoading(false);
+            }
+          };
+          connectFacebook();
+        } else {
+          setFacebookLoading(false);
+        }
+      },
+      {
+        scope: "pages_show_list,pages_read_engagement,read_insights",
+      }
+    );
+  };
+
+  const handleFacebookDisconnectClick = () => {
+    setShowFacebookDisconnectConfirm(true);
+  };
+
+  const confirmFacebookDisconnect = async () => {
+    try {
+      await fetch("/api/connect/facebook", { method: "DELETE" });
+      setFacebookConnected(false);
+      setFacebookAccount(null);
+      const cached = getCachedAccounts();
+      setCachedAccounts({ ...cached, facebook: null });
+      clearDashboardCache();
+    } catch (error) {
+      console.error("Failed to disconnect Facebook:", error);
+    } finally {
+      setShowFacebookDisconnectConfirm(false);
+    }
   };
 
   const handleDisconnectClick = () => {
@@ -307,6 +408,72 @@ export default function SocialPlatforms() {
           )}
         </div>
 
+        {/* Facebook */}
+        <div className="pb-6 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FacebookIcon className="w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium text-black">Facebook</p>
+                <p className="text-xs text-neutral-400">
+                  {facebookConnected ? "Connected" : "Not connected"}
+                </p>
+              </div>
+            </div>
+            {facebookConnected ? (
+              <button
+                onClick={handleFacebookDisconnectClick}
+                className="text-sm text-neutral-500 hover:text-black transition-colors"
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleFacebookPageLogin}
+                disabled={facebookLoading}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              >
+                {facebookLoading ? "..." : "Connect"}
+              </button>
+            )}
+          </div>
+
+          {facebookConnected && facebookAccount && (
+            <div className="mt-4 flex items-center justify-between py-3 px-4 bg-neutral-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-black rounded-full"></span>
+                <span className="text-sm text-black">{facebookAccount.username}</span>
+              </div>
+              <button
+                onClick={handleFacebookDisconnectClick}
+                className="text-neutral-400 hover:text-black transition-colors"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {!facebookConnected && !facebookLoading && (
+            <div className="mt-4 p-4 bg-neutral-50 rounded-lg">
+              <p className="text-sm font-medium text-black mb-2">You must have the following to continue:</p>
+              <ul className="space-y-1.5 text-sm text-neutral-600">
+                <li>
+                  <span className="mr-1">&bull;</span>
+                  A published Facebook Page (this is different than your Facebook profile).{" "}
+                  <a
+                    href="https://www.facebook.com/business/help/1199464373557428"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-black underline hover:no-underline"
+                  >
+                    How to create a new Page on Facebook
+                  </a>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+
         {/* TikTok */}
         <div className="pb-6 border-b border-neutral-100">
           <div className="flex items-center justify-between">
@@ -381,6 +548,32 @@ export default function SocialPlatforms() {
         </div>
       )}
 
+      {/* Disconnect Facebook Modal */}
+      {showFacebookDisconnectConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-black mb-2">Disconnect Facebook?</h3>
+            <p className="text-sm text-neutral-500 mb-6">
+              You will need to reconnect to access your Page insights again.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowFacebookDisconnectConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-black transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmFacebookDisconnect}
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Disconnect TikTok Modal */}
       {showTiktokDisconnectConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -425,6 +618,14 @@ function InstagramIcon({ className }: { className?: string }) {
       <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#instagram-gradient)" strokeWidth={1.5} />
       <circle cx="12" cy="12" r="4" stroke="url(#instagram-gradient)" strokeWidth={1.5} />
       <circle cx="18" cy="6" r="1.5" fill="url(#instagram-gradient)" />
+    </svg>
+  );
+}
+
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
     </svg>
   );
 }
