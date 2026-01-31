@@ -31,12 +31,18 @@ async function refreshAccessToken(account: Account): Promise<string> {
 
   const tokenExpiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000);
 
+  const updateFields: Record<string, string> = {
+    accessToken: data.access_token,
+    tokenExpiresAt: tokenExpiresAt.toISOString(),
+  };
+
+  if (data.refresh_token && data.refresh_token !== account.refreshToken) {
+    updateFields.refreshToken = data.refresh_token;
+  }
+
   await supabaseAdmin
     .from("ConnectedAccount")
-    .update({
-      accessToken: data.access_token,
-      tokenExpiresAt: tokenExpiresAt.toISOString(),
-    })
+    .update(updateFields)
     .eq("id", account.id);
 
   return data.access_token;
