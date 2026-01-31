@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { z } from "zod";
 
 interface Account {
   id: string;
@@ -6,6 +7,55 @@ interface Account {
   accessToken: string;
   refreshToken: string | null;
 }
+
+// --- Zod schemas for external API responses ---
+
+const TokenResponseSchema = z.object({
+  access_token: z.string(),
+  expires_in: z.number().optional(),
+  refresh_token: z.string().optional(),
+});
+
+const ChannelStatisticsSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        statistics: z.object({
+          subscriberCount: z.string(),
+          hiddenSubscriberCount: z.boolean(),
+        }),
+      })
+    )
+    .min(1, "No YouTube channel data returned"),
+});
+
+const AnalyticsReportSchema = z.object({
+  rows: z
+    .array(z.tuple([z.number(), z.number(), z.number(), z.number()]))
+    .optional(),
+});
+
+const ChannelContentDetailsSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        contentDetails: z.object({
+          relatedPlaylists: z.object({
+            uploads: z.string(),
+          }),
+        }),
+      })
+    )
+    .optional(),
+});
+
+const PlaylistPageInfoSchema = z.object({
+  pageInfo: z.object({
+    totalResults: z.number(),
+  }),
+});
+
+// --- Functions ---
 
 async function refreshAccessToken(account: Account): Promise<string> {
   if (!account.refreshToken) {
@@ -23,11 +73,8 @@ async function refreshAccessToken(account: Account): Promise<string> {
     }),
   });
 
-  const data = await res.json();
-
-  if (data.error || !data.access_token) {
-    throw new Error(data.error_description || "Failed to refresh YouTube token");
-  }
+  const raw = await res.json();
+  const data = TokenResponseSchema.parse(raw);
 
   const tokenExpiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000);
 
@@ -50,53 +97,65 @@ async function refreshAccessToken(account: Account): Promise<string> {
 
 async function fetchYouTubeAnalytics(accessToken: string) {
   const today = new Date().toISOString().split("T")[0];
+  const headers = { Authorization: `Bearer ${accessToken}` };
+
   const res = await fetch(
     `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&startDate=2010-01-01&endDate=${today}&metrics=views,likes,comments,shares`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
+    { headers }
   );
-  const data = await res.json();
+  const raw = await res.json();
+  const data = AnalyticsReportSchema.parse(raw);
+  const [views, likes, comments, shares] = data.rows?.[0] ?? [0, 0, 0, 0];
 
-  if (!data.rows || data.rows.length === 0) {
-    return { views: 0, likes: 0, comments: 0, shares: 0 };
-  }
-
-  const [views, likes, comments, shares] = data.rows[0];
   return { views, likes, comments, shares };
 }
 
+async function fetchUploadCount(channelId: string, accessToken: string): Promise<number> {
+  const headers = { Authorization: `Bearer ${accessToken}` };
+
+  const chRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}`,
+    { headers }
+  );
+  const chRaw = await chRes.json();
+  const chData = ChannelContentDetailsSchema.parse(chRaw);
+  const uploadsId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsId) return 0;
+
+  const plRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/playlistItems?part=id&playlistId=${uploadsId}&maxResults=0`,
+    { headers }
+  );
+  const plRaw = await plRes.json();
+  const plData = PlaylistPageInfoSchema.parse(plRaw);
+  return plData.pageInfo.totalResults;
+}
+
 export async function fetchYouTubeMetrics(account: Account) {
-  // Refresh token first since Google tokens expire in 1 hour
   const accessToken = await refreshAccessToken(account);
 
   const res = await fetch(
     `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${account.platformUserId}`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
 
-  const data = await res.json();
-
-  if (!data.items || data.items.length === 0) {
-    throw new Error("No YouTube channel data returned");
-  }
-
+  const raw = await res.json();
+  const data = ChannelStatisticsSchema.parse(raw);
   const stats = data.items[0].statistics;
 
   if (stats.hiddenSubscriberCount) {
     throw new Error("Subscriber count is hidden");
   }
 
-  const totalViews = parseInt(stats.viewCount, 10) || 0;
-  const videoCount = parseInt(stats.videoCount, 10) || 0;
-
-  // Fetch lifetime engagement from YouTube Analytics API
-  const analyticsData = await fetchYouTubeAnalytics(accessToken);
+  const [analyticsData, videoCount] = await Promise.all([
+    fetchYouTubeAnalytics(accessToken),
+    fetchUploadCount(account.platformUserId, accessToken),
+  ]);
 
   const metrics = {
     followers: parseInt(stats.subscriberCount, 10) || 0,
     videoCount,
-    avgViews: videoCount > 0 ? Math.round(totalViews / videoCount) : 0,
+    avgViews: videoCount > 0 ? Math.round(analyticsData.views / videoCount) : 0,
     total_likes: analyticsData.likes,
     total_comments: analyticsData.comments,
     total_shares: analyticsData.shares,

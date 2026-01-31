@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { z } from "zod";
 
 interface Account {
   id: string;
@@ -6,10 +7,46 @@ interface Account {
   accessToken: string;
 }
 
+// --- Zod schemas for TikTok API responses ---
+
+const TikTokUserResponseSchema = z.object({
+  data: z.object({
+    user: z.object({
+      follower_count: z.number(),
+      likes_count: z.number(),
+      video_count: z.number(),
+    }),
+  }),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+  }),
+});
+
+const TikTokVideoSchema = z.object({
+  view_count: z.number().optional().default(0),
+  like_count: z.number().optional().default(0),
+  comment_count: z.number().optional().default(0),
+  share_count: z.number().optional().default(0),
+});
+
+const TikTokVideoListResponseSchema = z.object({
+  data: z.object({
+    videos: z.array(TikTokVideoSchema).optional().default([]),
+    has_more: z.boolean().optional().default(false),
+    cursor: z.union([z.string(), z.number()]).optional(),
+  }),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+  }),
+});
+
+// --- Functions ---
+
 export async function fetchTikTokMetrics(account: Account) {
   const { id, accessToken } = account;
 
-  // Fetch user info with stats
   const userResponse = await fetch(
     "https://open.tiktokapis.com/v2/user/info/?fields=follower_count,likes_count,video_count",
     {
@@ -19,20 +56,18 @@ export async function fetchTikTokMetrics(account: Account) {
     }
   );
 
-  const userData = await userResponse.json();
+  const userRaw = await userResponse.json();
+  const userData = TikTokUserResponseSchema.parse(userRaw);
 
-  if (userData.error?.code !== "ok" && userData.error) {
-    throw new Error(userData.error?.message || "Failed to fetch TikTok user info");
+  if (userData.error.code !== "ok") {
+    throw new Error(userData.error.message || "Failed to fetch TikTok user info");
   }
 
-  const user = userData.data?.user;
-  if (!user) {
-    throw new Error("No user data returned from TikTok");
-  }
+  const user = userData.data.user;
 
   const metrics: Record<string, number> = {
-    followers: user.follower_count ?? 0,
-    videoCount: user.video_count ?? 0,
+    followers: user.follower_count,
+    videoCount: user.video_count,
   };
 
   // Fetch video list to calculate aggregated metrics
@@ -59,23 +94,23 @@ export async function fetchTikTokMetrics(account: Account) {
       }
     );
 
-    const videoData = await videoResponse.json();
+    const videoRaw = await videoResponse.json();
+    const videoData = TikTokVideoListResponseSchema.parse(videoRaw);
 
-    if (videoData.error?.code !== "ok" && videoData.error) {
+    if (videoData.error.code !== "ok") {
       console.error("Failed to fetch TikTok videos:", videoData.error);
       break;
     }
 
-    const videos = videoData.data?.videos || [];
-    for (const video of videos) {
-      totalViews += video.view_count ?? 0;
-      totalLikes += video.like_count ?? 0;
-      totalComments += video.comment_count ?? 0;
-      totalShares += video.share_count ?? 0;
+    for (const video of videoData.data.videos) {
+      totalViews += video.view_count;
+      totalLikes += video.like_count;
+      totalComments += video.comment_count;
+      totalShares += video.share_count;
     }
 
-    hasMore = videoData.data?.has_more ?? false;
-    cursor = videoData.data?.cursor;
+    hasMore = videoData.data.has_more;
+    cursor = videoData.data.cursor?.toString();
   }
 
   metrics.total_likes = totalLikes;

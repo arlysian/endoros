@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { z } from "zod";
 
 interface Account {
   id: string;
@@ -6,11 +7,81 @@ interface Account {
   accessToken: string;
 }
 
+// --- Zod schemas for Meta/Instagram API responses ---
+
+const IgProfileSchema = z.object({
+  followers_count: z.number(),
+  username: z.string().optional(),
+});
+
+const IgInsightValueSchema = z.object({
+  data: z.array(
+    z.object({
+      values: z.array(z.object({ value: z.number() })).min(1),
+    })
+  ).min(1),
+});
+
+const IgInsightTotalValueSchema = z.object({
+  data: z.array(
+    z.object({
+      total_value: z.object({ value: z.number() }),
+    })
+  ).min(1),
+});
+
+const IgMediaListSchema = z.object({
+  data: z.array(
+    z.object({
+      id: z.string(),
+      like_count: z.number().optional().default(0),
+      comments_count: z.number().optional().default(0),
+    })
+  ),
+});
+
+const IgFollowsBreakdownSchema = z.object({
+  data: z.array(
+    z.object({
+      total_value: z.object({
+        breakdowns: z.array(
+          z.object({
+            results: z.array(
+              z.object({
+                dimension_values: z.array(z.string()),
+                value: z.number(),
+              })
+            ),
+          })
+        ),
+      }),
+    })
+  ).min(1),
+});
+
+const BatchResponseItemSchema = z.object({
+  code: z.number(),
+  body: z.string(),
+});
+
+const BatchResponseSchema = z.array(BatchResponseItemSchema);
+
+// Helper to safely parse batch insight body
+const BatchInsightBodySchema = z.object({
+  data: z.array(
+    z.object({
+      name: z.string(),
+      values: z.array(z.object({ value: z.number() })).min(1),
+    })
+  ).min(1),
+});
+
+// --- Functions ---
+
 // Backfill last 30 days of follows/unfollows on initial connect
 export async function backfillFollowerHistory(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
-  // Generate last 30 days
   const days: { date: string; nextDate: string }[] = [];
   for (let i = 30; i >= 1; i--) {
     const date = new Date();
@@ -24,7 +95,6 @@ export async function backfillFollowerHistory(account: Account) {
     });
   }
 
-  // Batch API request for all 30 days
   const batchRequests = days.map((d) => ({
     method: "GET",
     relative_url: `${instagramBusinessId}/insights?metric=follows_and_unfollows&metric_type=total_value&period=day&breakdown=follow_type&since=${d.date}&until=${d.nextDate}`,
@@ -38,14 +108,15 @@ export async function backfillFollowerHistory(account: Account) {
       body: JSON.stringify({ batch: batchRequests }),
     }
   );
-  const batchData = await batchRes.json();
+  const batchRaw = await batchRes.json();
 
-  if (!Array.isArray(batchData)) {
-    console.error("Batch API error in backfillFollowerHistory:", batchData);
+  if (!Array.isArray(batchRaw)) {
+    console.error("Batch API error in backfillFollowerHistory:", batchRaw);
     return 0;
   }
 
-  // Process each day's response
+  const batchData = BatchResponseSchema.parse(batchRaw);
+
   const rows: { connectedAccountId: string; date: string; newFollows?: number; unfollows?: number; createdAt: string }[] = [];
 
   for (let i = 0; i < batchData.length; i++) {
@@ -54,10 +125,9 @@ export async function backfillFollowerHistory(account: Account) {
     let unfollows = 0;
 
     if (response.code === 200) {
-      const body = JSON.parse(response.body);
-      const results = body.data?.[0]?.total_value?.breakdowns?.[0]?.results;
-
-      if (results) {
+      const parsed = IgFollowsBreakdownSchema.safeParse(JSON.parse(response.body));
+      if (parsed.success) {
+        const results = parsed.data.data[0].total_value.breakdowns[0].results;
         for (const result of results) {
           if (result.dimension_values[0] === "FOLLOWER") {
             newFollows = result.value;
@@ -68,7 +138,6 @@ export async function backfillFollowerHistory(account: Account) {
       }
     }
 
-    // Always create row, even if 0/0
     rows.push({
       connectedAccountId: id,
       date: days[i].date,
@@ -78,7 +147,6 @@ export async function backfillFollowerHistory(account: Account) {
     });
   }
 
-  // Upsert all rows
   if (rows.length > 0) {
     const { error } = await supabaseAdmin
       .from("PlatformMetrics")
@@ -96,7 +164,6 @@ export async function backfillFollowerHistory(account: Account) {
 export async function backfillProfileVisits(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
-  // Generate last 30 days
   const days: { date: string; since: number; until: number }[] = [];
   for (let i = 30; i >= 1; i--) {
     const date = new Date();
@@ -112,9 +179,6 @@ export async function backfillProfileVisits(account: Account) {
     });
   }
 
-  const baseUrl = `https://graph.facebook.com/v24.0/${instagramBusinessId}/insights`;
-
-  // Batch API request for all 30 days
   const batchRequests = days.map((d) => ({
     method: "GET",
     relative_url: `${instagramBusinessId}/insights?metric=profile_views&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
@@ -128,14 +192,15 @@ export async function backfillProfileVisits(account: Account) {
       body: JSON.stringify({ batch: batchRequests }),
     }
   );
-  const batchData = await batchRes.json();
+  const batchRaw = await batchRes.json();
 
-  if (!Array.isArray(batchData)) {
-    console.error("Batch API error in backfillProfileVisits:", batchData);
+  if (!Array.isArray(batchRaw)) {
+    console.error("Batch API error in backfillProfileVisits:", batchRaw);
     return 0;
   }
 
-  // Process each day's response
+  const batchData = BatchResponseSchema.parse(batchRaw);
+
   const rows: { connectedAccountId: string; date: string; profileVisits?: number; createdAt: string }[] = [];
 
   for (let i = 0; i < batchData.length; i++) {
@@ -143,9 +208,9 @@ export async function backfillProfileVisits(account: Account) {
     let profileVisits = 0;
 
     if (response.code === 200) {
-      const body = JSON.parse(response.body);
-      if (body.data?.[0]?.total_value?.value !== undefined) {
-        profileVisits = body.data[0].total_value.value;
+      const parsed = IgInsightTotalValueSchema.safeParse(JSON.parse(response.body));
+      if (parsed.success) {
+        profileVisits = parsed.data.data[0].total_value.value;
       }
     }
 
@@ -157,7 +222,6 @@ export async function backfillProfileVisits(account: Account) {
     });
   }
 
-  // Upsert all rows
   if (rows.length > 0) {
     const { error } = await supabaseAdmin
       .from("PlatformMetrics")
@@ -175,7 +239,6 @@ export async function backfillProfileVisits(account: Account) {
 export async function backfillLinkClicks(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
-  // Generate last 30 days
   const days: { date: string; since: number; until: number }[] = [];
   for (let i = 30; i >= 1; i--) {
     const date = new Date();
@@ -191,7 +254,6 @@ export async function backfillLinkClicks(account: Account) {
     });
   }
 
-  // Batch API request for all 30 days
   const batchRequests = days.map((d) => ({
     method: "GET",
     relative_url: `${instagramBusinessId}/insights?metric=website_clicks&period=day&metric_type=total_value&since=${d.since}&until=${d.until}`,
@@ -205,14 +267,15 @@ export async function backfillLinkClicks(account: Account) {
       body: JSON.stringify({ batch: batchRequests }),
     }
   );
-  const batchData = await batchRes.json();
+  const batchRaw = await batchRes.json();
 
-  if (!Array.isArray(batchData)) {
-    console.error("Batch API error in backfillLinkClicks:", batchData);
+  if (!Array.isArray(batchRaw)) {
+    console.error("Batch API error in backfillLinkClicks:", batchRaw);
     return 0;
   }
 
-  // Process each day's response
+  const batchData = BatchResponseSchema.parse(batchRaw);
+
   const rows: { connectedAccountId: string; date: string; linkClicks?: number; createdAt: string }[] = [];
 
   for (let i = 0; i < batchData.length; i++) {
@@ -220,9 +283,9 @@ export async function backfillLinkClicks(account: Account) {
     let linkClicks = 0;
 
     if (response.code === 200) {
-      const body = JSON.parse(response.body);
-      if (body.data?.[0]?.total_value?.value !== undefined) {
-        linkClicks = body.data[0].total_value.value;
+      const parsed = IgInsightTotalValueSchema.safeParse(JSON.parse(response.body));
+      if (parsed.success) {
+        linkClicks = parsed.data.data[0].total_value.value;
       }
     }
 
@@ -234,7 +297,6 @@ export async function backfillLinkClicks(account: Account) {
     });
   }
 
-  // Upsert all rows
   if (rows.length > 0) {
     const { error } = await supabaseAdmin
       .from("PlatformMetrics")
@@ -252,7 +314,6 @@ export async function backfillLinkClicks(account: Account) {
 export async function backfillEngagement(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
-  // Generate last 30 days (with 24h lag, so day 2-31 ago)
   const days: { date: string; since: number; until: number }[] = [];
   for (let i = 31; i >= 2; i--) {
     const date = new Date();
@@ -268,8 +329,6 @@ export async function backfillEngagement(account: Account) {
     });
   }
 
-  // Batch API requests - 4 metrics per day, so 4 requests per day
-  // Meta batch limit is 50, so we need to split into multiple batches
   const allBatchRequests = days.flatMap((d) => [
     {
       method: "GET",
@@ -289,15 +348,13 @@ export async function backfillEngagement(account: Account) {
     },
   ]);
 
-  // Split into batches of 50
   const batchSize = 50;
   const batches: typeof allBatchRequests[] = [];
   for (let i = 0; i < allBatchRequests.length; i += batchSize) {
     batches.push(allBatchRequests.slice(i, i + batchSize));
   }
 
-  // Execute all batches
-  const allResponses: { code: number; body: string }[] = [];
+  const allResponses: z.infer<typeof BatchResponseItemSchema>[] = [];
   for (const batch of batches) {
     const batchRes = await fetch(
       `https://graph.facebook.com/v24.0/?access_token=${token}`,
@@ -307,15 +364,15 @@ export async function backfillEngagement(account: Account) {
         body: JSON.stringify({ batch }),
       }
     );
-    const batchData = await batchRes.json();
-    if (Array.isArray(batchData)) {
-      allResponses.push(...batchData);
+    const batchRaw = await batchRes.json();
+    if (Array.isArray(batchRaw)) {
+      const parsed = BatchResponseSchema.parse(batchRaw);
+      allResponses.push(...parsed);
     } else {
-      console.error("Batch API error:", batchData);
+      console.error("Batch API error:", batchRaw);
     }
   }
 
-  // Process responses - 4 responses per day
   const rows: {
     connectedAccountId: string;
     date: string;
@@ -333,37 +390,18 @@ export async function backfillEngagement(account: Account) {
     let shares = 0;
     let saves = 0;
 
-    // Likes
-    if (allResponses[baseIndex]?.code === 200) {
-      const body = JSON.parse(allResponses[baseIndex].body);
-      if (body.data?.[0]?.total_value?.value !== undefined) {
-        likes = body.data[0].total_value.value;
+    const extractValue = (idx: number): number => {
+      if (allResponses[idx]?.code === 200) {
+        const parsed = IgInsightTotalValueSchema.safeParse(JSON.parse(allResponses[idx].body));
+        if (parsed.success) return parsed.data.data[0].total_value.value;
       }
-    }
+      return 0;
+    };
 
-    // Comments
-    if (allResponses[baseIndex + 1]?.code === 200) {
-      const body = JSON.parse(allResponses[baseIndex + 1].body);
-      if (body.data?.[0]?.total_value?.value !== undefined) {
-        comments = body.data[0].total_value.value;
-      }
-    }
-
-    // Shares
-    if (allResponses[baseIndex + 2]?.code === 200) {
-      const body = JSON.parse(allResponses[baseIndex + 2].body);
-      if (body.data?.[0]?.total_value?.value !== undefined) {
-        shares = body.data[0].total_value.value;
-      }
-    }
-
-    // Saves
-    if (allResponses[baseIndex + 3]?.code === 200) {
-      const body = JSON.parse(allResponses[baseIndex + 3].body);
-      if (body.data?.[0]?.total_value?.value !== undefined) {
-        saves = body.data[0].total_value.value;
-      }
-    }
+    likes = extractValue(baseIndex);
+    comments = extractValue(baseIndex + 1);
+    shares = extractValue(baseIndex + 2);
+    saves = extractValue(baseIndex + 3);
 
     rows.push({
       connectedAccountId: id,
@@ -376,7 +414,6 @@ export async function backfillEngagement(account: Account) {
     });
   }
 
-  // Upsert all rows
   if (rows.length > 0) {
     const { error } = await supabaseAdmin
       .from("PlatformMetrics")
@@ -397,38 +434,43 @@ export async function fetchInstagramMetrics(account: Account) {
   const profileResponse = await fetch(
     `https://graph.facebook.com/v24.0/${instagramBusinessId}?fields=followers_count,username&access_token=${token}`
   );
-  const profileData = await profileResponse.json();
+  const profileRaw = await profileResponse.json();
 
-  if (profileData.error) {
-    throw new Error(profileData.error.message);
+  if (profileRaw.error) {
+    throw new Error(profileRaw.error.message);
   }
+
+  const profileData = IgProfileSchema.parse(profileRaw);
 
   const baseUrl = `https://graph.facebook.com/v24.0/${instagramBusinessId}/insights`;
 
   const metrics: Record<string, number> = {
-    followers: profileData.followers_count ?? 0,
+    followers: profileData.followers_count,
   };
 
   // Reach
   const reachRes = await fetch(`${baseUrl}?metric=reach&period=days_28&access_token=${token}`);
-  const reachData = await reachRes.json();
-  if (reachData.data?.[0]?.values?.[0]?.value) {
-    metrics.reach = reachData.data[0].values[0].value;
+  const reachRaw = await reachRes.json();
+  const reachParsed = IgInsightValueSchema.safeParse(reachRaw);
+  if (reachParsed.success) {
+    metrics.reach = reachParsed.data.data[0].values[0].value;
   }
 
   // Fetch recent media for engagement metrics
   const mediaRes = await fetch(
     `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=500&access_token=${token}`
   );
-  const mediaData = await mediaRes.json();
+  const mediaRaw = await mediaRes.json();
+  const mediaParsed = IgMediaListSchema.safeParse(mediaRaw);
 
-  if (mediaData.data?.length > 0) {
+  if (mediaParsed.success && mediaParsed.data.data.length > 0) {
+    const mediaData = mediaParsed.data.data;
     let totalLikes = 0;
     let totalComments = 0;
 
-    for (const media of mediaData.data) {
-      totalLikes += media.like_count || 0;
-      totalComments += media.comments_count || 0;
+    for (const media of mediaData) {
+      totalLikes += media.like_count;
+      totalComments += media.comments_count;
     }
 
     const totalEngagements = totalLikes + totalComments;
@@ -436,15 +478,14 @@ export async function fetchInstagramMetrics(account: Account) {
     metrics.total_comments = totalComments;
 
     // Batch request for views, shares, and saves
-    const batchRequests = mediaData.data.flatMap((media: { id: string }) => [
+    const batchRequests = mediaData.flatMap((media) => [
       { method: "GET", relative_url: `${media.id}/insights?metric=views` },
       { method: "GET", relative_url: `${media.id}/insights?metric=shares` },
       { method: "GET", relative_url: `${media.id}/insights?metric=saved` },
     ]);
 
-    // Split into batches of 50 (Meta limit)
     const batchSize = 50;
-    const allResponses: { code: number; body: string }[] = [];
+    const allResponses: z.infer<typeof BatchResponseItemSchema>[] = [];
     for (let i = 0; i < batchRequests.length; i += batchSize) {
       const batch = batchRequests.slice(i, i + batchSize);
       const batchRes = await fetch(
@@ -455,11 +496,12 @@ export async function fetchInstagramMetrics(account: Account) {
           body: JSON.stringify({ batch }),
         }
       );
-      const batchData = await batchRes.json();
-      if (Array.isArray(batchData)) {
-        allResponses.push(...batchData);
+      const batchRaw = await batchRes.json();
+      if (Array.isArray(batchRaw)) {
+        const parsed = BatchResponseSchema.parse(batchRaw);
+        allResponses.push(...parsed);
       } else {
-        console.error("Batch API error in fetchInstagramMetrics:", batchData);
+        console.error("Batch API error in fetchInstagramMetrics:", batchRaw);
       }
     }
 
@@ -469,10 +511,10 @@ export async function fetchInstagramMetrics(account: Account) {
 
     for (const response of allResponses) {
       if (response.code === 200) {
-        const body = JSON.parse(response.body);
-        if (body.data?.[0]?.values?.[0]?.value) {
-          const metricName = body.data[0].name;
-          const value = body.data[0].values[0].value;
+        const parsed = BatchInsightBodySchema.safeParse(JSON.parse(response.body));
+        if (parsed.success) {
+          const metricName = parsed.data.data[0].name;
+          const value = parsed.data.data[0].values[0].value;
           if (metricName === "views") totalViews += value;
           else if (metricName === "shares") totalShares += value;
           else if (metricName === "saved") totalSaves += value;
@@ -483,7 +525,7 @@ export async function fetchInstagramMetrics(account: Account) {
     metrics.total_shares = totalShares;
     metrics.total_saves = totalSaves;
 
-    const postCount = mediaData.data.length;
+    const postCount = mediaData.length;
 
     // Engagement Rate
     if (metrics.followers > 0) {
@@ -504,18 +546,20 @@ export async function fetchInstagramMetrics(account: Account) {
   const profileViewsSince = Math.floor(profileViewsDate.getTime() / 1000);
   const profileViewsUntil = Math.floor(profileViewsNextDate.getTime() / 1000);
   const profileViewsRes = await fetch(`${baseUrl}?metric=profile_views&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}&access_token=${token}`);
-  const profileViewsData = await profileViewsRes.json();
+  const profileViewsRaw = await profileViewsRes.json();
   let profileVisitsValue = 0;
-  if (profileViewsData.data?.[0]?.total_value?.value !== undefined) {
-    profileVisitsValue = profileViewsData.data[0].total_value.value;
+  const pvParsed = IgInsightTotalValueSchema.safeParse(profileViewsRaw);
+  if (pvParsed.success) {
+    profileVisitsValue = pvParsed.data.data[0].total_value.value;
   }
 
-  // Website clicks (yesterday, 24h lag - reuse same date range as profile views)
+  // Website clicks (yesterday, 24h lag)
   const websiteClicksRes = await fetch(`${baseUrl}?metric=website_clicks&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}&access_token=${token}`);
-  const websiteClicksData = await websiteClicksRes.json();
+  const websiteClicksRaw = await websiteClicksRes.json();
   let linkClicksValue = 0;
-  if (websiteClicksData.data?.[0]?.total_value?.value !== undefined) {
-    linkClicksValue = websiteClicksData.data[0].total_value.value;
+  const wcParsed = IgInsightTotalValueSchema.safeParse(websiteClicksRaw);
+  if (wcParsed.success) {
+    linkClicksValue = wcParsed.data.data[0].total_value.value;
   }
 
   // Follows and unfollows (day before yesterday → yesterday to avoid lag)
@@ -531,12 +575,13 @@ export async function fetchInstagramMetrics(account: Account) {
   const followsRes = await fetch(
     `${baseUrl}?metric=follows_and_unfollows&metric_type=total_value&period=day&breakdown=follow_type&since=${dayBeforeYesterdayStr}&until=${yesterdayStr}&access_token=${token}`
   );
-  const followsData = await followsRes.json();
+  const followsRaw = await followsRes.json();
 
   let newFollows = 0;
   let unfollows = 0;
-  if (followsData.data?.[0]?.total_value?.breakdowns?.[0]?.results) {
-    const results = followsData.data[0].total_value.breakdowns[0].results;
+  const followsParsed = IgFollowsBreakdownSchema.safeParse(followsRaw);
+  if (followsParsed.success) {
+    const results = followsParsed.data.data[0].total_value.breakdowns[0].results;
     for (const result of results) {
       if (result.dimension_values[0] === "FOLLOWER") {
         newFollows = result.value;
