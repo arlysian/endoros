@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchInstagramMetrics } from "@/lib/fetch-instagram-metrics";
 import { fetchTikTokMetrics } from "@/lib/fetch-tiktok-metrics";
+import { fetchYouTubeMetrics } from "@/lib/fetch-youtube-metrics";
+import { fetchFacebookMetrics } from "@/lib/fetch-facebook-metrics";
 import { NextResponse } from "next/server";
 
 // Vercel Cron or manual trigger
@@ -79,9 +81,71 @@ export async function GET(request: Request) {
       }
     }
 
+    // Get all YouTube accounts
+    const { data: youtubeAccounts, error: youtubeError } = await supabaseAdmin
+      .from("ConnectedAccount")
+      .select("id, platformUserId, accessToken, refreshToken")
+      .eq("platform", "YOUTUBE")
+      .not("accessToken", "is", null);
+
+    if (youtubeError) {
+      console.error("Error fetching YouTube accounts:", youtubeError);
+    }
+
+    const youtubeResults = [];
+
+    if (youtubeAccounts) {
+      const validYoutubeAccounts = youtubeAccounts.filter(
+        (acc): acc is { id: string; platformUserId: string; accessToken: string; refreshToken: string | null } =>
+          acc.platformUserId !== null && acc.accessToken !== null
+      );
+
+      for (const account of validYoutubeAccounts) {
+        try {
+          const metrics = await fetchYouTubeMetrics(account);
+          youtubeResults.push({ accountId: account.id, success: true, metrics });
+        } catch (err) {
+          console.error(`Error processing YouTube account ${account.id}:`, err);
+          youtubeResults.push({ accountId: account.id, success: false, error: String(err) });
+        }
+      }
+    }
+
+    // Get all Facebook accounts
+    const { data: facebookAccounts, error: facebookError } = await supabaseAdmin
+      .from("ConnectedAccount")
+      .select("id, pageId, pageAccessToken")
+      .eq("platform", "FACEBOOK")
+      .not("pageAccessToken", "is", null);
+
+    if (facebookError) {
+      console.error("Error fetching Facebook accounts:", facebookError);
+    }
+
+    const facebookResults = [];
+
+    if (facebookAccounts) {
+      const validFacebookAccounts = facebookAccounts.filter(
+        (acc): acc is { id: string; pageId: string; pageAccessToken: string } =>
+          acc.pageId !== null && acc.pageAccessToken !== null
+      );
+
+      for (const account of validFacebookAccounts) {
+        try {
+          const metrics = await fetchFacebookMetrics(account);
+          facebookResults.push({ accountId: account.id, success: true, metrics });
+        } catch (err) {
+          console.error(`Error processing Facebook account ${account.id}:`, err);
+          facebookResults.push({ accountId: account.id, success: false, error: String(err) });
+        }
+      }
+    }
+
     return NextResponse.json({
       instagram: { processed: validAccounts.length, results: instagramResults },
       tiktok: { processed: tiktokResults.length, results: tiktokResults },
+      youtube: { processed: youtubeResults.length, results: youtubeResults },
+      facebook: { processed: facebookResults.length, results: facebookResults },
     });
   } catch (error) {
     console.error("Cron job error:", error);

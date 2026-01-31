@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { fetchFacebookMetrics } from "@/lib/fetch-facebook-metrics";
 import { NextRequest, NextResponse } from "next/server";
 
 const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
@@ -117,6 +118,17 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("Database error:", error);
       return NextResponse.json({ error: "Failed to save account" }, { status: 500 });
+    }
+
+    // Fetch initial metrics (follower count)
+    try {
+      await fetchFacebookMetrics({
+        id: data.id,
+        pageId: page.id,
+        pageAccessToken: page.access_token,
+      });
+    } catch (metricsErr) {
+      console.error("Failed to fetch initial Facebook metrics:", metricsErr);
     }
 
     return NextResponse.json({

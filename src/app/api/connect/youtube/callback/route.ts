@@ -101,12 +101,13 @@ export async function GET(request: Request) {
     const channel = channelData.items[0];
     const channelId = channel.id;
     const channelTitle = channel.snippet?.title;
+    const stats = channel.statistics;
 
     // Calculate token expiry
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Upsert ConnectedAccount
-    const { error: dbError } = await supabaseAdmin
+    const { data: connectedAccount, error: dbError } = await supabaseAdmin
       .from("ConnectedAccount")
       .upsert(
         {
@@ -135,6 +136,26 @@ export async function GET(request: Request) {
       return NextResponse.redirect(
         new URL("/social-platforms?error=Failed+to+save+account", request.url)
       );
+    }
+
+    // Save initial subscriber count if not hidden
+    if (stats && !stats.hiddenSubscriberCount) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { error: metricsError } = await supabaseAdmin
+        .from("PlatformMetrics")
+        .upsert(
+          {
+            connectedAccountId: connectedAccount.id,
+            date: todayStr,
+            followers: parseInt(stats.subscriberCount, 10) || 0,
+            videoCount: parseInt(stats.videoCount, 10) || 0,
+            createdAt: new Date().toISOString(),
+          },
+          { onConflict: "connectedAccountId,date" }
+        );
+      if (metricsError) {
+        console.error("Failed to save initial YouTube metrics:", metricsError);
+      }
     }
 
     // Redirect back to social platforms page with success and clear the cookie
