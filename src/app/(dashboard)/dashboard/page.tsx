@@ -69,15 +69,25 @@ interface TikTokHistorySummary {
 const allPlatforms = [
   { id: "instagram", name: "Instagram", icon: InstagramIcon },
   { id: "tiktok", name: "TikTok", icon: TikTokIcon },
+  { id: "youtube", name: "YouTube", icon: YouTubeIcon },
+  { id: "facebook", name: "Facebook", icon: FacebookIcon },
 ];
 
 const DASHBOARD_CACHE_KEY = "dashboard_cache";
 
+interface SimpleMetrics {
+  followers: number;
+}
+
 type DashboardCache = {
   igConnected: boolean;
   ttConnected: boolean;
+  ytConnected: boolean;
+  fbConnected: boolean;
   igMetrics: InstagramMetrics | null;
   ttMetrics: TikTokMetrics | null;
+  ytMetrics: SimpleMetrics | null;
+  fbMetrics: SimpleMetrics | null;
 };
 
 function getCachedDashboard(): DashboardCache | null {
@@ -143,9 +153,25 @@ export default function Dashboard() {
   const [ttHistoryLoading, setTtHistoryLoading] = useState(false);
   const [ttHistoryCache, setTtHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
 
+  // YouTube state
+  const [ytMetrics, setYtMetrics] = useState<SimpleMetrics | null>(null);
+  const [ytHistory, setYtHistory] = useState<TikTokHistoryDay[]>([]);
+  const [ytHistorySummary, setYtHistorySummary] = useState<TikTokHistorySummary | null>(null);
+  const [ytHistoryLoading, setYtHistoryLoading] = useState(false);
+  const [ytHistoryCache, setYtHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
+
+  // Facebook state
+  const [fbMetrics, setFbMetrics] = useState<SimpleMetrics | null>(null);
+  const [fbHistory, setFbHistory] = useState<TikTokHistoryDay[]>([]);
+  const [fbHistorySummary, setFbHistorySummary] = useState<TikTokHistorySummary | null>(null);
+  const [fbHistoryLoading, setFbHistoryLoading] = useState(false);
+  const [fbHistoryCache, setFbHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
+
   // Connected accounts state
   const [igConnected, setIgConnected] = useState<boolean | null>(null);
   const [ttConnected, setTtConnected] = useState<boolean | null>(null);
+  const [ytConnected, setYtConnected] = useState<boolean | null>(null);
+  const [fbConnected, setFbConnected] = useState<boolean | null>(null);
   const router = useRouter();
 
   // Load from cache on mount (client-side only to avoid hydration mismatch)
@@ -154,10 +180,16 @@ export default function Dashboard() {
     if (cached) {
       setIgConnected(cached.igConnected);
       setTtConnected(cached.ttConnected);
+      setYtConnected(cached.ytConnected ?? false);
+      setFbConnected(cached.fbConnected ?? false);
       if (cached.igMetrics) setIgMetrics(cached.igMetrics);
       if (cached.ttMetrics) setTtMetrics(cached.ttMetrics);
+      if (cached.ytMetrics) setYtMetrics(cached.ytMetrics);
+      if (cached.fbMetrics) setFbMetrics(cached.fbMetrics);
       if (cached.igConnected) setSelectedPlatform("instagram");
       else if (cached.ttConnected) setSelectedPlatform("tiktok");
+      else if (cached.ytConnected) setSelectedPlatform("youtube");
+      else if (cached.fbConnected) setSelectedPlatform("facebook");
       setLoading(false);
     }
   }, []);
@@ -166,6 +198,8 @@ export default function Dashboard() {
   const connectedPlatforms = allPlatforms.filter(p => {
     if (p.id === "instagram") return igConnected;
     if (p.id === "tiktok") return ttConnected;
+    if (p.id === "youtube") return ytConnected;
+    if (p.id === "facebook") return fbConnected;
     return false;
   });
 
@@ -174,17 +208,27 @@ export default function Dashboard() {
     Promise.all([
       fetch("/api/metrics/instagram").then(res => ({ ok: res.ok, data: res.json() })),
       fetch("/api/metrics/tiktok").then(res => ({ ok: res.ok, data: res.json() })),
-    ]).then(async ([igRes, ttRes]) => {
+      fetch("/api/metrics/youtube").then(res => ({ ok: res.ok, data: res.json() })),
+      fetch("/api/metrics/facebook").then(res => ({ ok: res.ok, data: res.json() })),
+    ]).then(async ([igRes, ttRes, ytRes, fbRes]) => {
       const igData = await igRes.data;
       const ttData = await ttRes.data;
+      const ytData = await ytRes.data;
+      const fbData = await fbRes.data;
 
       const igIsConnected = igRes.ok && !igData.error;
       const ttIsConnected = ttRes.ok && !ttData.error;
+      const ytIsConnected = ytRes.ok && !ytData.error;
+      const fbIsConnected = fbRes.ok && !fbData.error;
       const igMetricsData = igIsConnected ? (igData.metrics || null) : null;
       const ttMetricsData = ttIsConnected ? (ttData.metrics || null) : null;
+      const ytMetricsData = ytIsConnected ? (ytData.metrics || null) : null;
+      const fbMetricsData = fbIsConnected ? (fbData.metrics || null) : null;
 
       setIgConnected(igIsConnected);
       setTtConnected(ttIsConnected);
+      setYtConnected(ytIsConnected);
+      setFbConnected(fbIsConnected);
 
       // Auto-select first connected platform (only if no cache existed)
       if (!getCachedDashboard()) {
@@ -192,22 +236,28 @@ export default function Dashboard() {
           setSelectedPlatform("instagram");
         } else if (ttIsConnected) {
           setSelectedPlatform("tiktok");
+        } else if (ytIsConnected) {
+          setSelectedPlatform("youtube");
+        } else if (fbIsConnected) {
+          setSelectedPlatform("facebook");
         }
       }
 
-      if (igIsConnected) {
-        setIgMetrics(igMetricsData);
-      }
-      if (ttIsConnected) {
-        setTtMetrics(ttMetricsData);
-      }
+      if (igIsConnected) setIgMetrics(igMetricsData);
+      if (ttIsConnected) setTtMetrics(ttMetricsData);
+      if (ytIsConnected) setYtMetrics(ytMetricsData);
+      if (fbIsConnected) setFbMetrics(fbMetricsData);
 
       // Update cache
       setCachedDashboard({
         igConnected: igIsConnected,
         ttConnected: ttIsConnected,
+        ytConnected: ytIsConnected,
+        fbConnected: fbIsConnected,
         igMetrics: igMetricsData,
         ttMetrics: ttMetricsData,
+        ytMetrics: ytMetricsData,
+        fbMetrics: fbMetricsData,
       });
 
       setLoading(false);
@@ -215,6 +265,8 @@ export default function Dashboard() {
     }).catch(() => {
       setIgConnected(false);
       setTtConnected(false);
+      setYtConnected(false);
+      setFbConnected(false);
       setLoading(false);
       setTtLoading(false);
     });
@@ -322,6 +374,64 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, historyDays]);
 
+  // Fetch YouTube history
+  useEffect(() => {
+    if (selectedPlatform === "youtube") {
+      const cached = ytHistoryCache[historyDays];
+      if (cached) {
+        setYtHistory(cached.history);
+        setYtHistorySummary(cached.summary);
+        setYtHistoryLoading(false);
+        return;
+      }
+
+      if (ytHistory.length === 0) setYtHistoryLoading(true);
+      fetch(`/api/metrics/youtube/history?days=${historyDays}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const historyData = data.history || [];
+          const summaryData = data.summary || null;
+          setYtHistory(historyData);
+          setYtHistorySummary(summaryData);
+          if (summaryData) {
+            setYtHistoryCache((prev) => ({ ...prev, [historyDays]: { history: historyData, summary: summaryData } }));
+          }
+          setYtHistoryLoading(false);
+        })
+        .catch(() => { setYtHistory([]); setYtHistorySummary(null); setYtHistoryLoading(false); });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, historyDays]);
+
+  // Fetch Facebook history
+  useEffect(() => {
+    if (selectedPlatform === "facebook") {
+      const cached = fbHistoryCache[historyDays];
+      if (cached) {
+        setFbHistory(cached.history);
+        setFbHistorySummary(cached.summary);
+        setFbHistoryLoading(false);
+        return;
+      }
+
+      if (fbHistory.length === 0) setFbHistoryLoading(true);
+      fetch(`/api/metrics/facebook/history?days=${historyDays}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const historyData = data.history || [];
+          const summaryData = data.summary || null;
+          setFbHistory(historyData);
+          setFbHistorySummary(summaryData);
+          if (summaryData) {
+            setFbHistoryCache((prev) => ({ ...prev, [historyDays]: { history: historyData, summary: summaryData } }));
+          }
+          setFbHistoryLoading(false);
+        })
+        .catch(() => { setFbHistory([]); setFbHistorySummary(null); setFbHistoryLoading(false); });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, historyDays]);
+
   // Fetch engagement data based on period
   useEffect(() => {
     if (selectedPlatform === "instagram" && igConnected) {
@@ -383,8 +493,13 @@ export default function Dashboard() {
 
   const isInstagram = selectedPlatform === "instagram";
   const isTikTok = selectedPlatform === "tiktok";
+  const isYouTube = selectedPlatform === "youtube";
+  const isFacebook = selectedPlatform === "facebook";
+  const isSimplePlatform = isYouTube || isFacebook;
   const hasIgData = isInstagram && igMetrics && !loading;
   const hasTtData = isTikTok && ttMetrics && !ttLoading;
+  const hasYtData = isYouTube && ytMetrics;
+  const hasFbData = isFacebook && fbMetrics;
 
   const displayData = hasIgData
     ? {
@@ -478,14 +593,14 @@ export default function Dashboard() {
       </div>
 
       {/* Loading state while checking connection status */}
-      {igConnected === null && ttConnected === null && (
+      {igConnected === null && ttConnected === null && ytConnected === null && fbConnected === null && (
         <div className="flex items-center justify-center py-20">
           <div className="text-neutral-400 text-sm">Loading...</div>
         </div>
       )}
 
       {/* No platforms connected state */}
-      {igConnected === false && ttConnected === false && (
+      {igConnected === false && ttConnected === false && ytConnected === false && fbConnected === false && (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-6">
             <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -506,23 +621,27 @@ export default function Dashboard() {
       )}
 
       {/* Dashboard content - only show when at least one platform is connected */}
-      {(igConnected || ttConnected) && (
+      {(igConnected || ttConnected || ytConnected || fbConnected) && (
         <>
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
         <StatCard
-          label="Followers"
-          value={isInstagram ? (hasIgData ? displayData?.followers ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.followers ?? "-" : "-") : mockData.followers}
+          label={isYouTube ? "Subscribers" : "Followers"}
+          value={isInstagram ? (hasIgData ? displayData?.followers ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.followers ?? "-" : "-") : isYouTube ? (hasYtData ? formatFullNumber(ytMetrics.followers) : "-") : isFacebook ? (hasFbData ? formatFullNumber(fbMetrics.followers) : "-") : mockData.followers}
         />
+        {!isSimplePlatform && (
         <StatCard
           label="Engagement"
           value={isInstagram ? (hasIgData ? displayData?.engagementRate ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.engagementRate ?? "-" : "-") : mockData.engagementRate}
         />
+        )}
+        {!isSimplePlatform && (
         <StatCard
           label="Avg. Views"
           value={isInstagram ? (hasIgData ? displayData?.avgViews ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.avgViews ?? "-" : "-") : mockData.avgViews}
         />
-{!isTikTok && (
+        )}
+{!isTikTok && !isSimplePlatform && (
           <StatCard
             label="Reach"
             value={isInstagram ? (hasIgData ? displayData?.reach ?? "-" : "-") : mockData.reach}
@@ -531,13 +650,13 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+      <div className={`grid ${isSimplePlatform ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"} gap-12 mb-12`}>
         {/* Follower Growth */}
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-medium text-black">Follower Growth</h2>
             <div className="flex items-center gap-3">
-              {!isTikTok && (
+              {!isTikTok && !isSimplePlatform && (
                 <select
                   className="text-xs text-neutral-500 bg-transparent focus:outline-none cursor-pointer"
                   value={chartType}
@@ -564,22 +683,22 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="h-40" onClick={() => setSelectedDayIndex(null)}>
-            {(isInstagram && historyLoading) || (isTikTok && ttHistoryLoading) ? (
+            {(isInstagram && historyLoading) || (isTikTok && ttHistoryLoading) || (isYouTube && ytHistoryLoading) || (isFacebook && fbHistoryLoading) ? (
               <div className="flex items-center justify-center h-full text-neutral-400 text-sm">Loading...</div>
             ) : (
               <FollowerGrowthChart
-                data={isInstagram ? history : isTikTok ? ttHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : []}
-                isRealData={isInstagram || isTikTok}
+                data={isInstagram ? history : isTikTok ? ttHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : isYouTube ? ytHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : isFacebook ? fbHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : []}
+                isRealData={isInstagram || isTikTok || isYouTube || isFacebook}
                 days={historyDays}
-                chartType={isTikTok ? "net" : chartType}
+                chartType={isTikTok || isSimplePlatform ? "net" : chartType}
               />
             )}
           </div>
-          {(isTikTok || chartType === "net") ? (
+          {(isTikTok || isSimplePlatform || chartType === "net") ? (
             <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
               {(() => {
-                const historyData = isTikTok ? ttHistory : history;
-                const isLoading = isTikTok ? ttHistoryLoading : historyLoading;
+                const historyData = isTikTok ? ttHistory : isYouTube ? ytHistory : isFacebook ? fbHistory : history;
+                const isLoading = isTikTok ? ttHistoryLoading : isYouTube ? ytHistoryLoading : isFacebook ? fbHistoryLoading : historyLoading;
                 const netChange = historyData.length > 0
                   ? historyData[historyData.length - 1].followers - historyData[0].followers
                   : 0;
@@ -588,7 +707,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-neutral-400 mb-1">Net Growth</p>
                     <p className={`text-lg font-semibold ${netChange < 0 ? "text-rose-500" : "text-emerald-600"}`}>
-                      {(isInstagram || isTikTok)
+                      {(isInstagram || isTikTok || isSimplePlatform)
                         ? (isLoading ? "-" : (historyData.length > 0 ? `${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()}` : "-"))
                         : "+2,723"}
                     </p>
@@ -637,6 +756,7 @@ export default function Dashboard() {
         </div>
 
         {/* Engagement Breakdown */}
+        {!isSimplePlatform && (
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-medium text-black">Engagement Breakdown</h2>
@@ -692,10 +812,11 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Performance Table - Hidden for TikTok */}
-      {!isTikTok && (
+      {/* Performance Table - Hidden for TikTok, YouTube, Facebook */}
+      {!isTikTok && !isSimplePlatform && (
         <div>
           <h2 className="text-sm font-medium text-black mb-6">Performance</h2>
           <div className="overflow-x-auto">
@@ -998,8 +1119,19 @@ function FollowerGrowthChart({ data, isRealData, days, chartType }: { data: Hist
 // Icons
 function InstagramIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <defs>
+        <linearGradient id="ig-gradient-dash" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="25%" stopColor="#FA7E1E" />
+          <stop offset="50%" stopColor="#D62976" />
+          <stop offset="75%" stopColor="#962FBF" />
+          <stop offset="100%" stopColor="#4F5BD5" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig-gradient-dash)" strokeWidth={1.5} />
+      <circle cx="12" cy="12" r="4" stroke="url(#ig-gradient-dash)" strokeWidth={1.5} />
+      <circle cx="18" cy="6" r="1.5" fill="url(#ig-gradient-dash)" />
     </svg>
   );
 }
@@ -1008,6 +1140,22 @@ function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+    </svg>
+  );
+}
+
+function YouTubeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#FF0000">
+      <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
     </svg>
   );
 }
