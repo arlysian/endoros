@@ -138,9 +138,28 @@ export async function GET(request: Request) {
       );
     }
 
-    // Save initial subscriber count if not hidden
+    // Save initial metrics including analytics
     if (stats && !stats.hiddenSubscriberCount) {
       const todayStr = new Date().toISOString().split("T")[0];
+      const totalViews = parseInt(stats.viewCount, 10) || 0;
+      const videoCount = parseInt(stats.videoCount, 10) || 0;
+
+      // Fetch lifetime engagement from YouTube Analytics API
+      let analyticsData = { views: 0, likes: 0, comments: 0, shares: 0 };
+      try {
+        const analyticsRes = await fetch(
+          `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&startDate=2010-01-01&endDate=${todayStr}&metrics=views,likes,comments,shares`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const analyticsJson = await analyticsRes.json();
+        if (analyticsJson.rows && analyticsJson.rows.length > 0) {
+          const [views, likes, comments, shares] = analyticsJson.rows[0];
+          analyticsData = { views, likes, comments, shares };
+        }
+      } catch (e) {
+        console.error("Failed to fetch YouTube Analytics on connect:", e);
+      }
+
       const { error: metricsError } = await supabaseAdmin
         .from("PlatformMetrics")
         .upsert(
@@ -148,7 +167,14 @@ export async function GET(request: Request) {
             connectedAccountId: connectedAccount.id,
             date: todayStr,
             followers: parseInt(stats.subscriberCount, 10) || 0,
-            videoCount: parseInt(stats.videoCount, 10) || 0,
+            videoCount,
+            avgViews: videoCount > 0 ? Math.round(totalViews / videoCount) : 0,
+            total_likes: analyticsData.likes,
+            total_comments: analyticsData.comments,
+            total_shares: analyticsData.shares,
+            engagementRate: analyticsData.views > 0
+              ? Math.round(((analyticsData.likes + analyticsData.comments + analyticsData.shares) / analyticsData.views) * 10000) / 100
+              : 0,
             createdAt: new Date().toISOString(),
           },
           { onConflict: "connectedAccountId,date" }

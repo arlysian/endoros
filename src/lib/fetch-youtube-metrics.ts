@@ -48,6 +48,22 @@ async function refreshAccessToken(account: Account): Promise<string> {
   return data.access_token;
 }
 
+async function fetchYouTubeAnalytics(accessToken: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const res = await fetch(
+    `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&startDate=2010-01-01&endDate=${today}&metrics=views,likes,comments,shares`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  const data = await res.json();
+
+  if (!data.rows || data.rows.length === 0) {
+    return { views: 0, likes: 0, comments: 0, shares: 0 };
+  }
+
+  const [views, likes, comments, shares] = data.rows[0];
+  return { views, likes, comments, shares };
+}
+
 export async function fetchYouTubeMetrics(account: Account) {
   // Refresh token first since Google tokens expire in 1 hour
   const accessToken = await refreshAccessToken(account);
@@ -71,9 +87,22 @@ export async function fetchYouTubeMetrics(account: Account) {
     throw new Error("Subscriber count is hidden");
   }
 
+  const totalViews = parseInt(stats.viewCount, 10) || 0;
+  const videoCount = parseInt(stats.videoCount, 10) || 0;
+
+  // Fetch lifetime engagement from YouTube Analytics API
+  const analyticsData = await fetchYouTubeAnalytics(accessToken);
+
   const metrics = {
     followers: parseInt(stats.subscriberCount, 10) || 0,
-    videoCount: parseInt(stats.videoCount, 10) || 0,
+    videoCount,
+    avgViews: videoCount > 0 ? Math.round(totalViews / videoCount) : 0,
+    total_likes: analyticsData.likes,
+    total_comments: analyticsData.comments,
+    total_shares: analyticsData.shares,
+    engagementRate: analyticsData.views > 0
+      ? Math.round(((analyticsData.likes + analyticsData.comments + analyticsData.shares) / analyticsData.views) * 10000) / 100
+      : 0,
   };
 
   const todayStr = new Date().toISOString().split("T")[0];

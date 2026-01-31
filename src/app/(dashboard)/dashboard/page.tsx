@@ -77,6 +77,7 @@ const DASHBOARD_CACHE_KEY = "dashboard_cache";
 
 interface SimpleMetrics {
   followers: number;
+  avgViews?: number | null;
 }
 
 type DashboardCache = {
@@ -635,10 +636,10 @@ export default function Dashboard() {
           value={isInstagram ? (hasIgData ? displayData?.engagementRate ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.engagementRate ?? "-" : "-") : mockData.engagementRate}
         />
         )}
-        {!isSimplePlatform && (
+        {(!isSimplePlatform || isYouTube) && (
         <StatCard
           label="Avg. Views"
-          value={isInstagram ? (hasIgData ? displayData?.avgViews ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.avgViews ?? "-" : "-") : mockData.avgViews}
+          value={isInstagram ? (hasIgData ? displayData?.avgViews ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.avgViews ?? "-" : "-") : isYouTube ? (hasYtData && ytMetrics.avgViews != null ? formatFullNumber(ytMetrics.avgViews) : "-") : mockData.avgViews}
         />
         )}
 {!isTikTok && !isSimplePlatform && (
