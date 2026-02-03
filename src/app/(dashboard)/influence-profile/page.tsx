@@ -13,11 +13,9 @@ export default function InfluenceProfile() {
 
   // Image URLs (from server or local preview)
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
 
   // Pending files to upload on save
   const [pendingPfp, setPendingPfp] = useState<File | null>(null);
-  const [pendingHero, setPendingHero] = useState<File | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [formLoaded, setFormLoaded] = useState(false);
@@ -30,21 +28,18 @@ export default function InfluenceProfile() {
   // Crop modal state
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [cropImage, setCropImage] = useState<string | null>(null);
-  const [cropType, setCropType] = useState<"pfp" | "hero">("pfp");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const pfpInputRef = useRef<HTMLInputElement>(null);
-  const heroInputRef = useRef<HTMLInputElement>(null);
 
   // Sync images with user data (always keep in sync after save)
   useEffect(() => {
     if (user) {
       if (user.profileImageUrl && !pendingPfp) setProfileImagePreview(user.profileImageUrl);
-      if (user.coverImageUrl && !pendingHero) setCoverImagePreview(user.coverImageUrl);
     }
-  }, [user, pendingPfp, pendingHero]);
+  }, [user, pendingPfp]);
 
   // Sync form data only on initial load
   useEffect(() => {
@@ -57,6 +52,7 @@ export default function InfluenceProfile() {
         website: user.website || "",
         location: user.location || "",
         bio: user.bio || "",
+        audienceSummary: user.audienceSummary || "",
       });
       setFormLoaded(true);
     }
@@ -149,15 +145,11 @@ export default function InfluenceProfile() {
     });
   };
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "pfp" | "hero"
-  ) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const previewUrl = URL.createObjectURL(file);
       setCropImage(previewUrl);
-      setCropType(type);
       setCrop({ x: 0, y: 0 });
       setZoom(1);
       setCropModalOpen(true);
@@ -172,13 +164,8 @@ export default function InfluenceProfile() {
       const croppedFile = await createCroppedImage(cropImage, croppedAreaPixels);
       const previewUrl = URL.createObjectURL(croppedFile);
 
-      if (cropType === "pfp") {
-        setPendingPfp(croppedFile);
-        setProfileImagePreview(previewUrl);
-      } else {
-        setPendingHero(croppedFile);
-        setCoverImagePreview(previewUrl);
-      }
+      setPendingPfp(croppedFile);
+      setProfileImagePreview(previewUrl);
 
       setCropModalOpen(false);
       setCropImage(null);
@@ -202,17 +189,10 @@ export default function InfluenceProfile() {
 
     setSaving(true);
     try {
-      // Upload pending images
-      const uploads: Promise<void>[] = [];
-
+      // Upload pending profile image
       if (pendingPfp) {
-        uploads.push(uploadImage(pendingPfp, "pfp"));
+        await uploadImage(pendingPfp, "pfp");
       }
-      if (pendingHero) {
-        uploads.push(uploadImage(pendingHero, "hero"));
-      }
-
-      await Promise.all(uploads);
 
       // Save form data
       const res = await fetch("/api/user", {
@@ -231,7 +211,6 @@ export default function InfluenceProfile() {
       await refreshUser();
 
       setPendingPfp(null);
-      setPendingHero(null);
 
       alert("Changes saved successfully!");
     } catch (error) {
@@ -242,12 +221,12 @@ export default function InfluenceProfile() {
     }
   };
 
-  const handleRemoveImage = async (type: "pfp" | "hero") => {
+  const handleRemoveImage = async () => {
     try {
       const res = await fetch("/api/user/image", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
+        body: JSON.stringify({ type: "pfp" }),
       });
 
       if (!res.ok) {
@@ -256,13 +235,8 @@ export default function InfluenceProfile() {
         return;
       }
 
-      if (type === "pfp") {
-        setProfileImagePreview(null);
-        setPendingPfp(null);
-      } else {
-        setCoverImagePreview(null);
-        setPendingHero(null);
-      }
+      setProfileImagePreview(null);
+      setPendingPfp(null);
 
       await refreshUser();
     } catch (error) {
@@ -287,11 +261,7 @@ export default function InfluenceProfile() {
     }
 
     const { url } = await res.json();
-    if (type === "pfp") {
-      setProfileImagePreview(url);
-    } else {
-      setCoverImagePreview(url);
-    }
+    setProfileImagePreview(url);
   };
 
   const [formData, setFormData] = useState({
@@ -302,6 +272,7 @@ export default function InfluenceProfile() {
     website: "",
     location: "",
     bio: "",
+    audienceSummary: "",
   });
 
   interface Achievement {
@@ -470,81 +441,14 @@ export default function InfluenceProfile() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-xl font-semibold text-black">Profile</h1>
-          <p className="text-sm text-neutral-500 mt-1">Manage your influencer profile</p>
-        </div>
-        {user?.userName && (
-          <a
-            href={`/${user.userName}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-            </svg>
-            Preview
-          </a>
-        )}
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-black">Profile</h1>
+        <p className="text-sm text-neutral-500 mt-1">Manage your influencer profile</p>
       </div>
 
       {/* Basic Information */}
       <section className="mb-10">
         <h2 className="text-lg font-medium text-black mb-6">Basic Information</h2>
-
-        {/* Cover Image Upload */}
-        <div className={`rounded-xl mb-6 overflow-hidden relative ${coverImagePreview ? "" : "border-2 border-dashed border-border"}`}>
-          {coverImagePreview ? (
-            <div className="relative h-[200px]">
-              <img
-                src={coverImagePreview}
-                alt="Cover"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <button
-                  onClick={() => heroInputRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-black hover:bg-gray-100 transition-colors"
-                >
-                  <UploadIcon className="w-4 h-4" />
-                  <span className="text-sm font-medium">Change</span>
-                </button>
-                <button
-                  onClick={() => handleRemoveImage("hero")}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                  <span className="text-sm font-medium">Remove</span>
-                </button>
-              </div>
-              {pendingHero && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
-                  Unsaved
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-8 flex flex-col items-center justify-center">
-              <button
-                onClick={() => heroInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-black hover:bg-hover transition-colors mb-2"
-              >
-                <UploadIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">Upload Cover Image</span>
-              </button>
-              <p className="text-sm text-neutral-400">JPG, PNG up to 5MB • 1200x300px recommended</p>
-            </div>
-          )}
-          <input
-            ref={heroInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => handleFileChange(e, "hero")}
-            className="hidden"
-          />
-        </div>
 
         {/* Profile Picture */}
         <div className="flex items-center gap-4 mb-6">
@@ -575,7 +479,7 @@ export default function InfluenceProfile() {
               </button>
               {profileImagePreview && (
                 <button
-                  onClick={() => handleRemoveImage("pfp")}
+                  onClick={handleRemoveImage}
                   className="flex items-center gap-2 px-4 py-2 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <TrashIcon className="w-4 h-4" />
@@ -591,7 +495,7 @@ export default function InfluenceProfile() {
               ref={pfpInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => handleFileChange(e, "pfp")}
+              onChange={handleFileChange}
               className="hidden"
             />
           </div>
@@ -681,11 +585,22 @@ export default function InfluenceProfile() {
           />
         </div>
 
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-black mb-2">Audience Summary</label>
+          <textarea
+            value={formData.audienceSummary}
+            onChange={(e) => setFormData({ ...formData, audienceSummary: e.target.value })}
+            rows={3}
+            placeholder="e.g., Young professionals aged 25-34, interested in tech and lifestyle..."
+            className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black resize-none"
+          />
+        </div>
+
         <div className="flex justify-end mt-6">
           <button
             onClick={handleSaveChanges}
             disabled={saving}
-            className="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
@@ -859,13 +774,13 @@ export default function InfluenceProfile() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowCollabModal(false)}
-                className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-black hover:bg-hover transition-colors"
+                className="flex-1 px-6 py-2.5 border border-border rounded-lg text-sm font-medium text-black hover:bg-hover transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={addCollaboration}
-                className="flex-1 px-4 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors"
+                className="flex-1 px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors"
               >
                 Add Collaboration
               </button>
@@ -959,13 +874,13 @@ export default function InfluenceProfile() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAchievementModal(false)}
-                className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-black hover:bg-hover transition-colors"
+                className="flex-1 px-6 py-2.5 border border-border rounded-lg text-sm font-medium text-black hover:bg-hover transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={addAchievement}
-                className="flex-1 px-4 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors"
+                className="flex-1 px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors"
               >
                 Add Achievement
               </button>
@@ -985,13 +900,13 @@ export default function InfluenceProfile() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-black hover:bg-hover transition-colors"
+                className="flex-1 px-6 py-2.5 border border-border rounded-lg text-sm font-medium text-black hover:bg-hover transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                className="flex-1 px-6 py-2.5 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors"
               >
                 Delete
               </button>
@@ -1006,7 +921,7 @@ export default function InfluenceProfile() {
           <div className="bg-white rounded-2xl w-full max-w-2xl mx-4 shadow-xl overflow-hidden">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-black">
-                Crop {cropType === "pfp" ? "Profile Picture" : "Cover Image"}
+                Crop Profile Picture
               </h2>
             </div>
 
@@ -1015,11 +930,11 @@ export default function InfluenceProfile() {
                 image={cropImage}
                 crop={crop}
                 zoom={zoom}
-                aspect={cropType === "pfp" ? 1 : 4}
+                aspect={1}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
-                cropShape={cropType === "pfp" ? "round" : "rect"}
+                cropShape="round"
                 showGrid={false}
               />
             </div>
@@ -1040,13 +955,13 @@ export default function InfluenceProfile() {
               <div className="flex gap-3">
                 <button
                   onClick={handleCropCancel}
-                  className="flex-1 px-4 py-3 border border-border rounded-lg font-medium text-black hover:bg-hover transition-colors"
+                  className="flex-1 px-6 py-2.5 border border-border rounded-lg text-sm font-medium text-black hover:bg-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCropConfirm}
-                  className="flex-1 px-4 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors"
+                  className="flex-1 px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors"
                 >
                   Apply Crop
                 </button>

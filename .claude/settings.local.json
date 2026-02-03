@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run *)",                                                                                                                       
+      "Bash(npm run *)",
       "Bash(npm install *)",
       "Bash(npx *)",
       "Bash(node *)",
@@ -25,7 +25,23 @@
       "WebFetch(domain:docs.supermetrics.com)",
       "WebSearch",
       "mcp__ide__getDiagnostics",
-      "WebFetch"
+      "WebFetch",
+      "Bash(git commit:*)",
+      "Bash(claude mcp list:*)",
+      "mcp__firecrawl-mcp__firecrawl_scrape",
+      "mcp__nia__index",
+      "mcp__nia__manage_resource",
+      "mcp__nia__search",
+      "mcp__shadcn__get_project_registries",
+      "mcp__shadcn__search_items_in_registries",
+      "mcp__shadcn__get_item_examples_from_registries",
+      "mcp__shadcn__view_items_in_registries",
+      "mcp__shadcn__list_items_in_registries"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "shadcn",
+    "nia",
+    "firecrawl-mcp"
+  ]
 }

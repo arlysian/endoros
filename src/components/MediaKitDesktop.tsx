@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Bar, BarChart, XAxis } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface User {
   firstName: string | null;
@@ -80,27 +87,45 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
-const platformIcons: Record<string, React.ReactNode> = {
-  INSTAGRAM: (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <defs>
+        <linearGradient id="ig-gradient-media" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="25%" stopColor="#FA7E1E" />
+          <stop offset="50%" stopColor="#D62976" />
+          <stop offset="75%" stopColor="#962FBF" />
+          <stop offset="100%" stopColor="#4F5BD5" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig-gradient-media)" strokeWidth={1.5} />
+      <circle cx="12" cy="12" r="4" stroke="url(#ig-gradient-media)" strokeWidth={1.5} />
+      <circle cx="18" cy="6" r="1.5" fill="url(#ig-gradient-media)" />
     </svg>
-  ),
-  YOUTUBE: (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
     </svg>
-  ),
-  TIKTOK: (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-    </svg>
-  ),
-  TWITTER: (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+  );
+}
+
+function TwitterIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
     </svg>
-  ),
+  );
+}
+
+const platformIcons: Record<string, (props: { className?: string }) => React.ReactNode> = {
+  INSTAGRAM: InstagramIcon,
+  TIKTOK: TikTokIcon,
+  TWITTER: TwitterIcon,
 };
 
 export default function MediaKitDesktop({
@@ -120,6 +145,11 @@ export default function MediaKitDesktop({
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
     : user?.firstName || user?.userName || "Creator";
+
+  // Filter out Facebook and YouTube from display
+  const displayAccounts = connectedAccounts.filter(
+    acc => acc.platform !== "FACEBOOK" && acc.platform !== "YOUTUBE"
+  );
 
   const totalFollowers = connectedAccounts.reduce((sum, acc) => sum + (acc.followers || 0), 0);
 
@@ -155,7 +185,7 @@ export default function MediaKitDesktop({
           <div className="w-80 flex-shrink-0">
             {/* Profile Picture */}
             <div className="mb-6">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-neutral-100">
+              <div className="w-40 h-40 rounded-full overflow-hidden bg-neutral-100">
                 {user.profileImageUrl ? (
                   <img
                     src={user.profileImageUrl}
@@ -164,7 +194,7 @@ export default function MediaKitDesktop({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                    <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                     </svg>
                   </div>
@@ -216,7 +246,7 @@ export default function MediaKitDesktop({
             {/* Collaborations */}
             {collaborations.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-sm font-medium text-black mb-4">Collaborations</h2>
+                <h2 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Collaborations</h2>
                 <div className="space-y-3">
                   {collaborations.slice(0, 5).map((collab) => (
                     <div key={collab.id} className="flex items-center gap-3">
@@ -238,12 +268,12 @@ export default function MediaKitDesktop({
             {/* Achievements */}
             {achievements.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-sm font-medium text-black mb-4">Achievements</h2>
+                <h2 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Achievements</h2>
                 <div className="flex flex-wrap gap-2">
                   {achievements.map((achievement) => (
                     <span
                       key={achievement.id}
-                      className="px-3 py-1.5 bg-black text-white text-xs rounded-full"
+                      className="px-3 py-1.5 bg-black text-white text-xs rounded-full shadow-sm hover:scale-105 transition-transform cursor-default"
                     >
                       {achievement.title}
                     </span>
@@ -256,21 +286,26 @@ export default function MediaKitDesktop({
           {/* Right Column - Stats */}
           <div className="flex-1">
             {/* Platform Selector */}
-            <div className="flex items-center gap-2 mb-8">
-              {connectedAccounts.map((account) => (
+            <div className="flex items-center gap-6 mb-10 border-b border-neutral-100 pb-4">
+              {displayAccounts.map((account) => {
+                const isSelected = selectedPlatform === account.platform;
+                const Icon = platformIcons[account.platform];
+                return (
                 <div key={account.id} className="flex items-center gap-1">
                   <button
                     onClick={() => setSelectedPlatform(account.platform)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedPlatform === account.platform
-                        ? "bg-black text-white"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    className={`flex items-center gap-2 pb-2 -mb-[17px] border-b-2 transition-colors ${
+                      isSelected
+                        ? "border-black text-black"
+                        : "border-transparent text-neutral-400 hover:text-black"
                     }`}
                   >
-                    {platformIcons[account.platform]}
-                    <span>{account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}</span>
+                    {Icon && <Icon className="w-4 h-4" />}
+                    <span className="text-sm font-medium">{account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}</span>
                     {account.followers && (
-                      <span className="text-xs opacity-70">{formatNumber(account.followers)}</span>
+                      <span className={`text-xs ${isSelected ? "text-neutral-500" : "text-neutral-400"}`}>
+                        {formatNumber(account.followers)}
+                      </span>
                     )}
                   </button>
                   {account.profileLink && (
@@ -278,57 +313,58 @@ export default function MediaKitDesktop({
                       href={account.profileLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-lg bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-black transition-colors"
+                      className="p-1.5 -mb-[17px] pb-2 text-neutral-400 hover:text-black transition-colors"
                       title={`View ${account.platform.toLowerCase()} profile`}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                       </svg>
                     </a>
                   )}
                 </div>
-              ))}
-              {connectedAccounts.length === 0 && (
+              );
+              })}
+              {displayAccounts.length === 0 && (
                 <div className="text-sm text-neutral-400">No platforms connected</div>
               )}
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-8">
-              {/* Overview Stats */}
+              {/* Key Stats for Brands */}
               <div>
-                <h3 className="text-sm font-medium text-black mb-4">Overview</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
+                <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Key Metrics</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
-                      {platformMetrics?.reach ? formatNumber(platformMetrics.reach) : "-"}
+                      {formatNumber(totalFollowers)}
                     </p>
-                    <p className="text-xs text-neutral-400 mt-1">Reach</p>
+                    <p className="text-xs text-neutral-400 mt-1">Total Followers</p>
                   </div>
-                  <div>
+                  <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
+                    <p className="text-2xl font-semibold text-black">
+                      {platformMetrics?.engagementRate ? `${platformMetrics.engagementRate}%` : "-"}
+                    </p>
+                    <p className="text-xs text-neutral-400 mt-1">Engagement Rate</p>
+                  </div>
+                  <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
                       {platformMetrics?.avgViews ? formatNumber(platformMetrics.avgViews) : "-"}
                     </p>
                     <p className="text-xs text-neutral-400 mt-1">Avg. Views</p>
                   </div>
-                  <div>
+                  <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
-                      {platformMetrics?.profileVisits ? formatNumber(platformMetrics.profileVisits) : "-"}
+                      {platformMetrics?.reach ? formatNumber(platformMetrics.reach) : "-"}
                     </p>
-                    <p className="text-xs text-neutral-400 mt-1">Profile Visits</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold text-black">
-                      {platformMetrics?.accountsEngaged ? formatNumber(platformMetrics.accountsEngaged) : "-"}
-                    </p>
-                    <p className="text-xs text-neutral-400 mt-1">Engaged</p>
+                    <p className="text-xs text-neutral-400 mt-1">Reach</p>
                   </div>
                 </div>
               </div>
 
               {/* Engagement Breakdown */}
               <div>
-                <h3 className="text-sm font-medium text-black mb-4">Engagement</h3>
+                <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Engagement</h3>
                 <div className="space-y-3">
                   {engagementData.map((item) => (
                     <div key={item.label}>
@@ -357,76 +393,37 @@ export default function MediaKitDesktop({
 
               {/* Follower Growth - Full Width */}
               <div className="col-span-2 pt-4 border-t border-neutral-100">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center justify-between mb-6">
                   <h3 className="text-sm font-medium text-black">Follower Growth</h3>
-                  <span className="text-xs text-neutral-400">Last 7 days</span>
+                  <span className="text-xs text-neutral-500">7 days</span>
                 </div>
-                <div className="flex items-end gap-4 h-32 pt-2 mb-2">
+                <div className="h-40">
                   {hasHistory ? (
-                    followerHistory.map((day, i) => {
-                      const followsHeight = (day.newFollows / maxValue) * 112;
-                      const unfollowsHeight = (day.unfollows / maxValue) * 112;
-                      return (
-                        <div key={i} className="flex-1 flex gap-1 items-end justify-center">
-                          <div
-                            className="w-[45%] bg-emerald-500 rounded-sm transition-all"
-                            style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 4 : 0)}px` }}
-                            title={`+${day.newFollows.toLocaleString()} follows`}
-                          />
-                          <div
-                            className="w-[45%] bg-rose-400 rounded-sm transition-all"
-                            style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 4 : 0)}px` }}
-                            title={`-${day.unfollows.toLocaleString()} unfollows`}
-                          />
-                        </div>
-                      );
-                    })
+                    <FollowerGrowthChart data={followerHistory} />
                   ) : (
-                    Array(7).fill(0).map((_, i) => (
-                      <div key={i} className="flex-1 flex gap-1 items-end justify-center">
-                        <div className="w-[45%] bg-neutral-100 rounded-sm h-4" />
-                        <div className="w-[45%] bg-neutral-100 rounded-sm h-4" />
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className="flex justify-between mb-5">
-                  {hasHistory ? (
-                    followerHistory.map((day, i) => {
-                      const date = new Date(day.date);
-                      const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
-                      return <span key={i} className="flex-1 text-center text-xs text-neutral-400">{dayName}</span>;
-                    })
-                  ) : (
-                    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                      <span key={d} className="flex-1 text-center text-xs text-neutral-400">{d}</span>
-                    ))
-                  )}
-                </div>
-                <div className="flex items-center gap-12 pt-4 border-t border-neutral-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-emerald-500" />
-                    <div>
-                      <p className="text-xs text-neutral-400">Follows</p>
-                      <p className="text-lg font-semibold text-emerald-600">
-                        {hasHistory ? `+${totalNewFollows.toLocaleString()}` : "-"}
-                      </p>
+                    <div className="flex items-center justify-center h-full text-neutral-400 text-sm">
+                      No data available
                     </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+                  <div>
+                    <p className="text-xs text-neutral-400 mb-1">Follows</p>
+                    <p className="text-lg font-semibold text-emerald-600">
+                      {hasHistory ? `+${totalNewFollows.toLocaleString()}` : "-"}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs text-neutral-400">Net</p>
+                    <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
+                    <p className="text-lg font-semibold text-rose-500">
+                      {hasHistory ? `-${totalUnfollows.toLocaleString()}` : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-neutral-400 mb-1">Net</p>
                     <p className={`text-lg font-semibold ${netGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
                       {hasHistory ? `${netGrowth >= 0 ? "+" : ""}${netGrowth.toLocaleString()}` : "-"}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-rose-400" />
-                    <div>
-                      <p className="text-xs text-neutral-400">Unfollows</p>
-                      <p className="text-lg font-semibold text-rose-500">
-                        {hasHistory ? `-${totalUnfollows.toLocaleString()}` : "-"}
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -434,7 +431,7 @@ export default function MediaKitDesktop({
               {/* Audience Summary */}
               {user.audienceSummary && (
                 <div className="col-span-2 pt-4 border-t border-neutral-100">
-                  <h3 className="text-sm font-medium text-black mb-3">Audience</h3>
+                  <h3 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h3>
                   <p className="text-sm text-neutral-600 leading-relaxed">{user.audienceSummary}</p>
                 </div>
               )}
@@ -447,6 +444,47 @@ export default function MediaKitDesktop({
           <p className="text-xs text-neutral-400">Powered by endoros</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FollowerGrowthChart({ data }: { data: FollowerHistoryDay[] }) {
+  const chartData = data.map((d) => ({
+    label: new Date(d.date).toLocaleDateString("en-US", { weekday: "short" }),
+    newFollows: d.newFollows,
+    unfollows: d.unfollows,
+  }));
+
+  const barChartConfig = {
+    newFollows: {
+      label: "Follows",
+      color: "#10b981",
+    },
+    unfollows: {
+      label: "Unfollows",
+      color: "#ef4444",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <div className="w-full h-full overflow-hidden">
+      <ChartContainer config={barChartConfig} className="h-[140px] w-full">
+        <BarChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }} barGap={2}>
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tick={{ fontSize: 10, fill: "#a3a3a3" }}
+          />
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent indicator="dashed" />}
+          />
+          <Bar dataKey="newFollows" fill="var(--color-newFollows)" radius={3} />
+          <Bar dataKey="unfollows" fill="var(--color-unfollows)" radius={3} />
+        </BarChart>
+      </ChartContainer>
     </div>
   );
 }

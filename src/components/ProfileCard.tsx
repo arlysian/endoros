@@ -162,13 +162,13 @@ export default function ProfileCard({
 
         {/* Achievements */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-black mb-3">Achievements</h4>
+          <h4 className="text-sm font-medium text-black mb-3 pb-1 border-b border-black/10">Achievements</h4>
           {achievements.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {achievements.map((achievement) => (
                 <span
                   key={achievement.id}
-                  className="px-3 py-1.5 bg-black text-white text-xs rounded-full"
+                  className="px-3 py-1.5 bg-black text-white text-xs rounded-full shadow-sm hover:scale-105 transition-transform cursor-default"
                 >
                   {achievement.title}
                 </span>
@@ -181,7 +181,7 @@ export default function ProfileCard({
 
         {/* Brand Collaborations */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-black mb-3">Collaborations</h4>
+          <h4 className="text-sm font-medium text-black mb-3 pb-1 border-b border-black/10">Collaborations</h4>
           {collaborations.length > 0 ? (
             <div className="space-y-2">
               {collaborations.map((collab) => (
@@ -209,7 +209,7 @@ export default function ProfileCard({
           return (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-black">Follower Growth</h4>
+                <h4 className="text-sm font-medium text-black pb-1 border-b border-black/10">Follower Growth</h4>
                 <span className="text-[10px] text-neutral-400">7 days</span>
               </div>
               <div className="flex items-end gap-2 h-16 pt-1 mb-3">
@@ -220,11 +220,11 @@ export default function ProfileCard({
                     return (
                       <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
                         <div
-                          className="w-[45%] bg-emerald-500 rounded-sm"
+                          className="w-[45%] bg-emerald-500 rounded-t-sm"
                           style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 2 : 0)}px` }}
                         />
                         <div
-                          className="w-[45%] bg-rose-400 rounded-sm"
+                          className="w-[45%] bg-rose-400 rounded-t-sm"
                           style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 2 : 0)}px` }}
                         />
                       </div>
@@ -233,8 +233,8 @@ export default function ProfileCard({
                 ) : (
                   Array(7).fill(0).map((_, i) => (
                     <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
-                      <div className="w-[45%] bg-neutral-100 rounded-sm h-2" />
-                      <div className="w-[45%] bg-neutral-100 rounded-sm h-2" />
+                      <div className="w-[45%] bg-neutral-100 rounded-t-sm h-2" />
+                      <div className="w-[45%] bg-neutral-100 rounded-t-sm h-2" />
                     </div>
                   ))
                 )}
@@ -284,7 +284,7 @@ export default function ProfileCard({
 
           return (
             <div>
-              <h4 className="text-sm font-medium text-black mb-3">Engagement</h4>
+              <h4 className="text-sm font-medium text-black mb-3 pb-1 border-b border-black/10">Engagement</h4>
               <div className="space-y-3">
                 {engagementData.map((item) => (
                   <div key={item.label}>
@@ -312,18 +312,18 @@ export default function ProfileCard({
   return (
     <>
       {/* Cover Image with Profile Picture */}
-      <div className="relative pb-14">
+      <div className="relative pb-20">
         {user?.coverImageUrl ? (
           <img
             src={user.coverImageUrl}
             alt="Cover"
-            className="h-32 w-full object-cover"
+            className="h-36 w-full object-cover"
           />
         ) : (
-          <div className="h-32 bg-neutral-100" />
+          <div className="h-36 bg-neutral-100" />
         )}
         <div className="absolute left-1/2 -translate-x-1/2 bottom-0">
-          <div className="w-28 h-28 rounded-full overflow-hidden bg-neutral-200">
+          <div className="w-36 h-36 rounded-full overflow-hidden bg-neutral-200 border-4 border-white">
             {user?.profileImageUrl ? (
               <img
                 src={user.profileImageUrl}
@@ -332,7 +332,7 @@ export default function ProfileCard({
               />
             ) : (
               <div className="w-full h-full bg-neutral-200 flex items-center justify-center text-neutral-400">
-                <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
               </div>
@@ -352,30 +352,36 @@ export default function ProfileCard({
           )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-10 pb-8 border-b border-neutral-100">
-          <div className="text-center">
+        {/* Key Stats for Brands */}
+        <div className="grid grid-cols-2 gap-3 mb-10 pb-8 border-b border-neutral-100">
+          <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
             <p className="text-2xl font-semibold text-black">{formatNumber(totalFollowers)}</p>
             <p className="text-xs text-neutral-400 mt-1">Followers</p>
           </div>
-          <div className="text-center">
+          <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
             <p className="text-2xl font-semibold text-black">
               {platformMetrics?.engagementRate ? `${platformMetrics.engagementRate}%` : "-"}
             </p>
             <p className="text-xs text-neutral-400 mt-1">Engagement</p>
           </div>
-          <div className="text-center">
+          <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
             <p className="text-2xl font-semibold text-black">
               {platformMetrics?.avgViews ? formatNumber(platformMetrics.avgViews) : "-"}
             </p>
             <p className="text-xs text-neutral-400 mt-1">Avg. Views</p>
+          </div>
+          <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
+            <p className="text-2xl font-semibold text-black">
+              {platformMetrics?.reach ? formatNumber(platformMetrics.reach) : "-"}
+            </p>
+            <p className="text-xs text-neutral-400 mt-1">Reach</p>
           </div>
         </div>
 
         {/* Audience Summary */}
         {user?.audienceSummary && (
           <div className="mb-8">
-            <h2 className="text-sm font-medium text-black mb-3">Audience</h2>
+            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h2>
             <p className="text-sm text-neutral-500 leading-relaxed">{user.audienceSummary}</p>
           </div>
         )}
@@ -383,12 +389,12 @@ export default function ProfileCard({
         {/* Achievements */}
         {achievements.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-sm font-medium text-black mb-3">Achievements</h2>
+            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Achievements</h2>
             <div className="flex flex-wrap gap-2">
               {achievements.map((achievement) => (
                 <span
                   key={achievement.id}
-                  className="px-3 py-1.5 bg-black text-white text-xs rounded-full"
+                  className="px-3 py-1.5 bg-black text-white text-xs rounded-full shadow-sm hover:scale-105 transition-transform cursor-default"
                 >
                   {achievement.title}
                 </span>
@@ -400,7 +406,7 @@ export default function ProfileCard({
         {/* Brand Collaborations */}
         {collaborations.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-sm font-medium text-black mb-3">Collaborations</h2>
+            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Collaborations</h2>
             <div className="grid grid-cols-2 gap-4">
               {collaborations.map((collab) => (
                 <div key={collab.id} className="border-b border-neutral-100 pb-3">
@@ -430,7 +436,7 @@ export default function ProfileCard({
           return (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-sm font-medium text-black">Follower Growth</h3>
+                <h3 className="text-base font-semibold text-black pb-2 border-b-2 border-black/10">Follower Growth</h3>
                 <span className="text-xs text-neutral-400">Last 7 days</span>
               </div>
               <div className="flex items-end gap-3 h-24 pt-2 mb-2">
@@ -441,12 +447,12 @@ export default function ProfileCard({
                     return (
                       <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
                         <div
-                          className="w-[45%] bg-emerald-500 rounded-sm"
+                          className="w-[45%] bg-emerald-500 rounded-t-sm"
                           style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 2 : 0)}px` }}
                           title={`+${day.newFollows.toLocaleString()} follows`}
                         />
                         <div
-                          className="w-[45%] bg-rose-400 rounded-sm"
+                          className="w-[45%] bg-rose-400 rounded-t-sm"
                           style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 2 : 0)}px` }}
                           title={`-${day.unfollows.toLocaleString()} unfollows`}
                         />
@@ -456,8 +462,8 @@ export default function ProfileCard({
                 ) : (
                   Array(7).fill(0).map((_, i) => (
                     <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
-                      <div className="w-[45%] bg-neutral-100 rounded-sm h-2" />
-                      <div className="w-[45%] bg-neutral-100 rounded-sm h-2" />
+                      <div className="w-[45%] bg-neutral-100 rounded-t-sm h-2" />
+                      <div className="w-[45%] bg-neutral-100 rounded-t-sm h-2" />
                     </div>
                   ))
                 )}
@@ -520,7 +526,7 @@ export default function ProfileCard({
 
           return (
             <div className="mb-8">
-              <h3 className="text-sm font-medium text-black mb-5">Engagement</h3>
+              <h3 className="text-base font-semibold text-black mb-5 pb-2 border-b-2 border-black/10">Engagement</h3>
               <div className="space-y-4">
                 {engagementData.map((item) => (
                   <div key={item.label}>
@@ -552,7 +558,7 @@ export default function ProfileCard({
         {/* Contact */}
         {(user?.location || user?.website) && (
           <div className="mb-8">
-            <h2 className="text-sm font-medium text-black mb-3">Contact</h2>
+            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Contact</h2>
             <div className="space-y-2 text-sm">
               {user.location && (
                 <p className="text-neutral-500">{user.location}</p>

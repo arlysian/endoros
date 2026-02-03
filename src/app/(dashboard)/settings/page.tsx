@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 
 export default function Settings() {
-  const [audienceSummary, setAudienceSummary] = useState("");
-  const [isSavingAudience, setIsSavingAudience] = useState(false);
   const [isMediaKitPublic, setIsMediaKitPublic] = useState(true);
   const [isToggleLoading, setIsToggleLoading] = useState(false);
 
@@ -15,7 +13,6 @@ export default function Settings() {
         if (res.ok) {
           const data = await res.json();
           setIsMediaKitPublic(data.isMediaKitPublic ?? true);
-          setAudienceSummary(data.audienceSummary ?? "");
         }
       } catch (error) {
         console.error("Failed to fetch settings:", error);
@@ -23,25 +20,6 @@ export default function Settings() {
     }
     fetchUserSettings();
   }, []);
-
-  const handleSaveAudienceSummary = async () => {
-    setIsSavingAudience(true);
-    try {
-      const res = await fetch("/api/user", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audienceSummary }),
-      });
-
-      if (!res.ok) {
-        console.error("Failed to save audience summary");
-      }
-    } catch (error) {
-      console.error("Error saving audience summary:", error);
-    } finally {
-      setIsSavingAudience(false);
-    }
-  };
 
   const handleToggleChange = async (checked: boolean) => {
     setIsToggleLoading(true);
@@ -73,30 +51,6 @@ export default function Settings() {
       </div>
 
       <div className="space-y-10">
-        {/* Audience Summary */}
-        <section>
-          <h2 className="text-sm font-medium text-black mb-4">Audience Summary</h2>
-          <div className="mb-4">
-            <label className="block text-xs text-neutral-400 mb-2">
-              Describe your average audience
-            </label>
-            <textarea
-              value={audienceSummary}
-              onChange={(e) => setAudienceSummary(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-3 bg-neutral-50 rounded-lg text-black text-sm resize-none focus:outline-none focus:ring-1 focus:ring-black"
-              placeholder="e.g., Young professionals aged 25-34, interested in tech and lifestyle..."
-            />
-          </div>
-          <button
-            onClick={handleSaveAudienceSummary}
-            disabled={isSavingAudience}
-            className="px-6 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
-          >
-            {isSavingAudience ? "Saving..." : "Save"}
-          </button>
-        </section>
-
         {/* Privacy Settings */}
         <section>
           <h2 className="text-sm font-medium text-black mb-4">Privacy</h2>
