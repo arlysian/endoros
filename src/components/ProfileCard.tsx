@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 export interface ProfileCardUser {
   firstName: string | null;
   lastName: string | null;
@@ -51,6 +53,14 @@ export interface PlatformMetricsData {
   unfollows?: number;
 }
 
+interface ConnectedAccount {
+  id: string;
+  platform: string;
+  username: string | null;
+  profileLink?: string | null;
+  followers: number | null;
+}
+
 interface ProfileCardProps {
   user: ProfileCardUser | null;
   achievements: ProfileCardAchievement[];
@@ -60,6 +70,7 @@ interface ProfileCardProps {
   compact?: boolean;
   platformMetrics?: PlatformMetricsData | null;
   followerHistory?: FollowerHistoryDay[];
+  connectedAccounts?: ConnectedAccount[];
 }
 
 function formatNumber(num: number): string {
@@ -72,6 +83,54 @@ function formatNumber(num: number): string {
   return num.toString();
 }
 
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <defs>
+        <linearGradient id="ig-gradient-profile" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="25%" stopColor="#FA7E1E" />
+          <stop offset="50%" stopColor="#D62976" />
+          <stop offset="75%" stopColor="#962FBF" />
+          <stop offset="100%" stopColor="#4F5BD5" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig-gradient-profile)" strokeWidth={1.5} />
+      <circle cx="12" cy="12" r="4" stroke="url(#ig-gradient-profile)" strokeWidth={1.5} />
+      <circle cx="18" cy="6" r="1.5" fill="url(#ig-gradient-profile)" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="black">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+    </svg>
+  );
+}
+
+function TwitterIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="black">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  );
+}
+
+function PlatformIcon({ platform, className }: { platform: string; className?: string }) {
+  switch (platform) {
+    case "INSTAGRAM":
+      return <InstagramIcon className={className} />;
+    case "TIKTOK":
+      return <TikTokIcon className={className} />;
+    case "TWITTER":
+      return <TwitterIcon className={className} />;
+    default:
+      return null;
+  }
+}
+
 export default function ProfileCard({
   user,
   achievements,
@@ -81,6 +140,7 @@ export default function ProfileCard({
   compact = false,
   platformMetrics = null,
   followerHistory = [],
+  connectedAccounts = [],
 }: ProfileCardProps) {
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -308,49 +368,75 @@ export default function ProfileCard({
     );
   }
 
+  // Filter platforms for display (exclude Facebook and YouTube)
+  const displayAccounts = connectedAccounts.filter(
+    acc => acc.platform !== "FACEBOOK" && acc.platform !== "YOUTUBE"
+  );
+
+  // State for selected platform
+  const [selectedPlatform, setSelectedPlatform] = useState<string>(
+    displayAccounts.find(a => a.platform === "INSTAGRAM")?.platform ||
+    displayAccounts[0]?.platform ||
+    "INSTAGRAM"
+  );
+
   // Full mode for public profile
   return (
     <>
-      {/* Cover Image with Profile Picture */}
-      <div className="relative pb-20">
-        {user?.coverImageUrl ? (
-          <img
-            src={user.coverImageUrl}
-            alt="Cover"
-            className="h-36 w-full object-cover"
-          />
-        ) : (
-          <div className="h-36 bg-neutral-100" />
-        )}
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-0">
-          <div className="w-36 h-36 rounded-full overflow-hidden bg-neutral-200 border-4 border-white">
-            {user?.profileImageUrl ? (
-              <img
-                src={user.profileImageUrl}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-neutral-200 flex items-center justify-center text-neutral-400">
-                <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-              </div>
-            )}
-          </div>
+      {/* Profile Picture - No Cover Image */}
+      <div className="pt-16 pb-4 flex justify-center">
+        <div className="w-28 h-28 rounded-full overflow-hidden bg-neutral-100">
+          {user?.profileImageUrl ? (
+            <img
+              src={user.profileImageUrl}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-neutral-200 flex items-center justify-center text-neutral-400">
+              <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="px-6 pb-6 flex-1 flex flex-col">
         {/* Profile Info */}
-        <div className="mb-8 text-center">
-          <h1 className="text-xl font-semibold text-black mt-3">{displayName}</h1>
+        <div className="mb-6 text-center">
+          <h1 className="text-xl font-semibold text-black">{displayName}</h1>
           <p className="text-neutral-500 mt-1">@{user?.userName}</p>
           {displayBio && (
-            <p className="text-sm text-neutral-500 mt-4 leading-relaxed">{displayBio}</p>
+            <p className="text-base text-neutral-600 mt-4 leading-relaxed">{displayBio}</p>
           )}
         </div>
+
+        {/* Platform Selector */}
+        {displayAccounts.length > 0 && (
+          <div className="flex items-center justify-center gap-6 mb-6 border-b border-neutral-100">
+            {displayAccounts.map((account) => {
+              const isSelected = selectedPlatform === account.platform;
+              return (
+                <button
+                  key={account.id}
+                  onClick={() => setSelectedPlatform(account.platform)}
+                  className={`flex items-center gap-2 pb-3 border-b-2 -mb-[1px] transition-colors ${
+                    isSelected
+                      ? "border-black text-black"
+                      : "border-transparent text-neutral-400 hover:text-black"
+                  }`}
+                >
+                  <PlatformIcon platform={account.platform} className="w-5 h-5" />
+                  <span className="text-sm font-medium">
+                    {account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Key Stats for Brands */}
         <div className="grid grid-cols-2 gap-3 mb-10 pb-8 border-b border-neutral-100">
@@ -377,14 +463,6 @@ export default function ProfileCard({
             <p className="text-xs text-neutral-400 mt-1">Reach</p>
           </div>
         </div>
-
-        {/* Audience Summary */}
-        {user?.audienceSummary && (
-          <div className="mb-8">
-            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h2>
-            <p className="text-sm text-neutral-500 leading-relaxed">{user.audienceSummary}</p>
-          </div>
-        )}
 
         {/* Achievements */}
         {achievements.length > 0 && (
@@ -554,6 +632,14 @@ export default function ProfileCard({
             </div>
           );
         })()}
+
+        {/* Audience Summary */}
+        {user?.audienceSummary && (
+          <div className="mb-8">
+            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h2>
+            <p className="text-sm text-neutral-500 leading-relaxed">{user.audienceSummary}</p>
+          </div>
+        )}
 
         {/* Contact */}
         {(user?.location || user?.website) && (

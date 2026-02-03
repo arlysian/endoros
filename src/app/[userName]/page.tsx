@@ -189,6 +189,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
               compact={false}
               platformMetrics={platformMetrics}
               followerHistory={followerHistory}
+              connectedAccounts={accountsWithFollowers}
             />
           </div>
         </div>
