@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Label, Pie, PieChart } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 export interface ProfileCardUser {
   firstName: string | null;
@@ -592,43 +599,90 @@ export default function ProfileCard({
           const total = likes + comments + shares + saves;
           const hasData = total > 0;
 
-          const engagementData = [
-            { label: "Likes", value: likes },
-            { label: "Comments", value: comments },
-            { label: "Shares", value: shares },
-            { label: "Saves", value: saves },
-          ].map(item => ({
-            ...item,
-            pct: hasData ? Math.round((item.value / total) * 100) : 0,
-          }));
+          const chartData = [
+            { type: "likes", value: likes, fill: "#4A5FD9" },
+            { type: "comments", value: comments, fill: "#7B8BE6" },
+            { type: "shares", value: shares, fill: "#A9B4EF" },
+            { type: "saves", value: saves, fill: "#D4DAF7" },
+          ];
+
+          const chartConfig = {
+            value: { label: "Engagement" },
+            likes: { label: "Likes", color: "#4A5FD9" },
+            comments: { label: "Comments", color: "#7B8BE6" },
+            shares: { label: "Shares", color: "#A9B4EF" },
+            saves: { label: "Saves", color: "#D4DAF7" },
+          } satisfies ChartConfig;
 
           return (
             <div className="mb-8">
               <h3 className="text-base font-semibold text-black mb-5 pb-2 border-b-2 border-black/10">Engagement</h3>
-              <div className="space-y-4">
-                {engagementData.map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className="text-sm text-black">{item.label}</span>
-                      <span className="text-sm text-neutral-400">
-                        {hasData ? `${formatNumber(item.value)} (${item.pct}%)` : "-"}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-neutral-100 rounded-full">
-                      <div
-                        className="h-full bg-black rounded-full"
-                        style={{ width: hasData ? `${item.pct}%` : "0%" }}
+              {hasData ? (
+                <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[200px]">
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                      data={chartData}
+                      dataKey="value"
+                      nameKey="type"
+                      innerRadius={50}
+                      outerRadius={80}
+                      strokeWidth={2}
+                      stroke="#fff"
+                    >
+                      <Label
+                        content={({ viewBox }) => {
+                          if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                            return (
+                              <text
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                              >
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={viewBox.cy}
+                                  className="fill-black text-2xl font-bold"
+                                >
+                                  {formatNumber(total)}
+                                </tspan>
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={(viewBox.cy || 0) + 20}
+                                  className="fill-neutral-400 text-xs"
+                                >
+                                  Total
+                                </tspan>
+                              </text>
+                            );
+                          }
+                        }}
                       />
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[200px] text-neutral-400 text-sm">
+                  No engagement data
+                </div>
+              )}
+              {hasData && (
+                <div className="flex justify-center gap-4 mt-4">
+                  {chartData.map((item) => (
+                    <div key={item.type} className="flex items-center gap-1.5">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: chartConfig[item.type as keyof typeof chartConfig]?.color }}
+                      />
+                      <span className="text-xs text-neutral-500 capitalize">{item.type}</span>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between items-center pt-4 mt-5 border-t border-neutral-100">
-                <span className="text-xs text-neutral-400">Total</span>
-                <span className="text-lg font-semibold text-black">
-                  {hasData ? formatNumber(total) : "-"}
-                </span>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()}

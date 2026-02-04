@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, XAxis } from "recharts";
+import { Bar, BarChart, XAxis, Pie, PieChart, Label } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -365,30 +365,91 @@ export default function MediaKitDesktop({
               {/* Engagement Breakdown */}
               <div>
                 <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Engagement</h3>
-                <div className="space-y-3">
-                  {engagementData.map((item) => (
-                    <div key={item.label}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-black">{item.label}</span>
-                        <span className="text-neutral-400">
-                          {hasEngagementData ? `${formatNumber(item.value)} (${item.pct}%)` : "-"}
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-neutral-100 rounded-full">
-                        <div
-                          className="h-full bg-black rounded-full transition-all"
-                          style={{ width: hasEngagementData ? `${item.pct}%` : "0%" }}
+                {hasEngagementData ? (
+                  <>
+                    <ChartContainer
+                      config={{
+                        value: { label: "Engagement" },
+                        likes: { label: "Likes", color: "#4A5FD9" },
+                        comments: { label: "Comments", color: "#7B8BE6" },
+                        shares: { label: "Shares", color: "#A9B4EF" },
+                        saves: { label: "Saves", color: "#D4DAF7" },
+                      }}
+                      className="mx-auto aspect-square max-h-[180px]"
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel />}
                         />
-                      </div>
+                        <Pie
+                          data={[
+                            { type: "likes", value: likes, fill: "#4A5FD9" },
+                            { type: "comments", value: comments, fill: "#7B8BE6" },
+                            { type: "shares", value: shares, fill: "#A9B4EF" },
+                            { type: "saves", value: saves, fill: "#D4DAF7" },
+                          ]}
+                          dataKey="value"
+                          nameKey="type"
+                          innerRadius={45}
+                          outerRadius={70}
+                          strokeWidth={2}
+                          stroke="#fff"
+                        >
+                          <Label
+                            content={({ viewBox }) => {
+                              if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                return (
+                                  <text
+                                    x={viewBox.cx}
+                                    y={viewBox.cy}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                  >
+                                    <tspan
+                                      x={viewBox.cx}
+                                      y={viewBox.cy}
+                                      className="fill-black text-xl font-bold"
+                                    >
+                                      {formatNumber(engagementTotal)}
+                                    </tspan>
+                                    <tspan
+                                      x={viewBox.cx}
+                                      y={(viewBox.cy || 0) + 18}
+                                      className="fill-neutral-400 text-[10px]"
+                                    >
+                                      Total
+                                    </tspan>
+                                  </text>
+                                );
+                              }
+                            }}
+                          />
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+                    <div className="flex justify-center gap-3 mt-3">
+                      {[
+                        { type: "Likes", color: "#4A5FD9" },
+                        { type: "Comments", color: "#7B8BE6" },
+                        { type: "Shares", color: "#A9B4EF" },
+                        { type: "Saves", color: "#D4DAF7" },
+                      ].map((item) => (
+                        <div key={item.type} className="flex items-center gap-1">
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <span className="text-[10px] text-neutral-500">{item.type}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <div className="flex justify-between items-center pt-4 mt-4 border-t border-neutral-100">
-                  <span className="text-xs text-neutral-400">Total</span>
-                  <span className="text-lg font-semibold text-black">
-                    {hasEngagementData ? formatNumber(engagementTotal) : "-"}
-                  </span>
-                </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-[180px] text-neutral-400 text-sm">
+                    No engagement data
+                  </div>
+                )}
               </div>
 
               {/* Follower Growth - Full Width */}
