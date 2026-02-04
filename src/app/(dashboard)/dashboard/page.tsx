@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, Label, Pie, PieChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -772,46 +772,13 @@ export default function Dashboard() {
               <option value="total">Total</option>
             </select>
           </div>
-          <div className="space-y-5">
-            <EngagementBar
-              label="Likes"
-              value={isInstagram ? (engagementBreakdown?.likes ?? 0) : isTikTok ? (ttEngagementBreakdown?.likes ?? 0) : mockData.likes.percent}
-              count={isInstagram ? (engagementData ? formatNumber(engagementData.likes) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.likes) : "-") : mockData.likes.count}
-            />
-            <EngagementBar
-              label="Comments"
-              value={isInstagram ? (engagementBreakdown?.comments ?? 0) : isTikTok ? (ttEngagementBreakdown?.comments ?? 0) : mockData.comments.percent}
-              count={isInstagram ? (engagementData ? formatNumber(engagementData.comments) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.comments) : "-") : mockData.comments.count}
-            />
-            <EngagementBar
-              label="Shares"
-              value={isInstagram ? (engagementBreakdown?.shares ?? 0) : isTikTok ? (ttEngagementBreakdown?.shares ?? 0) : mockData.shares.percent}
-              count={isInstagram ? (engagementData ? formatNumber(engagementData.shares) : "-") : isTikTok ? (ttDisplayData ? formatNumber(ttDisplayData.shares) : "-") : mockData.shares.count}
-            />
-            {!isTikTok && (
-              <EngagementBar
-                label="Saves"
-                value={isInstagram ? (engagementBreakdown?.saves ?? 0) : mockData.saves.percent}
-                count={isInstagram ? (engagementData ? formatNumber(engagementData.saves) : "-") : mockData.saves.count}
-              />
-            )}
-          </div>
-          <div className="mt-6 pt-4 border-t border-neutral-100">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-400">Total</span>
-              <span className="text-lg font-semibold text-black">
-                {isInstagram
-                  ? (engagementBreakdown?.total !== undefined
-                      ? formatNumber(engagementBreakdown.total)
-                      : "-")
-                  : isTikTok
-                    ? (ttDisplayData
-                        ? formatNumber(ttDisplayData.likes + ttDisplayData.comments + ttDisplayData.shares)
-                        : "-")
-                    : "66.9K"}
-              </span>
-            </div>
-          </div>
+          <EngagementDonutChart
+            likes={isInstagram ? (engagementData?.likes ?? 0) : isTikTok ? (ttDisplayData?.likes ?? 0) : 45200}
+            comments={isInstagram ? (engagementData?.comments ?? 0) : isTikTok ? (ttDisplayData?.comments ?? 0) : 12100}
+            shares={isInstagram ? (engagementData?.shares ?? 0) : isTikTok ? (ttDisplayData?.shares ?? 0) : 6200}
+            saves={isTikTok ? undefined : (isInstagram ? (engagementData?.saves ?? 0) : 3400)}
+            loading={engagementLoading}
+          />
         </div>
         )}
       </div>
@@ -917,6 +884,134 @@ function EngagementBar({
           style={{ width: `${value}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function EngagementDonutChart({
+  likes,
+  comments,
+  shares,
+  saves,
+  loading,
+}: {
+  likes: number;
+  comments: number;
+  shares: number;
+  saves?: number;
+  loading?: boolean;
+}) {
+  const total = likes + comments + shares + (saves ?? 0);
+  const hasData = total > 0;
+
+  const colors: Record<string, string> = {
+    likes: "#4A5FD9",
+    comments: "#7B8BE6",
+    shares: "#A9B4EF",
+    saves: "#D4DAF7",
+  };
+
+  const chartData = saves !== undefined
+    ? [
+        { type: "likes", value: likes, fill: colors.likes },
+        { type: "comments", value: comments, fill: colors.comments },
+        { type: "shares", value: shares, fill: colors.shares },
+        { type: "saves", value: saves, fill: colors.saves },
+      ]
+    : [
+        { type: "likes", value: likes, fill: colors.likes },
+        { type: "comments", value: comments, fill: colors.comments },
+        { type: "shares", value: shares, fill: colors.shares },
+      ];
+
+  const chartConfig: ChartConfig = {
+    value: { label: "Engagement" },
+    likes: { label: "Likes", color: colors.likes },
+    comments: { label: "Comments", color: colors.comments },
+    shares: { label: "Shares", color: colors.shares },
+    saves: { label: "Saves", color: colors.saves },
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[200px] text-neutral-400 text-sm">
+        Loading...
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {hasData ? (
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[180px]">
+          <PieChart>
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel />}
+            />
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="type"
+              innerRadius={50}
+              outerRadius={75}
+              strokeWidth={2}
+              stroke="#fff"
+            >
+              <Label
+                content={({ viewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <text
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        <tspan
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          className="fill-black text-2xl font-bold"
+                        >
+                          {formatNumber(total)}
+                        </tspan>
+                        <tspan
+                          x={viewBox.cx}
+                          y={(viewBox.cy || 0) + 18}
+                          className="fill-neutral-400 text-xs"
+                        >
+                          Total
+                        </tspan>
+                      </text>
+                    );
+                  }
+                }}
+              />
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+      ) : (
+        <div className="flex items-center justify-center h-[180px] text-neutral-400 text-sm">
+          No engagement data
+        </div>
+      )}
+      {hasData && (
+        <div className="flex justify-center gap-4 mt-4">
+          {chartData.map((item) => {
+            const pct = Math.round((item.value / total) * 100);
+            return (
+              <div key={item.type} className="flex items-center gap-1.5">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: colors[item.type] }}
+                />
+                <span className="text-xs text-neutral-500 capitalize">{item.type}</span>
+                <span className="text-xs text-neutral-400">({pct}%)</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
