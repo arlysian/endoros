@@ -599,20 +599,27 @@ export default function ProfileCard({
           const total = likes + comments + shares + saves;
           const hasData = total > 0;
 
+          const colors: Record<string, string> = {
+            likes: "#4A5FD9",
+            comments: "#7B8BE6",
+            shares: "#A9B4EF",
+            saves: "#D4DAF7",
+          };
+
           const chartData = [
-            { type: "likes", value: likes, fill: "#4A5FD9" },
-            { type: "comments", value: comments, fill: "#7B8BE6" },
-            { type: "shares", value: shares, fill: "#A9B4EF" },
-            { type: "saves", value: saves, fill: "#D4DAF7" },
+            { type: "likes", value: likes, fill: colors.likes },
+            { type: "comments", value: comments, fill: colors.comments },
+            { type: "shares", value: shares, fill: colors.shares },
+            { type: "saves", value: saves, fill: colors.saves },
           ];
 
-          const chartConfig = {
+          const chartConfig: ChartConfig = {
             value: { label: "Engagement" },
-            likes: { label: "Likes", color: "#4A5FD9" },
-            comments: { label: "Comments", color: "#7B8BE6" },
-            shares: { label: "Shares", color: "#A9B4EF" },
-            saves: { label: "Saves", color: "#D4DAF7" },
-          } satisfies ChartConfig;
+            likes: { label: "Likes", color: colors.likes },
+            comments: { label: "Comments", color: colors.comments },
+            shares: { label: "Shares", color: colors.shares },
+            saves: { label: "Saves", color: colors.saves },
+          };
 
           return (
             <div className="mb-8">
@@ -676,7 +683,7 @@ export default function ProfileCard({
                     <div key={item.type} className="flex items-center gap-1.5">
                       <div
                         className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: chartConfig[item.type as keyof typeof chartConfig]?.color }}
+                        style={{ backgroundColor: colors[item.type] }}
                       />
                       <span className="text-xs text-neutral-500 capitalize">{item.type}</span>
                     </div>

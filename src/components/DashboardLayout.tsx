@@ -18,6 +18,7 @@ interface UserData {
   profileImageUrl: string | null;
   coverImageUrl: string | null;
   onboardingCompleted: boolean;
+  audienceSummary: string | null;
 }
 
 interface SidebarContextType {
