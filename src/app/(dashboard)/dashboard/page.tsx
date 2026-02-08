@@ -69,8 +69,8 @@ interface TikTokHistorySummary {
 const allPlatforms = [
   { id: "instagram", name: "Instagram", icon: InstagramIcon },
   { id: "tiktok", name: "TikTok", icon: TikTokIcon },
-  // { id: "youtube", name: "YouTube", icon: YouTubeIcon },  // Temporarily hidden
-  // { id: "facebook", name: "Facebook", icon: FacebookIcon }, // Temporarily hidden
+  { id: "youtube", name: "YouTube", icon: YouTubeIcon },
+  { id: "facebook", name: "Facebook", icon: FacebookIcon },
 ];
 
 const DASHBOARD_CACHE_KEY = "dashboard_cache";

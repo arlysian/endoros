@@ -461,7 +461,7 @@ export default function SocialPlatforms() {
           )}
         </div>
 
-        {/* Facebook - Temporarily hidden
+        {/* Facebook */}
         <div className="pb-6 border-b border-neutral-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -526,7 +526,6 @@ export default function SocialPlatforms() {
             </div>
           )}
         </div>
-        */}
 
         {/* TikTok */}
         <div className="pb-6 border-b border-neutral-100">
@@ -574,7 +573,7 @@ export default function SocialPlatforms() {
           )}
         </div>
 
-        {/* YouTube - Temporarily hidden
+        {/* YouTube */}
         <div className="pb-6 border-b border-neutral-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -619,7 +618,6 @@ export default function SocialPlatforms() {
             </div>
           )}
         </div>
-        */}
 
       </div>
 

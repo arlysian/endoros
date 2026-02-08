@@ -42,26 +42,6 @@ export default function AudienceInsights() {
         <p className="text-sm text-neutral-500 mt-1">Understand your audience demographics</p>
       </div>
 
-      {/* Key Stats */}
-      <div className="grid grid-cols-4 gap-8 mb-12">
-        <div>
-          <p className="text-xs text-neutral-400 mb-2">Total Reach</p>
-          <p className="text-2xl font-semibold text-black">892K</p>
-        </div>
-        <div>
-          <p className="text-xs text-neutral-400 mb-2">Impressions</p>
-          <p className="text-2xl font-semibold text-black">2.4M</p>
-        </div>
-        <div>
-          <p className="text-xs text-neutral-400 mb-2">Profile Views</p>
-          <p className="text-2xl font-semibold text-black">45.2K</p>
-        </div>
-        <div>
-          <p className="text-xs text-neutral-400 mb-2">Link Clicks</p>
-          <p className="text-2xl font-semibold text-black">8.7K</p>
-        </div>
-      </div>
-
       {/* Demographics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
         {/* Gender */}
@@ -126,32 +106,29 @@ export default function AudienceInsights() {
       {/* Best Posting Times */}
       <div className="mb-12">
         <h2 className="text-sm font-medium text-black mb-6">Best Posting Times</h2>
-        <div className="flex items-end gap-4 h-32 mb-4">
+        <div className="flex gap-4">
           {postingTimes.map((item) => {
-            const height = (item.engagement / maxEngagement) * 100;
+            const barHeight = Math.round((item.engagement / maxEngagement) * 120);
             const isHigh = item.engagement >= 80;
             return (
-              <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-full flex justify-center">
+              <div key={item.day} className="flex-1 flex flex-col items-center">
+                <span className={`text-[10px] mb-2 font-medium ${isHigh ? "text-black" : "text-neutral-400"}`}>
+                  {item.engagement}%
+                </span>
+                <div className="w-full flex justify-center items-end" style={{ height: "120px" }}>
                   <div
-                    className={`w-full max-w-[40px] rounded-sm ${isHigh ? "bg-black" : "bg-neutral-200"}`}
-                    style={{ height: `${height}px` }}
+                    className={`w-full max-w-[36px] rounded-md ${isHigh ? "bg-black" : "bg-neutral-200"}`}
+                    style={{ height: `${barHeight}px` }}
                   />
                 </div>
+                <p className={`text-xs font-medium mt-3 ${isHigh ? "text-black" : "text-neutral-500"}`}>{item.day}</p>
+                <p className="text-[10px] text-neutral-400 mt-0.5">{item.time}</p>
               </div>
             );
           })}
         </div>
-        <div className="flex gap-4">
-          {postingTimes.map((item) => (
-            <div key={item.day} className="flex-1 text-center">
-              <p className="text-xs font-medium text-black">{item.day}</p>
-              <p className="text-[10px] text-neutral-400 mt-0.5">{item.time}</p>
-            </div>
-          ))}
-        </div>
         <p className="text-xs text-neutral-400 mt-6 pt-4 border-t border-neutral-100">
-          Based on when your audience is most active. Dark bars indicate peak engagement times.
+          Based on when your audience is most active. Percentage shows relative engagement score.
         </p>
       </div>
 
