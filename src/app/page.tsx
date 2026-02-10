@@ -85,7 +85,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full mb-8"
               >
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-emerald-700 text-sm font-medium">Trusted by creators</span>
+                <span className="text-emerald-700 text-sm font-medium">Trusted by 5000+ creators</span>
               </motion.div>
 
               <motion.h1
@@ -177,82 +177,8 @@ export default function LandingPage() {
       {/* Horizontal divider */}
       <div className="w-full h-px bg-neutral-400/20" />
 
-      {/* Scrolling names section */}
+      {/* Trusted by creators section */}
       <section className="py-32 px-6 relative overflow-hidden">
-        {/* Floating elements - chaotic */}
-        <motion.div
-          initial={{ opacity: 0, rotate: -8 }}
-          whileInView={{ opacity: 1, rotate: -6 }}
-          viewport={{ once: true }}
-          className="absolute left-[2%] sm:left-[8%] lg:left-[15%] top-[18%] sm:top-[22%] lg:top-[25%]"
-        >
-          <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-100">847K</span>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
-          className="absolute right-[4%] sm:right-[12%] lg:right-[22%] top-[8%] sm:top-[10%] lg:top-[12%] bg-neutral-900 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full rotate-6"
-        >
-          +24% this week
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.15 }}
-          className="absolute left-[4%] sm:left-[7.5%] lg:left-[20%] top-[6%] sm:top-[8%] lg:top-[12%] border border-neutral-200 bg-white/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg -rotate-3"
-        >
-          <p className="text-[8px] sm:text-[10px] text-neutral-400 uppercase tracking-wider">avg views</p>
-          <p className="text-sm sm:text-lg font-semibold">2.1M</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="absolute right-[2%] sm:right-[8%] lg:right-[15%] top-[32%] sm:top-[35%] lg:top-[38%]"
-        >
-          <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-neutral-100 rotate-3 block">5.2%</span>
-          <span className="text-[8px] sm:text-[10px] text-neutral-300 ml-1">engagement</span>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.25 }}
-          className="absolute left-[2%] sm:left-[8%] lg:left-[18%] bottom-[18%] sm:bottom-[20%] lg:bottom-[22%] flex items-center gap-1.5 sm:gap-2 bg-white border border-neutral-100 shadow-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-full rotate-2"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
-          </svg>
-          <span className="text-xs sm:text-sm font-medium">TikTok</span>
-          <span className="text-[10px] sm:text-xs text-neutral-400">320K</span>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="absolute right-[4%] sm:right-[7.5%] lg:right-[18%] bottom-[12%] sm:bottom-[15%] lg:bottom-[18%] text-right -rotate-2"
-        >
-          <p className="text-[10px] sm:text-xs text-neutral-400">monthly reach</p>
-          <p className="text-xl sm:text-2xl font-bold text-neutral-900">4.8M</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 0.5 }}
-          viewport={{ once: true }}
-          className="absolute left-[20%] sm:left-[24%] lg:left-[28%] bottom-[32%] sm:bottom-[35%] lg:bottom-[38%] w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 border-2 border-dashed border-neutral-200 rounded-full"
-        />
-
         {/* Center - Scrolling names */}
         <div className="flex items-center justify-center relative z-10">
           <span className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-neutral-300 leading-none">
@@ -308,13 +234,20 @@ export default function LandingPage() {
             className="flex items-center gap-24 w-fit"
           >
             {[...Array(4)].map((_, setIndex) => (
-              <div key={setIndex} className="contents">
+              <div key={setIndex} className="flex items-center gap-24 shrink-0">
                 <img src="/Google.svg" alt="Google" className="h-5 w-auto" />
                 <img src="/Instagram.svg" alt="Instagram" className="h-5 w-auto" />
                 <img src="/YouTube.svg" alt="YouTube" className="h-5 w-auto" />
                 <img src="/Tiktok.svg" alt="TikTok" className="h-5 w-auto" />
                 <img src="/facebook.svg" alt="Facebook" className="h-5 w-auto" />
                 <img src="/Shopify.svg" alt="Shopify" className="h-5 w-auto" />
+                <img src="/ralph_lauren.svg" alt="Ralph Lauren" className="h-9 w-auto" />
+                <img src="/Nike.svg" alt="Nike" className="h-5 w-auto" />
+                <img src="/louis_vuitton.svg" alt="Louis Vuitton" className="h-7 w-auto" />
+                <img src="/Gucci.svg" alt="Gucci" className="h-5 w-auto" />
+                <img src="/balenci.svg" alt="Balenciaga" className="h-12 w-auto" />
+                <img src="/Chanel.svg" alt="Chanel" className="h-5 w-auto" />
+                <img src="/Apple.svg" alt="Apple" className="h-7 w-auto" />
               </div>
             ))}
           </motion.div>
@@ -396,6 +329,7 @@ export default function LandingPage() {
                 title: "Real-time analytics",
                 desc: "Followers, engagement, reach—across all platforms. Always current.",
                 image: "/realtime.png",
+                objectPos: "top",
               },
               {
                 title: "Audience demographics",
@@ -411,6 +345,7 @@ export default function LandingPage() {
                 title: "Growth tracking",
                 desc: "See where you came from. See where you're going.",
                 image: "/growth_tracking.png",
+                objectPos: "bottom",
               },
             ].map((feature, i) => (
               <motion.div
@@ -427,7 +362,7 @@ export default function LandingPage() {
                   <img
                     src={feature.image}
                     alt={feature.title}
-                    className="w-full h-48 sm:h-60 md:h-72 object-cover rounded-xl mt-auto"
+                    className={`w-full h-auto sm:h-60 md:h-72 sm:object-cover rounded-xl mt-auto ${feature.objectPos === "top" ? "sm:object-top" : feature.objectPos === "bottom" ? "sm:object-bottom" : ""}`}
                   />
                 )}
               </motion.div>
