@@ -35,7 +35,7 @@ export default async function LoginPage() {
       <main className="flex-1 flex items-center justify-center px-8 -mt-16">
         <SignIn
           signUpUrl="/signup"
-          forceRedirectUrl="/onboarding"
+
           appearance={{
             elements: {
               rootBox: "mx-auto",
