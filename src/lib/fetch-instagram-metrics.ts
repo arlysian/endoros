@@ -430,7 +430,7 @@ export async function backfillEngagement(account: Account) {
 export async function fetchAudienceDemographics(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
   const baseUrl = `https://graph.facebook.com/v24.0/${instagramBusinessId}/insights`;
-  const breakdowns = ["age", "gender", "country", "city"] as const;
+  const breakdowns = ["age", "gender", "country"] as const;
 
   const rows: { connectedAccountId: string; type: string; label: string; value: number; updatedAt: string }[] = [];
 
@@ -447,7 +447,13 @@ export async function fetchAudienceDemographics(account: Account) {
 
     const parsed = IgFollowsBreakdownSchema.safeParse(raw);
     if (parsed.success) {
-      const results = parsed.data.data[0].total_value.breakdowns[0].results;
+      let results = parsed.data.data[0].total_value.breakdowns[0].results;
+
+      // Only store top 5 countries
+      if (breakdown === "country") {
+        results = [...results].sort((a, b) => b.value - a.value).slice(0, 5);
+      }
+
       for (const result of results) {
         rows.push({
           connectedAccountId: id,
