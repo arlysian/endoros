@@ -445,6 +445,10 @@ export async function fetchAudienceDemographics(account: Account) {
       continue;
     }
 
+    if (!raw.data?.length) {
+      continue;
+    }
+
     const parsed = IgFollowsBreakdownSchema.safeParse(raw);
     if (parsed.success) {
       let results = parsed.data.data[0].total_value.breakdowns[0].results;
