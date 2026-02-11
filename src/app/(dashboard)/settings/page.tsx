@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Settings() {
   const [isMediaKitPublic, setIsMediaKitPublic] = useState(true);
   const [isToggleLoading, setIsToggleLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchUserSettings() {
@@ -20,6 +24,23 @@ export default function Settings() {
     }
     fetchUserSettings();
   }, []);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/user", { method: "DELETE" });
+      if (res.ok) {
+        router.push("/");
+      } else {
+        console.error("Failed to delete account");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   const handleToggleChange = async (checked: boolean) => {
     setIsToggleLoading(true);
@@ -79,12 +100,47 @@ export default function Settings() {
                 Permanently delete your account and all data
               </p>
             </div>
-            <button className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-black transition-colors">
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="px-4 py-2 text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
+            >
               Delete
             </button>
           </div>
         </section>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !isDeleting && setShowDeleteModal(false)}
+          />
+          <div className="relative bg-white rounded-xl shadow-lg p-6 w-full max-w-sm mx-4">
+            <h3 className="text-base font-semibold text-black">Delete Account</h3>
+            <p className="text-sm text-neutral-500 mt-2">
+              This will permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 text-sm font-medium text-black bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

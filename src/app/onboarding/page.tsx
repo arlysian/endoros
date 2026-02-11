@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -14,9 +14,28 @@ export default function Onboarding() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [userReady, setUserReady] = useState(false);
+  const [userFailed, setUserFailed] = useState(false);
   const [userNameError, setUserNameError] = useState<string | null>(null);
   const [checkingUserName, setCheckingUserName] = useState(false);
   const userNameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function waitForUser() {
+      for (let i = 0; i < 20; i++) {
+        const res = await fetch("/api/user");
+        if (!cancelled && res.ok) {
+          setUserReady(true);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      if (!cancelled) setUserFailed(true);
+    }
+    waitForUser();
+    return () => { cancelled = true; };
+  }, []);
 
   const categories = [
     "Fashion & Style",
@@ -105,6 +124,42 @@ export default function Onboarding() {
   };
 
   const isFormValid = formData.userName && formData.category && !userNameError && !checkingUserName;
+
+  if (!userReady) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <header className="flex items-center px-6 h-16 relative z-10">
+          <Link href="/" className="text-base font-semibold text-black tracking-tight">
+            endoros
+          </Link>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          {userFailed ? (
+            <div className="text-center">
+              <p className="text-sm text-neutral-500 mb-4">Something went wrong setting up your account.</p>
+              <button
+                onClick={() => {
+                  setUserFailed(false);
+                  setUserReady(false);
+                  let i = 0;
+                  const retry = setInterval(async () => {
+                    const res = await fetch("/api/user");
+                    if (res.ok) { setUserReady(true); clearInterval(retry); }
+                    if (++i >= 10) { setUserFailed(true); clearInterval(retry); }
+                  }, 1000);
+                }}
+                className="px-4 py-2 text-sm font-medium text-black bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-neutral-400">Setting up your account...</p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

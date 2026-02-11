@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -36,6 +36,40 @@ export async function GET() {
   }
 
   return NextResponse.json(user);
+}
+
+export async function DELETE() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { error } = await supabaseAdmin
+      .from("User")
+      .delete()
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Error deleting user from database:", error);
+      return NextResponse.json(
+        { error: "Failed to delete account" },
+        { status: 500 }
+      );
+    }
+
+    const clerk = await clerkClient();
+    await clerk.users.deleteUser(userId);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(request: NextRequest) {
