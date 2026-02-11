@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { fetchInstagramMetrics, backfillFollowerHistory, backfillProfileVisits, backfillLinkClicks, backfillEngagement } from "@/lib/fetch-instagram-metrics";
+import { fetchInstagramMetrics, fetchAudienceDemographics, backfillFollowerHistory, backfillProfileVisits, backfillLinkClicks, backfillEngagement } from "@/lib/fetch-instagram-metrics";
 import { NextRequest, NextResponse } from "next/server";
 
 const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
     try {
       await Promise.all([
         fetchInstagramMetrics(accountData),
+        fetchAudienceDemographics(accountData),
         backfillFollowerHistory(accountData),
         backfillProfileVisits(accountData),
         backfillLinkClicks(accountData),

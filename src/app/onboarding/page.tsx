@@ -82,7 +82,7 @@ export default function Onboarding() {
     setFormData({ ...formData, phone: cleaned });
 
     if (!cleaned) {
-      setPhoneError("Phone number is required");
+      setPhoneError(null);
     } else if (!/^\+\d{1,3}[\s\-]?\d{4,14}$/.test(cleaned.replace(/[\s\-()]/g, ""))) {
       setPhoneError("Enter a valid number with country code (e.g. +1 555 1234567)");
     } else {

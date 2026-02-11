@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
-import { fetchInstagramMetrics } from "@/lib/fetch-instagram-metrics";
+import { fetchInstagramMetrics, fetchAudienceDemographics } from "@/lib/fetch-instagram-metrics";
 import { fetchTikTokMetrics } from "@/lib/fetch-tiktok-metrics";
 import { fetchYouTubeMetrics } from "@/lib/fetch-youtube-metrics";
 import { fetchFacebookMetrics } from "@/lib/fetch-facebook-metrics";
@@ -43,7 +43,10 @@ export async function GET(request: Request) {
 
     for (const account of validAccounts) {
       try {
-        const metrics = await fetchInstagramMetrics(account);
+        const [metrics] = await Promise.all([
+          fetchInstagramMetrics(account),
+          fetchAudienceDemographics(account),
+        ]);
         instagramResults.push({ accountId: account.id, success: true, metrics });
       } catch (err) {
         console.error(`Error processing Instagram account ${account.id}:`, err);

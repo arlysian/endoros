@@ -427,6 +427,52 @@ export async function backfillEngagement(account: Account) {
   return rows.length;
 }
 
+export async function fetchAudienceDemographics(account: Account) {
+  const { id, instagramBusinessId, accessToken: token } = account;
+  const baseUrl = `https://graph.facebook.com/v24.0/${instagramBusinessId}/insights`;
+  const breakdowns = ["age", "gender", "country", "city"] as const;
+
+  const rows: { connectedAccountId: string; type: string; label: string; value: number; updatedAt: string }[] = [];
+
+  for (const breakdown of breakdowns) {
+    const res = await fetch(
+      `${baseUrl}?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=${breakdown}&access_token=${token}`
+    );
+    const raw = await res.json();
+
+    if (raw.error) {
+      console.error(`Demographics error (${breakdown}):`, raw.error);
+      continue;
+    }
+
+    const parsed = IgFollowsBreakdownSchema.safeParse(raw);
+    if (parsed.success) {
+      const results = parsed.data.data[0].total_value.breakdowns[0].results;
+      for (const result of results) {
+        rows.push({
+          connectedAccountId: id,
+          type: breakdown,
+          label: result.dimension_values[0],
+          value: result.value,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabaseAdmin
+      .from("AudienceDemographics")
+      .upsert(rows, { onConflict: "connectedAccountId,type,label" });
+
+    if (error) {
+      console.error("Demographics upsert error:", error);
+    }
+  }
+
+  return rows.length;
+}
+
 export async function fetchInstagramMetrics(account: Account) {
   const { id, instagramBusinessId, accessToken: token } = account;
 
