@@ -97,6 +97,7 @@ export async function PATCH(request: NextRequest) {
       "isMediaKitPublic",
       "audienceSummary",
       "onboardingCompleted",
+      "phone",
     ];
 
     const updates: Record<string, string | number | boolean | null> = {};

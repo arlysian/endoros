@@ -11,11 +11,13 @@ export default function Onboarding() {
     userName: "",
     location: "",
     category: "",
+    phone: "",
   });
 
   const [saving, setSaving] = useState(false);
   const [userReady, setUserReady] = useState(false);
   const [userFailed, setUserFailed] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [userNameError, setUserNameError] = useState<string | null>(null);
   const [checkingUserName, setCheckingUserName] = useState(false);
   const userNameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -75,6 +77,19 @@ export default function Onboarding() {
     }
   }, []);
 
+  const handlePhoneChange = (value: string) => {
+    const cleaned = value.replace(/[^\d+\-\s()]/g, "");
+    setFormData({ ...formData, phone: cleaned });
+
+    if (!cleaned) {
+      setPhoneError("Phone number is required");
+    } else if (!/^\+\d{1,3}[\s\-]?\d{4,14}$/.test(cleaned.replace(/[\s\-()]/g, ""))) {
+      setPhoneError("Enter a valid number with country code (e.g. +1 555 1234567)");
+    } else {
+      setPhoneError(null);
+    }
+  };
+
   const handleUserNameChange = (value: string) => {
     setFormData({ ...formData, userName: value });
 
@@ -105,6 +120,7 @@ export default function Onboarding() {
           userName: formData.userName,
           location: formData.location,
           category: formData.category,
+          phone: formData.phone,
           onboardingCompleted: true,
         }),
       });
@@ -123,7 +139,7 @@ export default function Onboarding() {
     }
   };
 
-  const isFormValid = formData.userName && formData.category && !userNameError && !checkingUserName;
+  const isFormValid = formData.userName && formData.category && formData.phone && !userNameError && !phoneError && !checkingUserName;
 
   if (!userReady) {
     return (
@@ -223,6 +239,23 @@ export default function Onboarding() {
                   placeholder="Los Angeles, CA"
                   className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200"
                 />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  placeholder="+1 555 1234567"
+                  className={`w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 ${phoneError ? "ring-2 ring-red-500/20" : ""}`}
+                />
+                {phoneError && (
+                  <p className="text-sm text-red-500 mt-1">{phoneError}</p>
+                )}
               </div>
 
               {/* Category */}
