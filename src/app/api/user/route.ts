@@ -46,19 +46,6 @@ export async function DELETE() {
   }
 
   try {
-    const { error } = await supabaseAdmin
-      .from("User")
-      .delete()
-      .eq("id", userId);
-
-    if (error) {
-      console.error("Error deleting user from database:", error);
-      return NextResponse.json(
-        { error: "Failed to delete account" },
-        { status: 500 }
-      );
-    }
-
     const clerk = await clerkClient();
     await clerk.users.deleteUser(userId);
 
