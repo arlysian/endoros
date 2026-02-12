@@ -126,11 +126,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
       };
     }
 
-    // Get last 7 days for chart
+    // Get last 7 days for chart (Meta API has ~48h delay)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const cutoffDate = twoDaysAgo.toISOString().split("T")[0];
     const { data: history } = await supabaseAdmin
       .from("PlatformMetrics")
       .select("date, newFollows, unfollows")
       .eq("connectedAccountId", instagramAccount.id)
+      .lte("date", cutoffDate)
       .order("date", { ascending: false })
       .limit(7);
 

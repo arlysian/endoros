@@ -1030,8 +1030,8 @@ function FollowerGrowthChart({ data, isRealData, days, chartType }: { data: Hist
   }
 
   const chartData = data.map((d) => ({
-    label: days === 7
-      ? new Date(d.date).toLocaleDateString("en-US", { weekday: "short" })
+    label: days <= 14
+      ? new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
       : new Date(d.date).getDate().toString(),
     fullDate: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     newFollows: d.newFollows,

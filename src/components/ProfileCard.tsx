@@ -200,7 +200,7 @@ export default function ProfileCard({
               {loading ? <span className="bg-neutral-100 rounded w-20 h-4 inline-block animate-pulse" /> : displayUsername}
             </span>
           </div>
-          <p className="text-sm text-neutral-500 mt-3 leading-relaxed">
+          <p className="text-sm text-neutral-500 mt-3 leading-relaxed break-words overflow-hidden">
             {loading ? (
               <span className="bg-neutral-100 rounded w-full h-12 inline-block animate-pulse" />
             ) : displayBio}
@@ -229,16 +229,14 @@ export default function ProfileCard({
 
         {/* Achievements */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-black mb-3 pb-1 border-b border-black/10">Achievements</h4>
+          <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Achievements</h4>
           {achievements.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-1.5">
               {achievements.map((achievement) => (
-                <span
-                  key={achievement.id}
-                  className="px-3 py-1.5 bg-black text-white text-xs rounded-full shadow-sm hover:scale-105 transition-transform cursor-default"
-                >
-                  {achievement.title}
-                </span>
+                <div key={achievement.id} className="flex items-start gap-2">
+                  <span className="text-neutral-300 mt-0.5 text-xs">—</span>
+                  <p className="text-sm font-medium text-black">{achievement.title}</p>
+                </div>
               ))}
             </div>
           ) : (
@@ -248,15 +246,18 @@ export default function ProfileCard({
 
         {/* Brand Collaborations */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-black mb-3 pb-1 border-b border-black/10">Collaborations</h4>
+          <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Brand Collaborations</h4>
           {collaborations.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {collaborations.map((collab) => (
-                <div key={collab.id} className="border-b border-neutral-100 pb-2 last:border-0">
-                  <p className="font-medium text-black text-sm">{collab.brand}</p>
-                  {collab.campaign && (
-                    <p className="text-xs text-neutral-500 mt-0.5">{collab.campaign}</p>
-                  )}
+                <div key={collab.id} className="flex items-start gap-2">
+                  <span className="text-neutral-300 mt-0.5 text-xs">—</span>
+                  <div>
+                    <p className="font-medium text-black text-sm">{collab.brand}</p>
+                    {collab.campaign && (
+                      <p className="text-xs text-neutral-500 mt-0.5">{collab.campaign}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -416,9 +417,102 @@ export default function ProfileCard({
           <h1 className="text-xl font-semibold text-black">{displayName}</h1>
           <p className="text-neutral-500 mt-1">@{user?.userName}</p>
           {displayBio && (
-            <p className="text-base text-neutral-600 mt-4 leading-relaxed">{displayBio}</p>
+            <p className="text-base text-neutral-600 mt-4 leading-relaxed break-words overflow-hidden">{displayBio}</p>
+          )}
+
+          {/* Location */}
+          {user?.location && (
+            <div className="flex items-center justify-center gap-1.5 mt-3 text-sm text-neutral-500">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {user.location}
+            </div>
+          )}
+
+          {/* Social Icons Row */}
+          {(user?.website || displayAccounts.length > 0) && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              {user?.website && (
+                <a
+                  href={user.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-neutral-400 hover:text-black transition-colors"
+                  title={user.website.replace(/^https?:\/\//, "")}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </a>
+              )}
+              {displayAccounts.map((account) => (
+                account.profileLink ? (
+                  <a
+                    key={account.id}
+                    href={account.profileLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-neutral-400 hover:text-black transition-colors"
+                    title={`${account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}${account.username ? ` · @${account.username}` : ""}`}
+                  >
+                    <PlatformIcon platform={account.platform} className="w-5 h-5" />
+                  </a>
+                ) : (
+                  <span key={account.id} className="text-neutral-300">
+                    <PlatformIcon platform={account.platform} className="w-5 h-5" />
+                  </span>
+                )
+              ))}
+            </div>
           )}
         </div>
+
+        {/* Achievements */}
+        {achievements.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Achievements</h2>
+            <div className="space-y-2">
+              {achievements.map((achievement) => (
+                <div key={achievement.id} className="flex items-start gap-2">
+                  <span className="text-neutral-300 mt-0.5">—</span>
+                  <div>
+                    <p className="text-sm font-medium text-black">{achievement.title}</p>
+                    {achievement.date && (
+                      <p className="text-xs text-neutral-400 mt-0.5">{achievement.date}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Brand Collaborations */}
+        {collaborations.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Brand Collaborations</h2>
+            <div className="space-y-2">
+              {collaborations.map((collab) => (
+                <div key={collab.id} className="flex items-start gap-2">
+                  <span className="text-neutral-300 mt-0.5">—</span>
+                  <div>
+                    <p className="text-sm font-medium text-black">
+                      {collab.brand}
+                      {collab.campaign && <span className="font-normal text-neutral-500"> · {collab.campaign}</span>}
+                    </p>
+                    {(collab.type || collab.date) && (
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {collab.type}{collab.type && collab.date && " · "}{collab.date}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Platform Selector */}
         {displayAccounts.length > 0 && (
@@ -471,45 +565,6 @@ export default function ProfileCard({
           </div>
         </div>
 
-        {/* Achievements */}
-        {achievements.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Achievements</h2>
-            <div className="flex flex-wrap gap-2">
-              {achievements.map((achievement) => (
-                <span
-                  key={achievement.id}
-                  className="px-3 py-1.5 bg-black text-white text-xs rounded-full shadow-sm hover:scale-105 transition-transform cursor-default"
-                >
-                  {achievement.title}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Brand Collaborations */}
-        {collaborations.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Collaborations</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {collaborations.map((collab) => (
-                <div key={collab.id} className="border-b border-neutral-100 pb-3">
-                  <p className="font-medium text-black text-sm">{collab.brand}</p>
-                  {collab.campaign && (
-                    <p className="text-xs text-neutral-500 mt-1">{collab.campaign}</p>
-                  )}
-                  {(collab.type || collab.date) && (
-                    <p className="text-[10px] text-neutral-400 mt-2">
-                      {collab.type}{collab.type && collab.date && " · "}{collab.date}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Follower Growth */}
         {(() => {
           const hasHistory = followerHistory.length > 0;
@@ -557,12 +612,12 @@ export default function ProfileCard({
                 {hasHistory ? (
                   followerHistory.map((day, i) => {
                     const date = new Date(day.date);
-                    const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
-                    return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dayName}</span>;
+                    const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                    return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dateLabel}</span>;
                   })
                 ) : (
-                  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                    <span key={d} className="flex-1 text-center text-[10px] text-neutral-400">{d}</span>
+                  Array(7).fill(0).map((_, i) => (
+                    <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">-</span>
                   ))
                 )}
               </div>
@@ -699,28 +754,6 @@ export default function ProfileCard({
           <div className="mb-8">
             <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h2>
             <p className="text-sm text-neutral-500 leading-relaxed">{user.audienceSummary}</p>
-          </div>
-        )}
-
-        {/* Contact */}
-        {(user?.location || user?.website) && (
-          <div className="mb-8">
-            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Contact</h2>
-            <div className="space-y-2 text-sm">
-              {user.location && (
-                <p className="text-neutral-500">{user.location}</p>
-              )}
-              {user.website && (
-                <a
-                  href={user.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-black underline"
-                >
-                  {user.website}
-                </a>
-              )}
-            </div>
           </div>
         )}
 

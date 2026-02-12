@@ -210,7 +210,7 @@ export default function MediaKitDesktop({
 
             {/* Bio */}
             {user.bio && (
-              <p className="text-sm text-neutral-600 leading-relaxed mb-6">
+              <p className="text-sm text-neutral-600 leading-relaxed mb-6 break-words overflow-hidden">
                 {user.bio}
               </p>
             )}
@@ -243,20 +243,18 @@ export default function MediaKitDesktop({
               </div>
             )}
 
-            {/* Collaborations */}
-            {collaborations.length > 0 && (
+            {/* Achievements */}
+            {achievements.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Collaborations</h2>
-                <div className="space-y-3">
-                  {collaborations.slice(0, 5).map((collab) => (
-                    <div key={collab.id} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-xs font-medium">
-                        {collab.brand.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-black text-sm truncate">{collab.brand}</p>
-                        {collab.campaign && (
-                          <p className="text-xs text-neutral-500 truncate">{collab.campaign}</p>
+                <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Achievements</h2>
+                <div className="space-y-2">
+                  {achievements.map((achievement) => (
+                    <div key={achievement.id} className="flex items-start gap-2">
+                      <span className="text-neutral-300 mt-0.5">—</span>
+                      <div>
+                        <p className="text-sm font-medium text-black">{achievement.title}</p>
+                        {achievement.date && (
+                          <p className="text-xs text-neutral-400 mt-0.5">{achievement.date}</p>
                         )}
                       </div>
                     </div>
@@ -265,18 +263,26 @@ export default function MediaKitDesktop({
               </div>
             )}
 
-            {/* Achievements */}
-            {achievements.length > 0 && (
+            {/* Collaborations */}
+            {collaborations.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Achievements</h2>
-                <div className="flex flex-wrap gap-2">
-                  {achievements.map((achievement) => (
-                    <span
-                      key={achievement.id}
-                      className="px-3 py-1.5 bg-black text-white text-xs rounded-full shadow-sm hover:scale-105 transition-transform cursor-default"
-                    >
-                      {achievement.title}
-                    </span>
+                <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Brand Collaborations</h2>
+                <div className="space-y-2">
+                  {collaborations.map((collab) => (
+                    <div key={collab.id} className="flex items-start gap-2">
+                      <span className="text-neutral-300 mt-0.5">—</span>
+                      <div>
+                        <p className="text-sm font-medium text-black">
+                          {collab.brand}
+                          {collab.campaign && <span className="font-normal text-neutral-500"> · {collab.campaign}</span>}
+                        </p>
+                        {(collab.type || collab.date) && (
+                          <p className="text-xs text-neutral-400 mt-0.5">
+                            {collab.type}{collab.type && collab.date && " · "}{collab.date}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -302,11 +308,6 @@ export default function MediaKitDesktop({
                   >
                     {Icon && <Icon className="w-4 h-4" />}
                     <span className="text-sm font-medium">{account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}</span>
-                    {account.followers && (
-                      <span className={`text-xs ${isSelected ? "text-neutral-500" : "text-neutral-400"}`}>
-                        {formatNumber(account.followers)}
-                      </span>
-                    )}
                   </button>
                   {account.profileLink && (
                     <a
@@ -511,7 +512,7 @@ export default function MediaKitDesktop({
 
 function FollowerGrowthChart({ data }: { data: FollowerHistoryDay[] }) {
   const chartData = data.map((d) => ({
-    label: new Date(d.date).toLocaleDateString("en-US", { weekday: "short" }),
+    label: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     newFollows: d.newFollows,
     unfollows: d.unfollows,
   }));

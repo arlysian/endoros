@@ -24,11 +24,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ history: [] });
   }
 
-  // Get last N days of metrics
+  // Get last N days of metrics (Meta API has ~48h delay)
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 2);
+  const cutoffDate = cutoff.toISOString().split("T")[0];
+
   const { data: metrics, error } = await supabaseAdmin
     .from("PlatformMetrics")
     .select("date, followers, newFollows, unfollows, profileVisits, linkClicks, likes, comments, shares, saves")
     .eq("connectedAccountId", account.id)
+    .lte("date", cutoffDate)
     .order("date", { ascending: false })
     .limit(validDays);
 

@@ -509,6 +509,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              maxLength={50}
               placeholder="Enter your first name"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
             />
@@ -519,6 +520,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              maxLength={50}
               placeholder="Enter your last name"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
             />
@@ -529,6 +531,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.userName}
               onChange={(e) => handleUserNameChange(e.target.value)}
+              maxLength={30}
               placeholder="@yourname"
               className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black ${userNameError ? "border border-red-500" : ""}`}
             />
@@ -558,6 +561,7 @@ export default function InfluenceProfile() {
               type="url"
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              maxLength={200}
               placeholder="https://yourwebsite.com"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
             />
@@ -568,6 +572,7 @@ export default function InfluenceProfile() {
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              maxLength={100}
               placeholder="Los Angeles, CA"
               className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
             />
@@ -579,6 +584,7 @@ export default function InfluenceProfile() {
           <textarea
             value={formData.bio}
             onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+            maxLength={500}
             rows={4}
             placeholder="Add a bio to tell brands about yourself."
             className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black resize-none"
@@ -590,6 +596,7 @@ export default function InfluenceProfile() {
           <textarea
             value={formData.audienceSummary}
             onChange={(e) => setFormData({ ...formData, audienceSummary: e.target.value })}
+            maxLength={300}
             rows={3}
             placeholder="e.g., Young professionals aged 25-34, interested in tech and lifestyle..."
             className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black resize-none"
@@ -710,6 +717,7 @@ export default function InfluenceProfile() {
                   type="text"
                   value={newCollab.brand}
                   onChange={(e) => setNewCollab({ ...newCollab, brand: e.target.value })}
+                  maxLength={100}
                   placeholder="e.g. Nike"
                   className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
                 />
@@ -721,6 +729,7 @@ export default function InfluenceProfile() {
                   type="text"
                   value={newCollab.campaign}
                   onChange={(e) => setNewCollab({ ...newCollab, campaign: e.target.value })}
+                  maxLength={150}
                   placeholder="e.g. Summer Collection"
                   className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
                 />
@@ -810,6 +819,7 @@ export default function InfluenceProfile() {
                   type="text"
                   value={newAchievement.title}
                   onChange={(e) => setNewAchievement({ ...newAchievement, title: e.target.value })}
+                  maxLength={150}
                   placeholder="e.g. Featured in Vogue Magazine"
                   className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
                 />
@@ -821,6 +831,7 @@ export default function InfluenceProfile() {
                   type="text"
                   value={newAchievement.description}
                   onChange={(e) => setNewAchievement({ ...newAchievement, description: e.target.value })}
+                  maxLength={300}
                   placeholder="e.g. Cover story feature"
                   className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
                 />
