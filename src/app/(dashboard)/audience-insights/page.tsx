@@ -15,17 +15,46 @@ interface DemographicItem {
   value: number;
 }
 
+const DEMOGRAPHICS_CACHE_KEY = "demographics_cache";
+const DEMOGRAPHICS_CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+
+function getCachedDemographics(): DemographicItem[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DEMOGRAPHICS_CACHE_KEY);
+    if (!raw) return null;
+    const { demographics, timestamp } = JSON.parse(raw);
+    if (Date.now() - timestamp > DEMOGRAPHICS_CACHE_TTL) return null;
+    return demographics;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedDemographics(demographics: DemographicItem[]) {
+  try {
+    localStorage.setItem(DEMOGRAPHICS_CACHE_KEY, JSON.stringify({ demographics, timestamp: Date.now() }));
+  } catch {}
+}
+
 export default function AudienceInsights() {
   const [demographics, setDemographics] = useState<DemographicItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const cached = getCachedDemographics();
+    if (cached) {
+      setDemographics(cached);
+      setLoading(false);
+    }
+
     async function fetchDemographics() {
       try {
         const res = await fetch("/api/demographics");
         if (res.ok) {
           const data = await res.json();
           setDemographics(data.demographics);
+          setCachedDemographics(data.demographics);
         }
       } catch (error) {
         console.error("Failed to fetch demographics:", error);

@@ -180,25 +180,25 @@ function Sidebar() {
         </nav>
 
         {/* Preview Link */}
-        {user?.userName && (
-          <div className="px-3 mb-2">
-            <a
-              href={`/${user.userName}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-lg
-                bg-black text-white hover:bg-neutral-800 transition-colors
-                ${collapsed ? "justify-center" : ""}
-              `}
-            >
-              <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
-              {!collapsed && <span className="text-[13px] font-medium">Preview</span>}
-            </a>
-          </div>
-        )}
+        <div className="px-3 mb-2">
+          <a
+            href={user?.userName ? `/${user.userName}` : "#"}
+            target={user?.userName ? "_blank" : undefined}
+            rel={user?.userName ? "noopener noreferrer" : undefined}
+            onClick={(e) => { if (!user?.userName) e.preventDefault(); }}
+            className={`
+              flex items-center gap-3 px-3 py-2.5 rounded-lg
+              bg-black text-white hover:bg-neutral-800 transition-colors
+              ${collapsed ? "justify-center" : ""}
+              ${!user?.userName ? "cursor-default" : ""}
+            `}
+          >
+            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+            {!collapsed && <span className="text-[13px] font-medium">Preview</span>}
+          </a>
+        </div>
 
         {/* Bottom section */}
         <div className="py-3 px-3">

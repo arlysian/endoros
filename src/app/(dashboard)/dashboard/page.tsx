@@ -75,6 +75,19 @@ const allPlatforms = [
 
 const DASHBOARD_CACHE_KEY = "dashboard_cache";
 
+function getCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch { return null; }
+}
+
+function setCache(key: string, data: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
 interface SimpleMetrics {
   followers: number;
   avgViews?: number | null;
@@ -125,7 +138,6 @@ export default function Dashboard() {
   const [history, setHistory] = useState<HistoryDay[]>([]);
   const [historySummary, setHistorySummary] = useState<HistorySummary | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyCache, setHistoryCache] = useState<Record<number, { history: HistoryDay[]; summary: HistorySummary }>>({});
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [chartType, setChartType] = useState<"bar" | "net">("bar");
   const [engagementPeriod, setEngagementPeriod] = useState<"today" | "7" | "30" | "total">("total");
@@ -144,7 +156,6 @@ export default function Dashboard() {
     saves: number;
   } | null>(null);
   const [engagementLoading, setEngagementLoading] = useState(false);
-  const [engagementCache, setEngagementCache] = useState<Record<string, { likes: number; comments: number; shares: number; saves: number }>>({});
 
   // TikTok state
   const [ttMetrics, setTtMetrics] = useState<TikTokMetrics | null>(null);
@@ -152,21 +163,18 @@ export default function Dashboard() {
   const [ttHistory, setTtHistory] = useState<TikTokHistoryDay[]>([]);
   const [ttHistorySummary, setTtHistorySummary] = useState<TikTokHistorySummary | null>(null);
   const [ttHistoryLoading, setTtHistoryLoading] = useState(false);
-  const [ttHistoryCache, setTtHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
 
   // YouTube state
   const [ytMetrics, setYtMetrics] = useState<SimpleMetrics | null>(null);
   const [ytHistory, setYtHistory] = useState<TikTokHistoryDay[]>([]);
   const [ytHistorySummary, setYtHistorySummary] = useState<TikTokHistorySummary | null>(null);
   const [ytHistoryLoading, setYtHistoryLoading] = useState(false);
-  const [ytHistoryCache, setYtHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
 
   // Facebook state
   const [fbMetrics, setFbMetrics] = useState<SimpleMetrics | null>(null);
   const [fbHistory, setFbHistory] = useState<TikTokHistoryDay[]>([]);
   const [fbHistorySummary, setFbHistorySummary] = useState<TikTokHistorySummary | null>(null);
   const [fbHistoryLoading, setFbHistoryLoading] = useState(false);
-  const [fbHistoryCache, setFbHistoryCache] = useState<Record<number, { history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>>({});
 
   // Connected accounts state
   const [igConnected, setIgConnected] = useState<boolean | null>(null);
@@ -204,87 +212,71 @@ export default function Dashboard() {
     return false;
   });
 
-  // Fetch and update connected accounts (refresh in background)
+  // First check which platforms are connected, then only fetch metrics for those
   useEffect(() => {
-    Promise.all([
-      fetch("/api/metrics/instagram").then(res => ({ ok: res.ok, data: res.json() })),
-      fetch("/api/metrics/tiktok").then(res => ({ ok: res.ok, data: res.json() })),
-      fetch("/api/metrics/youtube").then(res => ({ ok: res.ok, data: res.json() })),
-      fetch("/api/metrics/facebook").then(res => ({ ok: res.ok, data: res.json() })),
-    ]).then(async ([igRes, ttRes, ytRes, fbRes]) => {
-      const igData = await igRes.data;
-      const ttData = await ttRes.data;
-      const ytData = await ytRes.data;
-      const fbData = await fbRes.data;
+    fetch("/api/connected-platforms")
+      .then((res) => res.json())
+      .then(async (platforms: { instagram: boolean; tiktok: boolean; youtube: boolean; facebook: boolean }) => {
+        setIgConnected(platforms.instagram);
+        setTtConnected(platforms.tiktok);
+        setYtConnected(platforms.youtube);
+        setFbConnected(platforms.facebook);
 
-      const igIsConnected = igRes.ok && !igData.error;
-      const ttIsConnected = ttRes.ok && !ttData.error;
-      const ytIsConnected = ytRes.ok && !ytData.error;
-      const fbIsConnected = fbRes.ok && !fbData.error;
-      const igMetricsData = igIsConnected ? (igData.metrics || null) : null;
-      const ttMetricsData = ttIsConnected ? (ttData.metrics || null) : null;
-      const ytMetricsData = ytIsConnected ? (ytData.metrics || null) : null;
-      const fbMetricsData = fbIsConnected ? (fbData.metrics || null) : null;
-
-      setIgConnected(igIsConnected);
-      setTtConnected(ttIsConnected);
-      setYtConnected(ytIsConnected);
-      setFbConnected(fbIsConnected);
-
-      // Auto-select first connected platform (only if no cache existed)
-      if (!getCachedDashboard()) {
-        if (igIsConnected) {
-          setSelectedPlatform("instagram");
-        } else if (ttIsConnected) {
-          setSelectedPlatform("tiktok");
-        } else if (ytIsConnected) {
-          setSelectedPlatform("youtube");
-        } else if (fbIsConnected) {
-          setSelectedPlatform("facebook");
+        // Auto-select first connected platform (only if no cache existed)
+        if (!getCachedDashboard()) {
+          if (platforms.instagram) setSelectedPlatform("instagram");
+          else if (platforms.tiktok) setSelectedPlatform("tiktok");
+          else if (platforms.youtube) setSelectedPlatform("youtube");
+          else if (platforms.facebook) setSelectedPlatform("facebook");
         }
-      }
 
-      if (igIsConnected) setIgMetrics(igMetricsData);
-      if (ttIsConnected) setTtMetrics(ttMetricsData);
-      if (ytIsConnected) setYtMetrics(ytMetricsData);
-      if (fbIsConnected) setFbMetrics(fbMetricsData);
+        // Only fetch metrics for connected platforms
+        const fetches: Promise<{ key: string; data: Record<string, unknown> }>[] = [];
+        if (platforms.instagram) fetches.push(fetch("/api/metrics/instagram").then(r => r.json()).then(d => ({ key: "ig", data: d })));
+        if (platforms.tiktok) fetches.push(fetch("/api/metrics/tiktok").then(r => r.json()).then(d => ({ key: "tt", data: d })));
+        if (platforms.youtube) fetches.push(fetch("/api/metrics/youtube").then(r => r.json()).then(d => ({ key: "yt", data: d })));
+        if (platforms.facebook) fetches.push(fetch("/api/metrics/facebook").then(r => r.json()).then(d => ({ key: "fb", data: d })));
 
-      // Update cache
-      setCachedDashboard({
-        igConnected: igIsConnected,
-        ttConnected: ttIsConnected,
-        ytConnected: ytIsConnected,
-        fbConnected: fbIsConnected,
-        igMetrics: igMetricsData,
-        ttMetrics: ttMetricsData,
-        ytMetrics: ytMetricsData,
-        fbMetrics: fbMetricsData,
+        const results = await Promise.all(fetches);
+        for (const { key, data } of results) {
+          if (key === "ig" && data.metrics) setIgMetrics(data.metrics as InstagramMetrics);
+          if (key === "tt" && data.metrics) setTtMetrics(data.metrics as TikTokMetrics);
+          if (key === "yt" && data.metrics) setYtMetrics(data.metrics as SimpleMetrics);
+          if (key === "fb" && data.metrics) setFbMetrics(data.metrics as SimpleMetrics);
+        }
+
+        setCachedDashboard({
+          igConnected: platforms.instagram,
+          ttConnected: platforms.tiktok,
+          ytConnected: platforms.youtube,
+          fbConnected: platforms.facebook,
+          igMetrics: results.find(r => r.key === "ig")?.data.metrics as InstagramMetrics ?? null,
+          ttMetrics: results.find(r => r.key === "tt")?.data.metrics as TikTokMetrics ?? null,
+          ytMetrics: results.find(r => r.key === "yt")?.data.metrics as SimpleMetrics ?? null,
+          fbMetrics: results.find(r => r.key === "fb")?.data.metrics as SimpleMetrics ?? null,
+        });
+
+        setLoading(false);
+        setTtLoading(false);
+      })
+      .catch(() => {
+        setIgConnected(false);
+        setTtConnected(false);
+        setYtConnected(false);
+        setFbConnected(false);
+        setLoading(false);
+        setTtLoading(false);
       });
-
-      setLoading(false);
-      setTtLoading(false);
-    }).catch(() => {
-      setIgConnected(false);
-      setTtConnected(false);
-      setYtConnected(false);
-      setFbConnected(false);
-      setLoading(false);
-      setTtLoading(false);
-    });
   }, []);
 
 
   useEffect(() => {
-    if (selectedPlatform === "instagram") {
-      const cached = historyCache[historyDays];
-      if (cached) {
-        setHistory(cached.history);
-        setHistorySummary(cached.summary);
-        setHistoryLoading(false);
-        return;
-      }
+    if (selectedPlatform === "instagram" && igConnected) {
+      const cacheKey = `ig_history_${historyDays}`;
+      const cached = getCache<{ history: HistoryDay[]; summary: HistorySummary }>(cacheKey);
+      if (cached) { setHistory(cached.history); setHistorySummary(cached.summary); setHistoryLoading(false); }
+      else { setHistoryLoading(true); }
 
-      setHistoryLoading(true);
       fetch(`/api/metrics/instagram/history?days=${historyDays}`)
         .then((res) => res.json())
         .then((data) => {
@@ -292,35 +284,27 @@ export default function Dashboard() {
           const summaryData = data.summary || null;
           setHistory(historyData);
           setHistorySummary(summaryData);
-          if (summaryData) {
-            setHistoryCache((prev) => ({
-              ...prev,
-              [historyDays]: { history: historyData, summary: summaryData },
-            }));
-          }
+          if (summaryData) setCache(cacheKey, { history: historyData, summary: summaryData });
           setHistoryLoading(false);
         })
-        .catch(() => {
-          setHistory([]);
-          setHistorySummary(null);
-          setHistoryLoading(false);
-        });
+        .catch(() => { setHistory([]); setHistorySummary(null); setHistoryLoading(false); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform, historyDays]);
+  }, [selectedPlatform, historyDays, igConnected]);
 
   // Fetch 14 days for performance table (this week vs last week)
   useEffect(() => {
     if (selectedPlatform === "instagram" && igConnected) {
+      const cached = getCache<{ thisWeek: { profileVisits: number; linkClicks: number }; lastWeek: { profileVisits: number; linkClicks: number } }>("ig_performance");
+      if (cached) setPerformanceData(cached);
+
       fetch("/api/metrics/instagram/history?days=14")
         .then((res) => res.json())
         .then((data) => {
           const history14 = data.history || [];
           if (history14.length >= 7) {
-            // Split into this week (last 7 days) and last week (7 days before)
             const thisWeekData = history14.slice(-7);
             const lastWeekData = history14.slice(0, Math.min(7, history14.length - 7));
-
             const thisWeek = {
               profileVisits: thisWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.profileVisits || 0), 0),
               linkClicks: thisWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.linkClicks || 0), 0),
@@ -329,8 +313,8 @@ export default function Dashboard() {
               profileVisits: lastWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.profileVisits || 0), 0),
               linkClicks: lastWeekData.reduce((sum: number, d: HistoryDay) => sum + (d.linkClicks || 0), 0),
             };
-
             setPerformanceData({ thisWeek, lastWeek });
+            setCache("ig_performance", { thisWeek, lastWeek });
           }
         })
         .catch(() => setPerformanceData(null));
@@ -339,18 +323,12 @@ export default function Dashboard() {
 
   // Fetch TikTok history
   useEffect(() => {
-    if (selectedPlatform === "tiktok") {
-      const cached = ttHistoryCache[historyDays];
-      if (cached) {
-        setTtHistory(cached.history);
-        setTtHistorySummary(cached.summary);
-        setTtHistoryLoading(false);
-        return;
-      }
+    if (selectedPlatform === "tiktok" && ttConnected) {
+      const cacheKey = `tt_history_${historyDays}`;
+      const cached = getCache<{ history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>(cacheKey);
+      if (cached) { setTtHistory(cached.history); setTtHistorySummary(cached.summary); setTtHistoryLoading(false); }
+      else { setTtHistoryLoading(true); }
 
-      if (ttHistory.length === 0) {
-        setTtHistoryLoading(true);
-      }
       fetch(`/api/metrics/tiktok/history?days=${historyDays}`)
         .then((res) => res.json())
         .then((data) => {
@@ -358,35 +336,22 @@ export default function Dashboard() {
           const summaryData = data.summary || null;
           setTtHistory(historyData);
           setTtHistorySummary(summaryData);
-          if (summaryData) {
-            setTtHistoryCache((prev) => ({
-              ...prev,
-              [historyDays]: { history: historyData, summary: summaryData },
-            }));
-          }
+          if (summaryData) setCache(cacheKey, { history: historyData, summary: summaryData });
           setTtHistoryLoading(false);
         })
-        .catch(() => {
-          setTtHistory([]);
-          setTtHistorySummary(null);
-          setTtHistoryLoading(false);
-        });
+        .catch(() => { setTtHistory([]); setTtHistorySummary(null); setTtHistoryLoading(false); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform, historyDays]);
+  }, [selectedPlatform, historyDays, ttConnected]);
 
   // Fetch YouTube history
   useEffect(() => {
-    if (selectedPlatform === "youtube") {
-      const cached = ytHistoryCache[historyDays];
-      if (cached) {
-        setYtHistory(cached.history);
-        setYtHistorySummary(cached.summary);
-        setYtHistoryLoading(false);
-        return;
-      }
+    if (selectedPlatform === "youtube" && ytConnected) {
+      const cacheKey = `yt_history_${historyDays}`;
+      const cached = getCache<{ history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>(cacheKey);
+      if (cached) { setYtHistory(cached.history); setYtHistorySummary(cached.summary); setYtHistoryLoading(false); }
+      else { setYtHistoryLoading(true); }
 
-      if (ytHistory.length === 0) setYtHistoryLoading(true);
       fetch(`/api/metrics/youtube/history?days=${historyDays}`)
         .then((res) => res.json())
         .then((data) => {
@@ -394,28 +359,22 @@ export default function Dashboard() {
           const summaryData = data.summary || null;
           setYtHistory(historyData);
           setYtHistorySummary(summaryData);
-          if (summaryData) {
-            setYtHistoryCache((prev) => ({ ...prev, [historyDays]: { history: historyData, summary: summaryData } }));
-          }
+          if (summaryData) setCache(cacheKey, { history: historyData, summary: summaryData });
           setYtHistoryLoading(false);
         })
         .catch(() => { setYtHistory([]); setYtHistorySummary(null); setYtHistoryLoading(false); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform, historyDays]);
+  }, [selectedPlatform, historyDays, ytConnected]);
 
   // Fetch Facebook history
   useEffect(() => {
-    if (selectedPlatform === "facebook") {
-      const cached = fbHistoryCache[historyDays];
-      if (cached) {
-        setFbHistory(cached.history);
-        setFbHistorySummary(cached.summary);
-        setFbHistoryLoading(false);
-        return;
-      }
+    if (selectedPlatform === "facebook" && fbConnected) {
+      const cacheKey = `fb_history_${historyDays}`;
+      const cached = getCache<{ history: TikTokHistoryDay[]; summary: TikTokHistorySummary }>(cacheKey);
+      if (cached) { setFbHistory(cached.history); setFbHistorySummary(cached.summary); setFbHistoryLoading(false); }
+      else { setFbHistoryLoading(true); }
 
-      if (fbHistory.length === 0) setFbHistoryLoading(true);
       fetch(`/api/metrics/facebook/history?days=${historyDays}`)
         .then((res) => res.json())
         .then((data) => {
@@ -423,20 +382,17 @@ export default function Dashboard() {
           const summaryData = data.summary || null;
           setFbHistory(historyData);
           setFbHistorySummary(summaryData);
-          if (summaryData) {
-            setFbHistoryCache((prev) => ({ ...prev, [historyDays]: { history: historyData, summary: summaryData } }));
-          }
+          if (summaryData) setCache(cacheKey, { history: historyData, summary: summaryData });
           setFbHistoryLoading(false);
         })
         .catch(() => { setFbHistory([]); setFbHistorySummary(null); setFbHistoryLoading(false); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform, historyDays]);
+  }, [selectedPlatform, historyDays, fbConnected]);
 
   // Fetch engagement data based on period
   useEffect(() => {
     if (selectedPlatform === "instagram" && igConnected) {
-      // For "total", use the total_* columns from igMetrics
       if (engagementPeriod === "total") {
         if (igMetrics) {
           setEngagementData({
@@ -449,16 +405,12 @@ export default function Dashboard() {
         return;
       }
 
-      // For other periods, fetch from history and aggregate
       const days = engagementPeriod === "today" ? 1 : parseInt(engagementPeriod);
-      const cacheKey = `ig_${days}`;
+      const cacheKey = `ig_engagement_${days}`;
+      const cached = getCache<{ likes: number; comments: number; shares: number; saves: number }>(cacheKey);
+      if (cached) { setEngagementData(cached); }
+      else { setEngagementLoading(true); }
 
-      if (engagementCache[cacheKey]) {
-        setEngagementData(engagementCache[cacheKey]);
-        return;
-      }
-
-      setEngagementLoading(true);
       fetch(`/api/metrics/instagram/history?days=${days}`)
         .then((res) => res.json())
         .then((data) => {
@@ -470,13 +422,10 @@ export default function Dashboard() {
             saves: historyData.reduce((sum, d) => sum + (d.saves || 0), 0),
           };
           setEngagementData(aggregated);
-          setEngagementCache((prev) => ({ ...prev, [cacheKey]: aggregated }));
+          setCache(cacheKey, aggregated);
           setEngagementLoading(false);
         })
-        .catch(() => {
-          setEngagementData(null);
-          setEngagementLoading(false);
-        });
+        .catch(() => { setEngagementData(null); setEngagementLoading(false); });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, engagementPeriod, igConnected, igMetrics]);
@@ -595,9 +544,7 @@ export default function Dashboard() {
 
       {/* Loading state while checking connection status */}
       {igConnected === null && ttConnected === null && ytConnected === null && fbConnected === null && (
-        <div className="flex items-center justify-center py-20">
-          <div className="text-neutral-400 text-sm">Loading...</div>
-        </div>
+        <div className="py-20" />
       )}
 
       {/* No platforms connected state */}
@@ -685,7 +632,7 @@ export default function Dashboard() {
           </div>
           <div className="h-40" onClick={() => setSelectedDayIndex(null)}>
             {(isInstagram && historyLoading) || (isTikTok && ttHistoryLoading) || (isYouTube && ytHistoryLoading) || (isFacebook && fbHistoryLoading) ? (
-              <div className="flex items-center justify-center h-full text-neutral-400 text-sm">Loading...</div>
+              <div className="h-full" />
             ) : (
               <FollowerGrowthChart
                 data={isInstagram ? history : isTikTok ? ttHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : isYouTube ? ytHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : isFacebook ? fbHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : []}
@@ -934,9 +881,7 @@ function EngagementDonutChart({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[200px] text-neutral-400 text-sm">
-        Loading...
-      </div>
+      <div className="h-[200px]" />
     );
   }
 
