@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -392,6 +398,71 @@ export default function LandingPage() {
             Create your media kit
           </Link>
         </motion.div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-32 px-6">
+        <div className="max-w-3xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl font-semibold tracking-tight mb-16 text-center"
+          >
+            Questions? Answers.
+          </motion.h2>
+
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="free" className="border-neutral-200">
+              <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                Is it really free?
+              </AccordionTrigger>
+              <AccordionContent className="text-neutral-500 text-base leading-relaxed">
+                Yes. You can create your media kit, connect your socials, and share your link for free. No credit card needed.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="platforms" className="border-neutral-200">
+              <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                What platforms do you support?
+              </AccordionTrigger>
+              <AccordionContent className="text-neutral-500 text-base leading-relaxed">
+                Instagram, TikTok, and YouTube. We pull your stats automatically so your media kit is always up to date.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="privacy" className="border-neutral-200">
+              <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                Can brands see my analytics?
+              </AccordionTrigger>
+              <AccordionContent className="text-neutral-500 text-base leading-relaxed">
+                Only what you choose to share. You control exactly what shows up on your media kit.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="linktree" className="border-neutral-200">
+              <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                How is this different from Linktree?
+              </AccordionTrigger>
+              <AccordionContent className="text-neutral-500 text-base leading-relaxed">
+                Linktree is a list of links. Endoros is a media kit — it shows your real stats, audience demographics, and growth to help you land brand deals.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="setup" className="border-neutral-200">
+              <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                How long does setup take?
+              </AccordionTrigger>
+              <AccordionContent className="text-neutral-500 text-base leading-relaxed">
+                About 2 minutes. Connect your accounts, and your media kit builds itself.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="followers" className="border-neutral-200">
+              <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                Do I need a certain number of followers?
+              </AccordionTrigger>
+              <AccordionContent className="text-neutral-500 text-base leading-relaxed">
+                No. Whether you have 1K or 1M followers, brands want to see your stats presented professionally.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
       </section>
 
       {/* Footer */}

@@ -4,4 +4,9 @@
 
 
 - refresh of page access when refreshing user access token
-- Add Zod to check against schema 
+
+-Drop it in your bio.
+Let brands find you.
+Add to your Linktree or replace it entirely. One link that shows brands exactly why they should pay you.
+
+-screenshot with link in linktree of bio
