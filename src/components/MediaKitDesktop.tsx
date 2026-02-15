@@ -73,12 +73,24 @@ interface PlatformData {
   followerHistory: FollowerHistoryDay[];
 }
 
+interface DemographicItem {
+  type: string;
+  label: string;
+  value: number;
+}
+
+interface AccountData {
+  metrics: PlatformMetrics | null;
+  followerHistory: FollowerHistoryDay[];
+  demographics: DemographicItem[];
+}
+
 interface MediaKitDesktopProps {
   user: User;
   achievements: Achievement[];
   collaborations: Collaboration[];
   connectedAccounts: ConnectedAccount[];
-  platformDataMap: Record<string, PlatformData>;
+  accountDataMap: Record<string, AccountData>;
 }
 
 function formatNumber(num: number): string {
@@ -132,21 +144,42 @@ const platformIcons: Record<string, (props: { className?: string }) => React.Rea
   TWITTER: TwitterIcon,
 };
 
+const countryNames: Record<string, string> = {
+  AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AO: "Angola", AR: "Argentina",
+  AU: "Australia", AT: "Austria", BD: "Bangladesh", BE: "Belgium", BR: "Brazil",
+  CA: "Canada", CL: "Chile", CN: "China", CO: "Colombia", CR: "Costa Rica",
+  CI: "Ivory Coast", CM: "Cameroon", CZ: "Czechia", DE: "Germany", DK: "Denmark",
+  DO: "Dominican Republic", EC: "Ecuador", EG: "Egypt", ES: "Spain", FI: "Finland",
+  FR: "France", GB: "United Kingdom", GH: "Ghana", GR: "Greece", GT: "Guatemala",
+  HK: "Hong Kong", HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel",
+  IN: "India", IQ: "Iraq", IR: "Iran", IT: "Italy", JM: "Jamaica",
+  JO: "Jordan", JP: "Japan", KE: "Kenya", KR: "South Korea", KW: "Kuwait",
+  LB: "Lebanon", LY: "Libya", MA: "Morocco", MG: "Madagascar", MN: "Mongolia",
+  MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NG: "Nigeria", NL: "Netherlands",
+  NO: "Norway", NZ: "New Zealand", PA: "Panama", PE: "Peru", PH: "Philippines",
+  PK: "Pakistan", PL: "Poland", PS: "Palestine", PT: "Portugal", RO: "Romania",
+  RU: "Russia", SA: "Saudi Arabia", SD: "Sudan", SE: "Sweden", SG: "Singapore",
+  SN: "Senegal", SY: "Syria", TH: "Thailand", TJ: "Tajikistan", TN: "Tunisia",
+  TR: "Turkey", TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", AE: "UAE",
+  US: "United States", UZ: "Uzbekistan", VE: "Venezuela", VN: "Vietnam",
+  ZA: "South Africa", ZW: "Zimbabwe",
+};
+
 export default function MediaKitDesktop({
   user,
   achievements,
   collaborations,
   connectedAccounts,
-  platformDataMap,
+  accountDataMap,
 }: MediaKitDesktopProps) {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>(
-    connectedAccounts.find(a => a.platform === "INSTAGRAM")?.platform ||
-    connectedAccounts[0]?.platform ||
-    "INSTAGRAM"
-  );
+  const defaultAccount = connectedAccounts.find(a => a.platform === "INSTAGRAM") || connectedAccounts[0];
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
 
-  const platformMetrics = platformDataMap[selectedPlatform]?.metrics ?? null;
-  const followerHistory = platformDataMap[selectedPlatform]?.followerHistory ?? [];
+  const selectedAccount = connectedAccounts.find(a => a.id === selectedAccountId);
+  const accountData = accountDataMap[selectedAccountId];
+  const platformMetrics = accountData?.metrics ?? null;
+  const followerHistory = accountData?.followerHistory ?? [];
+  const demographics = accountData?.demographics ?? [];
 
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -156,8 +189,6 @@ export default function MediaKitDesktop({
   const displayAccounts = connectedAccounts.filter(
     acc => acc.platform !== "FACEBOOK" && acc.platform !== "YOUTUBE"
   );
-
-  const totalFollowers = connectedAccounts.reduce((sum, acc) => sum + (acc.followers || 0), 0);
 
   const hasHistory = followerHistory.length > 0;
   const totalNewFollows = followerHistory.reduce((sum, d) => sum + d.newFollows, 0);
@@ -300,12 +331,12 @@ export default function MediaKitDesktop({
             {/* Platform Selector */}
             <div className="flex items-center gap-6 mb-10 border-b border-neutral-100 pb-4">
               {displayAccounts.map((account) => {
-                const isSelected = selectedPlatform === account.platform;
+                const isSelected = selectedAccountId === account.id;
                 const Icon = platformIcons[account.platform];
                 return (
                 <div key={account.id} className="flex items-center gap-1">
                   <button
-                    onClick={() => setSelectedPlatform(account.platform)}
+                    onClick={() => setSelectedAccountId(account.id)}
                     className={`flex items-center gap-2 pb-2 -mb-[17px] border-b-2 transition-colors ${
                       isSelected
                         ? "border-black text-black"
@@ -313,7 +344,9 @@ export default function MediaKitDesktop({
                     }`}
                   >
                     {Icon && <Icon className="w-4 h-4" />}
-                    <span className="text-sm font-medium">{account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}</span>
+                    <span className="text-sm font-medium">
+                      {account.username || account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}
+                    </span>
                   </button>
                   {account.profileLink && (
                     <a
@@ -344,9 +377,9 @@ export default function MediaKitDesktop({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
-                      {formatNumber(totalFollowers)}
+                      {platformMetrics?.followers ? formatNumber(platformMetrics.followers) : "-"}
                     </p>
-                    <p className="text-xs text-neutral-400 mt-1">Total Followers</p>
+                    <p className="text-xs text-neutral-400 mt-1">Followers</p>
                   </div>
                   <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
@@ -496,11 +529,124 @@ export default function MediaKitDesktop({
                 </div>
               </div>
 
-              {/* Audience Summary */}
-              {user.audienceSummary && (
+              {/* Audience Summary + Demographics */}
+              {(user.audienceSummary || demographics.length > 0) && (
                 <div className="col-span-2 pt-4 border-t border-neutral-100">
                   <h3 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h3>
-                  <p className="text-sm text-neutral-600 leading-relaxed">{user.audienceSummary}</p>
+                  {user.audienceSummary && (
+                    <p className="text-sm text-neutral-600 leading-relaxed mb-6">{user.audienceSummary}</p>
+                  )}
+                  {demographics.length > 0 && (() => {
+                    const genderData = demographics.filter(d => d.type === "gender");
+                    const ageData = demographics.filter(d => d.type === "age");
+                    const countryData = demographics.filter(d => d.type === "country").sort((a, b) => b.value - a.value).slice(0, 5);
+                    const genderTotal = genderData.reduce((s, d) => s + d.value, 0);
+                    const ageTotal = ageData.reduce((s, d) => s + d.value, 0);
+                    const countryTotal = countryData.reduce((s, d) => s + d.value, 0);
+                    const genderLabels: Record<string, string> = { M: "Male", F: "Female", U: "Other" };
+                    const genderColors: Record<string, string> = { M: "#4A5FD9", F: "#E05C97", U: "#9CA3AF" };
+
+                    const genderChartConfig: ChartConfig = {
+                      M: { label: "Male", color: "#4A5FD9" },
+                      F: { label: "Female", color: "#E05C97" },
+                      U: { label: "Other", color: "#9CA3AF" },
+                    };
+
+                    const genderChartData = genderData.map(g => ({
+                      gender: g.label,
+                      value: g.value,
+                      fill: genderColors[g.label] || "#9CA3AF",
+                    }));
+
+                    return (
+                      <div className="grid grid-cols-3 gap-8">
+                        {/* Gender - Donut Chart */}
+                        {genderTotal > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">Gender</p>
+                            <ChartContainer config={genderChartConfig} className="mx-auto aspect-square max-h-[140px]">
+                              <PieChart>
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                                <Pie
+                                  data={genderChartData}
+                                  dataKey="value"
+                                  nameKey="gender"
+                                  innerRadius={35}
+                                  outerRadius={55}
+                                  strokeWidth={2}
+                                  stroke="#fff"
+                                >
+                                  <Label
+                                    content={({ viewBox }) => {
+                                      if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                        return (
+                                          <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                            <tspan x={viewBox.cx} y={viewBox.cy} className="fill-black text-lg font-bold">
+                                              {genderTotal.toLocaleString()}
+                                            </tspan>
+                                          </text>
+                                        );
+                                      }
+                                    }}
+                                  />
+                                </Pie>
+                              </PieChart>
+                            </ChartContainer>
+                            <div className="flex justify-center gap-3 mt-2">
+                              {genderChartData.map(g => {
+                                const pct = Math.round((g.value / genderTotal) * 100);
+                                return (
+                                  <div key={g.gender} className="flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: genderColors[g.gender] || "#9CA3AF" }} />
+                                    <span className="text-xs text-neutral-500">{genderLabels[g.gender] || g.gender} ({pct}%)</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Age */}
+                        {ageTotal > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">Age</p>
+                            <div className="space-y-2">
+                              {ageData.map(a => {
+                                const pct = Math.round((a.value / ageTotal) * 100);
+                                return (
+                                  <div key={a.label} className="flex items-center gap-2">
+                                    <span className="text-xs text-neutral-500 w-12">{a.label}</span>
+                                    <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                                      <div className="h-full bg-black rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <span className="text-xs text-neutral-400 w-8 text-right">{pct}%</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top Countries */}
+                        {countryData.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">Top Countries</p>
+                            <div className="space-y-2">
+                              {countryData.map(c => {
+                                const pct = countryTotal > 0 ? Math.round((c.value / countryTotal) * 100) : 0;
+                                return (
+                                  <div key={c.label} className="flex items-center justify-between">
+                                    <span className="text-xs text-neutral-600">{countryNames[c.label] || c.label}</span>
+                                    <span className="text-xs text-neutral-400">{pct}%</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

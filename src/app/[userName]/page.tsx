@@ -95,14 +95,34 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .eq("userId", user.id)
     .order("date", { ascending: false });
 
-  // Fetch metrics for ALL connected accounts
+  // Fetch metrics per connected account, keyed by platform
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
   const cutoffDate = twoDaysAgo.toISOString().split("T")[0];
 
-  const platformDataEntries = await Promise.all(
+  // Build account data map — keyed by connectedAccountId so multiple accounts
+  // of the same platform stay independent
+  const accountDataMap: Record<string, {
+    metrics: {
+      followers?: number;
+      reach?: number;
+      engagementRate?: number;
+      avgViews?: number;
+      likes?: number;
+      comments?: number;
+      shares?: number;
+      saves?: number;
+      profileVisits?: number;
+      newFollows?: number;
+      unfollows?: number;
+    } | null;
+    followerHistory: { date: string; newFollows: number; unfollows: number }[];
+    demographics: { type: string; label: string; value: number }[];
+  }> = {};
+
+  const accountsWithFollowers = await Promise.all(
     (connectedAccounts || []).map(async (acc) => {
-      // Get latest metrics
+      // Get latest metrics row for this account
       const { data: metrics } = await supabaseAdmin
         .from("PlatformMetrics")
         .select("*")
@@ -111,65 +131,77 @@ export default async function PublicProfilePage({ params }: PageProps) {
         .limit(1)
         .single();
 
+      // Map only the fields that this platform actually provides
       let parsedMetrics = null;
       if (metrics) {
-        parsedMetrics = {
-          followers: metrics.followers ?? undefined,
-          reach: metrics.reach ?? undefined,
-          engagementRate: metrics.engagementRate ?? undefined,
-          avgViews: metrics.avgViews ?? undefined,
-          likes: metrics.total_likes ?? undefined,
-          comments: metrics.total_comments ?? undefined,
-          shares: metrics.total_shares ?? undefined,
-          saves: metrics.total_saves ?? undefined,
-          profileVisits: metrics.profileVisits ?? undefined,
-          newFollows: metrics.newFollows ?? undefined,
-          unfollows: metrics.unfollows ?? undefined,
-        };
+        if (acc.platform === "INSTAGRAM") {
+          parsedMetrics = {
+            followers: metrics.followers ?? undefined,
+            reach: metrics.reach ?? undefined,
+            engagementRate: metrics.engagementRate ?? undefined,
+            avgViews: metrics.avgViews ?? undefined,
+            likes: metrics.total_likes ?? undefined,
+            comments: metrics.total_comments ?? undefined,
+            shares: metrics.total_shares ?? undefined,
+            saves: metrics.total_saves ?? undefined,
+            profileVisits: metrics.profileVisits ?? undefined,
+            newFollows: metrics.newFollows ?? undefined,
+            unfollows: metrics.unfollows ?? undefined,
+          };
+        } else if (acc.platform === "TIKTOK") {
+          parsedMetrics = {
+            followers: metrics.followers ?? undefined,
+            engagementRate: metrics.engagementRate ?? undefined,
+            avgViews: metrics.avgViews ?? undefined,
+            likes: metrics.total_likes ?? undefined,
+            comments: metrics.total_comments ?? undefined,
+            shares: metrics.total_shares ?? undefined,
+          };
+        } else if (acc.platform === "FACEBOOK") {
+          parsedMetrics = {
+            followers: metrics.followers ?? undefined,
+          };
+        }
       }
 
-      // Get last 7 days for chart
-      const { data: history } = await supabaseAdmin
-        .from("PlatformMetrics")
-        .select("date, newFollows, unfollows")
-        .eq("connectedAccountId", acc.id)
-        .lte("date", cutoffDate)
-        .order("date", { ascending: false })
-        .limit(7);
+      // Follower history — only IG tracks newFollows/unfollows
+      let followerHistory: { date: string; newFollows: number; unfollows: number }[] = [];
+      if (acc.platform === "INSTAGRAM") {
+        const { data: history } = await supabaseAdmin
+          .from("PlatformMetrics")
+          .select("date, newFollows, unfollows")
+          .eq("connectedAccountId", acc.id)
+          .lte("date", cutoffDate)
+          .order("date", { ascending: false })
+          .limit(7);
 
-      const followerHistory = history
-        ? history.reverse().map(h => ({
-            date: h.date,
-            newFollows: h.newFollows ?? 0,
-            unfollows: h.unfollows ?? 0,
-          }))
-        : [];
+        followerHistory = history
+          ? history.reverse().map(h => ({
+              date: h.date,
+              newFollows: h.newFollows ?? 0,
+              unfollows: h.unfollows ?? 0,
+            }))
+          : [];
+      }
 
-      return [acc.platform, { metrics: parsedMetrics, followerHistory }] as const;
-    })
-  );
+      // Demographics — only IG has this
+      let demographics: { type: string; label: string; value: number }[] = [];
+      if (acc.platform === "INSTAGRAM") {
+        const { data: demoData } = await supabaseAdmin
+          .from("AudienceDemographics")
+          .select("type, label, value")
+          .eq("connectedAccountId", acc.id);
+        demographics = (demoData as unknown as { type: string; label: string; value: number }[]) || [];
+      }
 
-  const platformDataMap: Record<string, { metrics: typeof platformDataEntries[number][1]["metrics"]; followerHistory: { date: string; newFollows: number; unfollows: number }[] }> = Object.fromEntries(platformDataEntries);
-
-  // Get latest followers count for each connected account
-  const accountsWithFollowers = await Promise.all(
-    (connectedAccounts || []).map(async (acc) => {
-      const { data: latestMetrics } = await supabaseAdmin
-        .from("PlatformMetrics")
-        .select("followers")
-        .eq("connectedAccountId", acc.id)
-        .order("date", { ascending: false })
-        .limit(1)
-        .single();
+      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, demographics };
 
       return {
         ...acc,
-        followers: latestMetrics?.followers || null,
+        followers: metrics?.followers || null,
       };
     })
   );
-
-  const totalFollowers = accountsWithFollowers.reduce((sum, acc) => sum + (acc.followers || 0), 0);
 
   return (
     <>
@@ -180,7 +212,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           achievements={achievements || []}
           collaborations={collaborations || []}
           connectedAccounts={accountsWithFollowers}
-          platformDataMap={platformDataMap}
+          accountDataMap={accountDataMap}
         />
       </div>
 
@@ -192,10 +224,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
               user={user}
               achievements={achievements || []}
               collaborations={collaborations || []}
-              totalFollowers={totalFollowers}
               compact={false}
-              platformDataMap={platformDataMap}
               connectedAccounts={accountsWithFollowers}
+              accountDataMap={accountDataMap}
             />
           </div>
         </div>

@@ -73,6 +73,18 @@ interface PlatformData {
   followerHistory: FollowerHistoryDay[];
 }
 
+interface DemographicItem {
+  type: string;
+  label: string;
+  value: number;
+}
+
+interface AccountData {
+  metrics: PlatformMetricsData | null;
+  followerHistory: FollowerHistoryDay[];
+  demographics: DemographicItem[];
+}
+
 interface ProfileCardProps {
   user: ProfileCardUser | null;
   achievements: ProfileCardAchievement[];
@@ -81,8 +93,30 @@ interface ProfileCardProps {
   loading?: boolean;
   compact?: boolean;
   platformDataMap?: Record<string, PlatformData>;
+  accountDataMap?: Record<string, AccountData>;
   connectedAccounts?: ConnectedAccount[];
 }
+
+const countryNames: Record<string, string> = {
+  AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AO: "Angola", AR: "Argentina",
+  AU: "Australia", AT: "Austria", BD: "Bangladesh", BE: "Belgium", BR: "Brazil",
+  CA: "Canada", CL: "Chile", CN: "China", CO: "Colombia", CR: "Costa Rica",
+  CI: "Ivory Coast", CM: "Cameroon", CZ: "Czechia", DE: "Germany", DK: "Denmark",
+  DO: "Dominican Republic", EC: "Ecuador", EG: "Egypt", ES: "Spain", FI: "Finland",
+  FR: "France", GB: "United Kingdom", GH: "Ghana", GR: "Greece", GT: "Guatemala",
+  HK: "Hong Kong", HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel",
+  IN: "India", IQ: "Iraq", IR: "Iran", IT: "Italy", JM: "Jamaica",
+  JO: "Jordan", JP: "Japan", KE: "Kenya", KR: "South Korea", KW: "Kuwait",
+  LB: "Lebanon", LY: "Libya", MA: "Morocco", MG: "Madagascar", MN: "Mongolia",
+  MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NG: "Nigeria", NL: "Netherlands",
+  NO: "Norway", NZ: "New Zealand", PA: "Panama", PE: "Peru", PH: "Philippines",
+  PK: "Pakistan", PL: "Poland", PS: "Palestine", PT: "Portugal", RO: "Romania",
+  RU: "Russia", SA: "Saudi Arabia", SD: "Sudan", SE: "Sweden", SG: "Singapore",
+  SN: "Senegal", SY: "Syria", TH: "Thailand", TJ: "Tajikistan", TN: "Tunisia",
+  TR: "Turkey", TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", AE: "UAE",
+  US: "United States", UZ: "Uzbekistan", VE: "Venezuela", VN: "Vietnam",
+  ZA: "South Africa", ZW: "Zimbabwe",
+};
 
 function formatNumber(num: number): string {
   if (num >= 1000000) {
@@ -150,6 +184,7 @@ export default function ProfileCard({
   loading = false,
   compact = false,
   platformDataMap = {},
+  accountDataMap = {},
   connectedAccounts = [],
 }: ProfileCardProps) {
   const displayName = user?.firstName && user?.lastName
@@ -159,13 +194,15 @@ export default function ProfileCard({
   const displayUsername = user?.userName ? `@${user.userName}` : "@username";
   const displayBio = user?.bio || (compact ? "Add a bio to tell brands about yourself." : null);
 
-  // For compact mode, use first available platform
-  const firstPlatform = connectedAccounts[0]?.platform || "INSTAGRAM";
+  // For compact mode, use first available account
+  const firstAccount = connectedAccounts[0];
+  const firstAccountId = firstAccount?.id || "";
 
   // Compact mode for sidebar
   if (compact) {
-    const platformMetrics = platformDataMap[firstPlatform]?.metrics ?? null;
-    const followerHistory = platformDataMap[firstPlatform]?.followerHistory ?? [];
+    const compactData = accountDataMap[firstAccountId] || platformDataMap[firstAccount?.platform || "INSTAGRAM"];
+    const platformMetrics = compactData?.metrics ?? null;
+    const followerHistory = compactData?.followerHistory ?? [];
     return (
       <div>
         {/* Cover Image */}
@@ -218,7 +255,7 @@ export default function ProfileCard({
         {/* Stats */}
         <div className="grid grid-cols-3 gap-6 mb-8">
           <div className="text-center">
-            <p className="text-xl font-semibold text-black">{formatNumber(totalFollowers) || "-"}</p>
+            <p className="text-xl font-semibold text-black">{platformMetrics?.followers ? formatNumber(platformMetrics.followers) : "-"}</p>
             <p className="text-xs text-neutral-400">Followers</p>
           </div>
           <div className="text-center">
@@ -389,15 +426,16 @@ export default function ProfileCard({
     acc => acc.platform !== "FACEBOOK" && acc.platform !== "YOUTUBE"
   );
 
-  // State for selected platform
-  const [selectedPlatform, setSelectedPlatform] = useState<string>(
-    displayAccounts.find(a => a.platform === "INSTAGRAM")?.platform ||
-    displayAccounts[0]?.platform ||
-    "INSTAGRAM"
-  );
+  // State for selected account
+  const defaultAccount = displayAccounts.find(a => a.platform === "INSTAGRAM") || displayAccounts[0];
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
 
-  const platformMetrics = platformDataMap[selectedPlatform]?.metrics ?? null;
-  const followerHistory = platformDataMap[selectedPlatform]?.followerHistory ?? [];
+  const selectedAccount = displayAccounts.find(a => a.id === selectedAccountId);
+  const selectedPlatform = selectedAccount?.platform || "INSTAGRAM";
+  const accountData = accountDataMap[selectedAccountId];
+  const platformMetrics = accountData?.metrics ?? platformDataMap[selectedPlatform]?.metrics ?? null;
+  const followerHistory = accountData?.followerHistory ?? platformDataMap[selectedPlatform]?.followerHistory ?? [];
+  const demographics = accountData?.demographics ?? [];
 
   // Full mode for public profile
   return (
@@ -529,11 +567,11 @@ export default function ProfileCard({
         {displayAccounts.length > 0 && (
           <div className="flex items-center justify-center gap-6 mb-6 border-b border-neutral-100">
             {displayAccounts.map((account) => {
-              const isSelected = selectedPlatform === account.platform;
+              const isSelected = selectedAccountId === account.id;
               return (
                 <button
                   key={account.id}
-                  onClick={() => setSelectedPlatform(account.platform)}
+                  onClick={() => setSelectedAccountId(account.id)}
                   className={`flex items-center gap-2 pb-3 border-b-2 -mb-[1px] transition-colors ${
                     isSelected
                       ? "border-black text-black"
@@ -542,7 +580,7 @@ export default function ProfileCard({
                 >
                   <PlatformIcon platform={account.platform} className="w-5 h-5" />
                   <span className="text-sm font-medium">
-                    {account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}
+                    {account.username || account.platform.charAt(0) + account.platform.slice(1).toLowerCase()}
                   </span>
                 </button>
               );
@@ -553,7 +591,7 @@ export default function ProfileCard({
         {/* Key Stats for Brands */}
         <div className="grid grid-cols-2 gap-3 mb-10 pb-8 border-b border-neutral-100">
           <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
-            <p className="text-2xl font-semibold text-black">{formatNumber(totalFollowers)}</p>
+            <p className="text-2xl font-semibold text-black">{platformMetrics?.followers ? formatNumber(platformMetrics.followers) : "-"}</p>
             <p className="text-xs text-neutral-400 mt-1">Followers</p>
           </div>
           <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
@@ -760,11 +798,127 @@ export default function ProfileCard({
           );
         })()}
 
-        {/* Audience Summary */}
-        {user?.audienceSummary && (
+        {/* Audience Summary + Demographics */}
+        {(user?.audienceSummary || demographics.length > 0) && (
           <div className="mb-8">
             <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h2>
-            <p className="text-sm text-neutral-500 leading-relaxed">{user.audienceSummary}</p>
+            {user?.audienceSummary && (
+              <p className="text-sm text-neutral-500 leading-relaxed mb-5">{user.audienceSummary}</p>
+            )}
+            {demographics.length > 0 && (() => {
+              const genderData = demographics.filter(d => d.type === "gender");
+              const ageData = demographics.filter(d => d.type === "age");
+              const countryData = demographics.filter(d => d.type === "country").sort((a, b) => b.value - a.value).slice(0, 5);
+              const genderTotal = genderData.reduce((s, d) => s + d.value, 0);
+              const ageTotal = ageData.reduce((s, d) => s + d.value, 0);
+              const countryTotal = countryData.reduce((s, d) => s + d.value, 0);
+              const genderLabels: Record<string, string> = { M: "Male", F: "Female", U: "Other" };
+              const genderColors: Record<string, string> = { M: "#4A5FD9", F: "#E05C97", U: "#9CA3AF" };
+
+              const genderChartConfig: ChartConfig = {
+                M: { label: "Male", color: "#4A5FD9" },
+                F: { label: "Female", color: "#E05C97" },
+                U: { label: "Other", color: "#9CA3AF" },
+              };
+
+              const genderChartData = genderData.map(g => ({
+                gender: g.label,
+                value: g.value,
+                fill: genderColors[g.label] || "#9CA3AF",
+              }));
+
+              return (
+                <div className="space-y-5">
+                  {/* Gender - Donut Chart */}
+                  {genderTotal > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Gender</p>
+                      <ChartContainer config={genderChartConfig} className="mx-auto aspect-square max-h-[160px]">
+                        <PieChart>
+                          <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                          <Pie
+                            data={genderChartData}
+                            dataKey="value"
+                            nameKey="gender"
+                            innerRadius={40}
+                            outerRadius={65}
+                            strokeWidth={2}
+                            stroke="#fff"
+                          >
+                            <Label
+                              content={({ viewBox }) => {
+                                if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                  return (
+                                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                      <tspan x={viewBox.cx} y={viewBox.cy} className="fill-black text-xl font-bold">
+                                        {genderTotal.toLocaleString()}
+                                      </tspan>
+                                      <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 18} className="fill-neutral-400 text-[10px]">
+                                        followers
+                                      </tspan>
+                                    </text>
+                                  );
+                                }
+                              }}
+                            />
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
+                      <div className="flex justify-center gap-3 mt-2">
+                        {genderChartData.map(g => {
+                          const pct = Math.round((g.value / genderTotal) * 100);
+                          return (
+                            <div key={g.gender} className="flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: genderColors[g.gender] || "#9CA3AF" }} />
+                              <span className="text-xs text-neutral-500">{genderLabels[g.gender] || g.gender} ({pct}%)</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Age */}
+                  {ageTotal > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Age</p>
+                      <div className="space-y-2">
+                        {ageData.map(a => {
+                          const pct = Math.round((a.value / ageTotal) * 100);
+                          return (
+                            <div key={a.label} className="flex items-center gap-2">
+                              <span className="text-xs text-neutral-500 w-12">{a.label}</span>
+                              <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-black rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-xs text-neutral-400 w-8 text-right">{pct}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top Countries */}
+                  {countryData.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Top Countries</p>
+                      <div className="space-y-1.5">
+                        {countryData.map(c => {
+                          const pct = countryTotal > 0 ? Math.round((c.value / countryTotal) * 100) : 0;
+                          return (
+                            <div key={c.label} className="flex items-center justify-between">
+                              <span className="text-xs text-neutral-600">{countryNames[c.label] || c.label}</span>
+                              <span className="text-xs text-neutral-400">{pct}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
