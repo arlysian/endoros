@@ -472,9 +472,9 @@ export default function LandingPage() {
           <div className="flex items-center gap-8 text-sm text-neutral-400">
             <Link href="/privacy" className="hover:text-neutral-900 transition-colors">Privacy</Link>
             <Link href="/tos" className="hover:text-neutral-900 transition-colors">Terms</Link>
-            <a href="mailto:hello@endoros.com" className="hover:text-neutral-900 transition-colors">Contact</a>
+            <a href="mailto:general@endoros.com" className="hover:text-neutral-900 transition-colors">Contact</a>
           </div>
-          <p className="text-sm text-neutral-400">© 2025</p>
+          <p className="text-sm text-neutral-400">© 2026</p>
         </div>
       </footer>
     </div>
