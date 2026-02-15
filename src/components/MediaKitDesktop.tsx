@@ -84,11 +84,17 @@ interface FollowerSnapshot {
   followers: number;
 }
 
+interface PerformanceData {
+  thisWeek: { profileVisits: number; linkClicks: number };
+  lastWeek: { profileVisits: number; linkClicks: number };
+}
+
 interface AccountData {
   metrics: PlatformMetrics | null;
   followerHistory: FollowerHistoryDay[];
   followerSnapshots: FollowerSnapshot[];
   demographics: DemographicItem[];
+  performanceData?: PerformanceData | null;
 }
 
 interface MediaKitDesktopProps {
@@ -187,6 +193,8 @@ export default function MediaKitDesktop({
   const followerHistory = accountData?.followerHistory ?? [];
   const followerSnapshots = accountData?.followerSnapshots ?? [];
   const demographics = accountData?.demographics ?? [];
+
+  const performanceData = accountData?.performanceData ?? null;
 
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -561,6 +569,48 @@ export default function MediaKitDesktop({
                 )}
               </div>
 
+              {/* Performance Table - Instagram only */}
+              {selectedAccount?.platform === "INSTAGRAM" && performanceData && (
+                <div className="col-span-2 pt-4 border-t border-neutral-100">
+                  <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Performance</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-neutral-100">
+                          <th className="text-left text-xs font-medium text-neutral-400 pb-3">Metric</th>
+                          <th className="text-right text-xs font-medium text-neutral-400 pb-3">This Week</th>
+                          <th className="text-right text-xs font-medium text-neutral-400 pb-3">Last Week</th>
+                          <th className="text-right text-xs font-medium text-neutral-400 pb-3">Change</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const thisVisits = performanceData.thisWeek.profileVisits;
+                          const lastVisits = performanceData.lastWeek.profileVisits;
+                          const visitsChange = lastVisits > 0 ? ((thisVisits - lastVisits) / lastVisits) * 100 : 0;
+
+                          const thisClicks = performanceData.thisWeek.linkClicks;
+                          const lastClicks = performanceData.lastWeek.linkClicks;
+                          const clicksChange = lastClicks > 0 ? ((thisClicks - lastClicks) / lastClicks) * 100 : 0;
+
+                          const thisCTR = thisVisits > 0 ? (thisClicks / thisVisits) * 100 : 0;
+                          const lastCTR = lastVisits > 0 ? (lastClicks / lastVisits) * 100 : 0;
+                          const ctrChange = lastCTR > 0 ? ((thisCTR - lastCTR) / lastCTR) * 100 : 0;
+
+                          return (
+                            <>
+                              <PerformanceRow metric="Profile Visits" thisWeek={formatNumber(thisVisits)} lastWeek={formatNumber(lastVisits)} change={lastVisits > 0 ? `${visitsChange >= 0 ? "+" : ""}${visitsChange.toFixed(1)}%` : "-"} positive={visitsChange >= 0} />
+                              <PerformanceRow metric="Link Clicks" thisWeek={formatNumber(thisClicks)} lastWeek={formatNumber(lastClicks)} change={lastClicks > 0 ? `${clicksChange >= 0 ? "+" : ""}${clicksChange.toFixed(1)}%` : "-"} positive={clicksChange >= 0} />
+                              <PerformanceRow metric="Link CTR" thisWeek={`${thisCTR.toFixed(2)}%`} lastWeek={`${lastCTR.toFixed(2)}%`} change={lastCTR > 0 ? `${ctrChange >= 0 ? "+" : ""}${ctrChange.toFixed(1)}%` : "-"} positive={ctrChange >= 0} />
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* Audience Summary + Demographics */}
               {(user.audienceSummary || demographics.length > 0) && (
                 <div className="col-span-2 pt-4 border-t border-neutral-100">
@@ -796,5 +846,30 @@ function FollowerSnapshotChart({ data }: { data: { date: string; followers: numb
         </AreaChart>
       </ChartContainer>
     </div>
+  );
+}
+
+function PerformanceRow({
+  metric,
+  thisWeek,
+  lastWeek,
+  change,
+  positive,
+}: {
+  metric: string;
+  thisWeek: string;
+  lastWeek: string;
+  change: string;
+  positive: boolean;
+}) {
+  return (
+    <tr className="border-b border-neutral-50">
+      <td className="py-4 text-sm text-black">{metric}</td>
+      <td className="py-4 text-sm text-black text-right font-medium">{thisWeek}</td>
+      <td className="py-4 text-sm text-neutral-400 text-right">{lastWeek}</td>
+      <td className={`py-4 text-sm text-right font-medium ${positive ? "text-emerald-600" : "text-rose-500"}`}>
+        {change}
+      </td>
+    </tr>
   );
 }

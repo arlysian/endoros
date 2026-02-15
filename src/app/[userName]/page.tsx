@@ -157,6 +157,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
     followerHistory: { date: string; newFollows: number; unfollows: number }[];
     followerSnapshots: { date: string; followers: number }[];
     demographics: { type: string; label: string; value: number }[];
+    performanceData: {
+      thisWeek: { profileVisits: number; linkClicks: number };
+      lastWeek: { profileVisits: number; linkClicks: number };
+    } | null;
   }> = {};
 
   const accountsWithFollowers = await Promise.all(
@@ -251,7 +255,38 @@ export default async function PublicProfilePage({ params }: PageProps) {
         demographics = (demoData as unknown as { type: string; label: string; value: number }[]) || [];
       }
 
-      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, followerSnapshots, demographics };
+      // Performance data — 14 days for this week vs last week comparison (IG only)
+      let performanceData: {
+        thisWeek: { profileVisits: number; linkClicks: number };
+        lastWeek: { profileVisits: number; linkClicks: number };
+      } | null = null;
+      if (acc.platform === "INSTAGRAM") {
+        const { data: perfHistory } = await supabaseAdmin
+          .from("PlatformMetrics")
+          .select("date, profileVisits, linkClicks")
+          .eq("connectedAccountId", acc.id)
+          .lte("date", cutoffDate)
+          .order("date", { ascending: false })
+          .limit(14);
+
+        if (perfHistory && perfHistory.length >= 7) {
+          const sorted = [...perfHistory].reverse();
+          const thisWeekData = sorted.slice(-7);
+          const lastWeekData = sorted.slice(0, Math.min(7, sorted.length - 7));
+          performanceData = {
+            thisWeek: {
+              profileVisits: thisWeekData.reduce((sum, d) => sum + (d.profileVisits || 0), 0),
+              linkClicks: thisWeekData.reduce((sum, d) => sum + (d.linkClicks || 0), 0),
+            },
+            lastWeek: {
+              profileVisits: lastWeekData.reduce((sum, d) => sum + (d.profileVisits || 0), 0),
+              linkClicks: lastWeekData.reduce((sum, d) => sum + (d.linkClicks || 0), 0),
+            },
+          };
+        }
+      }
+
+      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, followerSnapshots, demographics, performanceData };
 
       return {
         ...acc,

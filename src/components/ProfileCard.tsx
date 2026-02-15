@@ -84,11 +84,17 @@ interface FollowerSnapshot {
   followers: number;
 }
 
+interface PerformanceData {
+  thisWeek: { profileVisits: number; linkClicks: number };
+  lastWeek: { profileVisits: number; linkClicks: number };
+}
+
 interface AccountData {
   metrics: PlatformMetricsData | null;
   followerHistory: FollowerHistoryDay[];
   followerSnapshots: FollowerSnapshot[];
   demographics: DemographicItem[];
+  performanceData?: PerformanceData | null;
 }
 
 interface ProfileCardProps {
@@ -857,6 +863,64 @@ export default function ProfileCard({
                   ))}
                 </div>
               )}
+            </div>
+          );
+        })()}
+
+        {/* Performance Table - Instagram only */}
+        {selectedPlatform === "INSTAGRAM" && accountData?.performanceData && (() => {
+          const perf = accountData.performanceData;
+          const thisVisits = perf.thisWeek.profileVisits;
+          const lastVisits = perf.lastWeek.profileVisits;
+          const visitsChange = lastVisits > 0 ? ((thisVisits - lastVisits) / lastVisits) * 100 : 0;
+
+          const thisClicks = perf.thisWeek.linkClicks;
+          const lastClicks = perf.lastWeek.linkClicks;
+          const clicksChange = lastClicks > 0 ? ((thisClicks - lastClicks) / lastClicks) * 100 : 0;
+
+          const thisCTR = thisVisits > 0 ? (thisClicks / thisVisits) * 100 : 0;
+          const lastCTR = lastVisits > 0 ? (lastClicks / lastVisits) * 100 : 0;
+          const ctrChange = lastCTR > 0 ? ((thisCTR - lastCTR) / lastCTR) * 100 : 0;
+
+          return (
+            <div className="mb-8">
+              <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Performance</h3>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-neutral-100">
+                    <th className="text-left text-xs font-medium text-neutral-400 pb-3">Metric</th>
+                    <th className="text-right text-xs font-medium text-neutral-400 pb-3">This Week</th>
+                    <th className="text-right text-xs font-medium text-neutral-400 pb-3">Last Week</th>
+                    <th className="text-right text-xs font-medium text-neutral-400 pb-3">Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-neutral-50">
+                    <td className="py-3 text-sm text-black">Profile Visits</td>
+                    <td className="py-3 text-sm text-black text-right font-medium">{formatNumber(thisVisits)}</td>
+                    <td className="py-3 text-sm text-neutral-400 text-right">{formatNumber(lastVisits)}</td>
+                    <td className={`py-3 text-sm text-right font-medium ${visitsChange >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                      {lastVisits > 0 ? `${visitsChange >= 0 ? "+" : ""}${visitsChange.toFixed(1)}%` : "-"}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-neutral-50">
+                    <td className="py-3 text-sm text-black">Link Clicks</td>
+                    <td className="py-3 text-sm text-black text-right font-medium">{formatNumber(thisClicks)}</td>
+                    <td className="py-3 text-sm text-neutral-400 text-right">{formatNumber(lastClicks)}</td>
+                    <td className={`py-3 text-sm text-right font-medium ${clicksChange >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                      {lastClicks > 0 ? `${clicksChange >= 0 ? "+" : ""}${clicksChange.toFixed(1)}%` : "-"}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-neutral-50">
+                    <td className="py-3 text-sm text-black">Link CTR</td>
+                    <td className="py-3 text-sm text-black text-right font-medium">{`${thisCTR.toFixed(2)}%`}</td>
+                    <td className="py-3 text-sm text-neutral-400 text-right">{`${lastCTR.toFixed(2)}%`}</td>
+                    <td className={`py-3 text-sm text-right font-medium ${ctrChange >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                      {lastCTR > 0 ? `${ctrChange >= 0 ? "+" : ""}${ctrChange.toFixed(1)}%` : "-"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           );
         })()}
