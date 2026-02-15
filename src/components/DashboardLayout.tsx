@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface UserData {
   id: string;
@@ -115,6 +116,110 @@ const navItems = [
   },
 ];
 
+const moodIcons = [
+  { value: "sad", label: "Sad", path: "M15.182 16.318A4.486 4.486 0 0012.016 15a4.486 4.486 0 00-3.198 1.318M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" },
+  { value: "meh", label: "Meh", path: "M15.75 15.75H8.25M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" },
+  { value: "good", label: "Good", path: "M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" },
+  { value: "great", label: "Great", path: "M16.5 14.25c0 2.485-2.015 4.5-4.5 4.5s-4.5-2.015-4.5-4.5h9zM21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" },
+];
+
+function FeedbackPopover() {
+  const [open, setOpen] = useState(false);
+  const [mood, setMood] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!mood) return;
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mood, message: message.trim() }),
+      });
+    } catch {
+      // silently fail — feedback is best-effort
+    }
+    setSubmitted(true);
+    setTimeout(() => {
+      setOpen(false);
+      setSubmitted(false);
+      setMood(null);
+      setMessage("");
+    }, 1500);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSubmitted(false); setMood(null); setMessage(""); } }}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-500 hover:text-black transition-colors duration-150 w-full">
+          <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+          <span className="text-[13px]">Feedback</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="top" align="start" className="w-72 p-4 border border-neutral-200">
+        {submitted ? (
+          <p className="text-[13px] text-neutral-600 text-center py-4">Thanks for your feedback!</p>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <p className="text-[13px] font-medium mb-3">How are you feeling?</p>
+            <div className="flex items-center justify-between mb-3">
+              {moodIcons.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setMood(item.value)}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
+                    mood === item.value
+                      ? "bg-neutral-100 text-black"
+                      : "text-neutral-400 hover:text-neutral-600"
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.path} />
+                  </svg>
+                  <span className="text-[10px]">{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="How could we improve?"
+              className="w-full h-20 text-[13px] border border-neutral-200 rounded-lg p-2.5 resize-none focus:outline-none focus:ring-1 focus:ring-black"
+            />
+            <button
+              type="submit"
+              disabled={!mood}
+              className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-black text-white text-[13px] font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-default"
+            >
+              Submit
+            </button>
+          </form>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function HelpButton() {
+  return (
+    <a
+      href="mailto:support@endoros.com"
+      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-500 hover:text-black transition-colors duration-150 w-full"
+    >
+      <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827m0 3.75h.007v.008H12v-.008z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span className="text-[13px]">Help</span>
+    </a>
+  );
+}
+
 function Sidebar() {
   const { mobileMenuOpen, setMobileMenuOpen } = useSidebar();
   const { user } = useUser();
@@ -188,6 +293,12 @@ function Sidebar() {
             </svg>
             <span className="text-[13px] font-medium">Preview</span>
           </a>
+        </div>
+
+        {/* Feedback & Help */}
+        <div className="px-3 mb-2 flex flex-col gap-0.5">
+          <FeedbackPopover />
+          <HelpButton />
         </div>
 
         {/* Bottom section */}

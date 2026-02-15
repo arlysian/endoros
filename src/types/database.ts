@@ -62,6 +62,7 @@ export type Database = {
           label: string
           type: string
           updatedAt: string | null
+          value: number | null
         }
         Insert: {
           connectedAccountId: string
@@ -69,6 +70,7 @@ export type Database = {
           label: string
           type: string
           updatedAt?: string | null
+          value?: number | null
         }
         Update: {
           connectedAccountId?: string
@@ -76,6 +78,7 @@ export type Database = {
           label?: string
           type?: string
           updatedAt?: string | null
+          value?: number | null
         }
         Relationships: [
           {
@@ -192,6 +195,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      Feedback: {
+        Row: {
+          createdAt: string
+          id: string
+          message: string | null
+          mood: string
+          userId: string
+        }
+        Insert: {
+          createdAt?: string
+          id?: string
+          message?: string | null
+          mood: string
+          userId: string
+        }
+        Update: {
+          createdAt?: string
+          id?: string
+          message?: string | null
+          mood?: string
+          userId?: string
+        }
+        Relationships: []
       }
       PlatformMetrics: {
         Row: {

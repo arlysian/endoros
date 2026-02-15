@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:types": "npx supabase gen types typescript --project-id ocwougvwtwkscrvqlyrr > src/types/database.ts"
+    "db:types": "npx supabase gen types typescript --project-id ocwougvwtwkscrvqlyrr > src/types/database.ts",
+    "db:link:dev": "npx supabase link --project-ref ocwougvwtwkscrvqlyrr",
+    "db:link:prod": "npx supabase link --project-ref pcgolponhvvhjaudfuuq",
+    "db:push:dev": "npm run db:link:dev && npx supabase db push",
+    "db:push:prod": "npm run db:link:prod && npx supabase db push",
+    "db:push:all": "npm run db:push:dev && npm run db:push:prod"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
