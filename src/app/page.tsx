@@ -76,7 +76,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="sm:min-h-screen flex items-start lg:items-center pt-24 sm:pt-28 lg:pt-16 pb-12 sm:pb-0 px-6 overflow-hidden">
+      <section className="sm:min-h-screen flex items-start lg:items-center pt-24 sm:pt-28 lg:pt-16 pb-24 sm:pb-0 px-6 overflow-hidden">
         <div className="max-w-6xl mx-auto w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-8 items-center">
             {/* Left side - Text content */}
@@ -135,11 +135,11 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Right side - Phone mockups */}
-            <div className="relative h-[280px] sm:h-[500px] lg:h-[600px]">
+            <div className="relative h-[320px] sm:h-[500px] lg:h-[600px] mt-14 sm:mt-0">
               {/* Phone 1 - Front/Left */}
               <motion.div
-                initial={{ opacity: 0, x: -30, y: 20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
+                initial={{ opacity: 0, x: -100 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="absolute left-4 sm:left-0 lg:left-4 top-1/2 -translate-y-1/2 z-20"
               >
@@ -151,15 +151,15 @@ export default function LandingPage() {
                   <img
                     src="/tel1.png"
                     alt="Endoros app analytics view"
-                    className="w-[140px] sm:w-[240px] lg:w-[280px] h-auto"
+                    className="w-[160px] sm:w-[240px] lg:w-[280px] h-auto"
                   />
                 </motion.div>
               </motion.div>
 
               {/* Phone 2 - Back/Right */}
               <motion.div
-                initial={{ opacity: 0, x: 30, y: -20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="absolute right-4 sm:right-0 lg:right-4 top-1/2 -translate-y-1/2 z-10"
               >
@@ -171,7 +171,7 @@ export default function LandingPage() {
                   <img
                     src="/tel 2.png"
                     alt="Endoros app dashboard view"
-                    className="w-[140px] sm:w-[240px] lg:w-[280px] h-auto"
+                    className="w-[160px] sm:w-[240px] lg:w-[280px] h-auto"
                   />
                 </motion.div>
               </motion.div>
@@ -378,7 +378,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-32 px-6">
+      <section className="pt-32 pb-0 px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -401,13 +401,13 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-32 px-6">
+      <section className="pt-32 pb-32 px-6">
         <div className="max-w-3xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl font-semibold tracking-tight mb-16 text-center"
+            className="text-4xl font-semibold tracking-tight mb-32 text-center"
           >
             Questions? Answers.
           </motion.h2>
