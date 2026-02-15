@@ -117,6 +117,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       unfollows?: number;
     } | null;
     followerHistory: { date: string; newFollows: number; unfollows: number }[];
+    followerSnapshots: { date: string; followers: number }[];
     demographics: { type: string; label: string; value: number }[];
   }> = {};
 
@@ -164,8 +165,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
         }
       }
 
-      // Follower history — only IG tracks newFollows/unfollows
+      // IG: follows/unfollows breakdown
       let followerHistory: { date: string; newFollows: number; unfollows: number }[] = [];
+      // TikTok/other: follower count snapshots over time
+      let followerSnapshots: { date: string; followers: number }[] = [];
+
       if (acc.platform === "INSTAGRAM") {
         const { data: history } = await supabaseAdmin
           .from("PlatformMetrics")
@@ -182,6 +186,21 @@ export default async function PublicProfilePage({ params }: PageProps) {
               unfollows: h.unfollows ?? 0,
             }))
           : [];
+      } else if (acc.platform === "TIKTOK") {
+        const { data: snapshots } = await supabaseAdmin
+          .from("PlatformMetrics")
+          .select("date, followers")
+          .eq("connectedAccountId", acc.id)
+          .not("followers", "is", null)
+          .order("date", { ascending: false })
+          .limit(7);
+
+        followerSnapshots = snapshots
+          ? snapshots.reverse().map(s => ({
+              date: s.date,
+              followers: s.followers ?? 0,
+            }))
+          : [];
       }
 
       // Demographics — only IG has this
@@ -194,7 +213,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         demographics = (demoData as unknown as { type: string; label: string; value: number }[]) || [];
       }
 
-      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, demographics };
+      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, followerSnapshots, demographics };
 
       return {
         ...acc,

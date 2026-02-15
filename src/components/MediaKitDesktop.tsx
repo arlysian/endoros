@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, XAxis, Pie, PieChart, Label } from "recharts";
+import { Bar, BarChart, Line, LineChart, XAxis, YAxis, Pie, PieChart, Label } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -79,9 +79,15 @@ interface DemographicItem {
   value: number;
 }
 
+interface FollowerSnapshot {
+  date: string;
+  followers: number;
+}
+
 interface AccountData {
   metrics: PlatformMetrics | null;
   followerHistory: FollowerHistoryDay[];
+  followerSnapshots: FollowerSnapshot[];
   demographics: DemographicItem[];
 }
 
@@ -179,6 +185,7 @@ export default function MediaKitDesktop({
   const accountData = accountDataMap[selectedAccountId];
   const platformMetrics = accountData?.metrics ?? null;
   const followerHistory = accountData?.followerHistory ?? [];
+  const followerSnapshots = accountData?.followerSnapshots ?? [];
   const demographics = accountData?.demographics ?? [];
 
   const displayName = user?.firstName && user?.lastName
@@ -498,35 +505,64 @@ export default function MediaKitDesktop({
                   <h3 className="text-sm font-medium text-black">Follower Growth</h3>
                   <span className="text-xs text-neutral-500">7 days</span>
                 </div>
-                <div className="h-40">
-                  {hasHistory ? (
-                    <FollowerGrowthChart data={followerHistory} />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-neutral-400 text-sm">
-                      No data available
+
+                {/* IG: follows/unfollows breakdown chart */}
+                {hasHistory && (
+                  <>
+                    <div className="h-40">
+                      <FollowerGrowthChart data={followerHistory} />
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Follows</p>
-                    <p className="text-lg font-semibold text-emerald-600">
-                      {hasHistory ? `+${totalNewFollows.toLocaleString()}` : "-"}
-                    </p>
+                    <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Follows</p>
+                        <p className="text-lg font-semibold text-emerald-600">+{totalNewFollows.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
+                        <p className="text-lg font-semibold text-rose-500">-{totalUnfollows.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Net</p>
+                        <p className={`text-lg font-semibold ${netGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                          {netGrowth >= 0 ? "+" : ""}{netGrowth.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* TikTok/other: follower snapshot chart */}
+                {!hasHistory && followerSnapshots.length > 0 && (() => {
+                  const first = followerSnapshots[0].followers;
+                  const last = followerSnapshots[followerSnapshots.length - 1].followers;
+                  const change = last - first;
+                  return (
+                    <>
+                      <div className="h-40">
+                        <FollowerSnapshotChart data={followerSnapshots} />
+                      </div>
+                      <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+                        <div>
+                          <p className="text-xs text-neutral-400 mb-1">Current</p>
+                          <p className="text-lg font-semibold text-black">{formatNumber(last)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-neutral-400 mb-1">Change</p>
+                          <p className={`text-lg font-semibold ${change >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                            {change >= 0 ? "+" : ""}{change.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+
+                {/* No data */}
+                {!hasHistory && followerSnapshots.length === 0 && (
+                  <div className="flex items-center justify-center h-40 text-neutral-400 text-sm">
+                    No data available
                   </div>
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
-                    <p className="text-lg font-semibold text-rose-500">
-                      {hasHistory ? `-${totalUnfollows.toLocaleString()}` : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-400 mb-1">Net</p>
-                    <p className={`text-lg font-semibold ${netGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
-                      {hasHistory ? `${netGrowth >= 0 ? "+" : ""}${netGrowth.toLocaleString()}` : "-"}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Audience Summary + Demographics */}
@@ -698,6 +734,49 @@ function FollowerGrowthChart({ data }: { data: FollowerHistoryDay[] }) {
           <Bar dataKey="newFollows" fill="var(--color-newFollows)" radius={3} />
           <Bar dataKey="unfollows" fill="var(--color-unfollows)" radius={3} />
         </BarChart>
+      </ChartContainer>
+    </div>
+  );
+}
+
+function FollowerSnapshotChart({ data }: { data: { date: string; followers: number }[] }) {
+  const chartData = data.map((d) => ({
+    label: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    followers: d.followers,
+  }));
+
+  const snapshotConfig = {
+    followers: {
+      label: "Followers",
+      color: "#000000",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <div className="w-full h-full overflow-hidden">
+      <ChartContainer config={snapshotConfig} className="h-[140px] w-full">
+        <LineChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }}>
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tick={{ fontSize: 10, fill: "#a3a3a3" }}
+          />
+          <YAxis hide domain={["dataMin - 100", "dataMax + 100"]} />
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent indicator="line" />}
+          />
+          <Line
+            type="monotone"
+            dataKey="followers"
+            stroke="var(--color-followers)"
+            strokeWidth={2}
+            dot={{ r: 3, fill: "#000" }}
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
       </ChartContainer>
     </div>
   );

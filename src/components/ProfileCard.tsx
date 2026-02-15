@@ -79,9 +79,15 @@ interface DemographicItem {
   value: number;
 }
 
+interface FollowerSnapshot {
+  date: string;
+  followers: number;
+}
+
 interface AccountData {
   metrics: PlatformMetricsData | null;
   followerHistory: FollowerHistoryDay[];
+  followerSnapshots: FollowerSnapshot[];
   demographics: DemographicItem[];
 }
 
@@ -435,6 +441,7 @@ export default function ProfileCard({
   const accountData = accountDataMap[selectedAccountId];
   const platformMetrics = accountData?.metrics ?? platformDataMap[selectedPlatform]?.metrics ?? null;
   const followerHistory = accountData?.followerHistory ?? platformDataMap[selectedPlatform]?.followerHistory ?? [];
+  const followerSnapshots = accountData?.followerSnapshots ?? [];
   const demographics = accountData?.demographics ?? [];
 
   // Full mode for public profile
@@ -617,6 +624,7 @@ export default function ProfileCard({
         {/* Follower Growth */}
         {(() => {
           const hasHistory = followerHistory.length > 0;
+          const hasSnapshots = followerSnapshots.length > 0;
           const totalNewFollows = followerHistory.reduce((sum, d) => sum + d.newFollows, 0);
           const totalUnfollows = followerHistory.reduce((sum, d) => sum + d.unfollows, 0);
           const netGrowth = totalNewFollows - totalUnfollows;
@@ -628,68 +636,110 @@ export default function ProfileCard({
                 <h3 className="text-base font-semibold text-black pb-2 border-b-2 border-black/10">Follower Growth</h3>
                 <span className="text-xs text-neutral-400">Last 7 days</span>
               </div>
-              <div className="flex items-end gap-3 h-24 pt-2 mb-2">
-                {hasHistory ? (
-                  followerHistory.map((day, i) => {
-                    const followsHeight = (day.newFollows / maxValue) * 80;
-                    const unfollowsHeight = (day.unfollows / maxValue) * 80;
-                    return (
-                      <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
-                        <div
-                          className="w-[45%] bg-emerald-500 rounded-t-sm"
-                          style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 2 : 0)}px` }}
-                          title={`+${day.newFollows.toLocaleString()} follows`}
-                        />
-                        <div
-                          className="w-[45%] bg-rose-400 rounded-t-sm"
-                          style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 2 : 0)}px` }}
-                          title={`-${day.unfollows.toLocaleString()} unfollows`}
-                        />
-                      </div>
-                    );
-                  })
-                ) : (
-                  Array(7).fill(0).map((_, i) => (
-                    <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
-                      <div className="w-[45%] bg-neutral-100 rounded-t-sm h-2" />
-                      <div className="w-[45%] bg-neutral-100 rounded-t-sm h-2" />
+
+              {/* IG: follows/unfollows breakdown */}
+              {hasHistory && (
+                <>
+                  <div className="flex items-end gap-3 h-24 pt-2 mb-2">
+                    {followerHistory.map((day, i) => {
+                      const followsHeight = (day.newFollows / maxValue) * 80;
+                      const unfollowsHeight = (day.unfollows / maxValue) * 80;
+                      return (
+                        <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
+                          <div
+                            className="w-[45%] bg-emerald-500 rounded-t-sm"
+                            style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 2 : 0)}px` }}
+                            title={`+${day.newFollows.toLocaleString()} follows`}
+                          />
+                          <div
+                            className="w-[45%] bg-rose-400 rounded-t-sm"
+                            style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 2 : 0)}px` }}
+                            title={`-${day.unfollows.toLocaleString()} unfollows`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between mb-5">
+                    {followerHistory.map((day, i) => {
+                      const date = new Date(day.date);
+                      const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                      return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dateLabel}</span>;
+                    })}
+                  </div>
+                  <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Follows</p>
+                      <p className="text-lg font-semibold text-emerald-600">+{totalNewFollows.toLocaleString()}</p>
                     </div>
-                  ))
-                )}
-              </div>
-              <div className="flex justify-between mb-5">
-                {hasHistory ? (
-                  followerHistory.map((day, i) => {
-                    const date = new Date(day.date);
-                    const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                    return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dateLabel}</span>;
-                  })
-                ) : (
-                  Array(7).fill(0).map((_, i) => (
-                    <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">-</span>
-                  ))
-                )}
-              </div>
-              <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
-                <div>
-                  <p className="text-xs text-neutral-400 mb-1">Follows</p>
-                  <p className="text-lg font-semibold text-emerald-600">
-                    {hasHistory ? `+${totalNewFollows.toLocaleString()}` : "-"}
-                  </p>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Net</p>
+                      <p className={`text-lg font-semibold ${netGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                        {netGrowth >= 0 ? "+" : ""}{netGrowth.toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
+                      <p className="text-lg font-semibold text-rose-500">-{totalUnfollows.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* TikTok/other: follower snapshot line */}
+              {!hasHistory && hasSnapshots && (() => {
+                const first = followerSnapshots[0].followers;
+                const last = followerSnapshots[followerSnapshots.length - 1].followers;
+                const change = last - first;
+                const snapshotMax = Math.max(...followerSnapshots.map(s => s.followers));
+                const snapshotMin = Math.min(...followerSnapshots.map(s => s.followers));
+                const range = snapshotMax - snapshotMin || 1;
+
+                return (
+                  <>
+                    <div className="flex items-end gap-3 h-24 pt-2 mb-2">
+                      {followerSnapshots.map((snap, i) => {
+                        const height = ((snap.followers - snapshotMin) / range) * 70 + 10;
+                        return (
+                          <div key={i} className="flex-1 flex items-end justify-center">
+                            <div
+                              className="w-full bg-black rounded-t-sm max-w-[20px]"
+                              style={{ height: `${height}px` }}
+                              title={`${snap.followers.toLocaleString()} followers`}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between mb-5">
+                      {followerSnapshots.map((snap, i) => {
+                        const date = new Date(snap.date);
+                        const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                        return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dateLabel}</span>;
+                      })}
+                    </div>
+                    <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Current</p>
+                        <p className="text-lg font-semibold text-black">{formatNumber(last)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Change</p>
+                        <p className={`text-lg font-semibold ${change >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                          {change >= 0 ? "+" : ""}{change.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+
+              {/* No data */}
+              {!hasHistory && !hasSnapshots && (
+                <div className="flex items-center justify-center h-24 text-neutral-400 text-sm">
+                  No data available
                 </div>
-                <div>
-                  <p className="text-xs text-neutral-400 mb-1">Net</p>
-                  <p className={`text-lg font-semibold ${netGrowth >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
-                    {hasHistory ? `${netGrowth >= 0 ? "+" : ""}${netGrowth.toLocaleString()}` : "-"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
-                  <p className="text-lg font-semibold text-rose-500">
-                    {hasHistory ? `-${totalUnfollows.toLocaleString()}` : "-"}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           );
         })()}
