@@ -68,13 +68,17 @@ interface FollowerHistoryDay {
   unfollows: number;
 }
 
+interface PlatformData {
+  metrics: PlatformMetrics | null;
+  followerHistory: FollowerHistoryDay[];
+}
+
 interface MediaKitDesktopProps {
   user: User;
   achievements: Achievement[];
   collaborations: Collaboration[];
   connectedAccounts: ConnectedAccount[];
-  platformMetrics: PlatformMetrics | null;
-  followerHistory: FollowerHistoryDay[];
+  platformDataMap: Record<string, PlatformData>;
 }
 
 function formatNumber(num: number): string {
@@ -133,14 +137,16 @@ export default function MediaKitDesktop({
   achievements,
   collaborations,
   connectedAccounts,
-  platformMetrics,
-  followerHistory,
+  platformDataMap,
 }: MediaKitDesktopProps) {
   const [selectedPlatform, setSelectedPlatform] = useState<string>(
     connectedAccounts.find(a => a.platform === "INSTAGRAM")?.platform ||
     connectedAccounts[0]?.platform ||
     "INSTAGRAM"
   );
+
+  const platformMetrics = platformDataMap[selectedPlatform]?.metrics ?? null;
+  const followerHistory = platformDataMap[selectedPlatform]?.followerHistory ?? [];
 
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`

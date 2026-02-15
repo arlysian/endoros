@@ -95,57 +95,61 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .eq("userId", user.id)
     .order("date", { ascending: false });
 
-  // Fetch latest platform metrics for Instagram
-  const instagramAccount = connectedAccounts?.find(acc => acc.platform === "INSTAGRAM");
-  let platformMetrics = null;
-  let followerHistory: { date: string; newFollows: number; unfollows: number }[] = [];
+  // Fetch metrics for ALL connected accounts
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  const cutoffDate = twoDaysAgo.toISOString().split("T")[0];
 
-  if (instagramAccount) {
-    // Get latest metrics
-    const { data: metrics } = await supabaseAdmin
-      .from("PlatformMetrics")
-      .select("*")
-      .eq("connectedAccountId", instagramAccount.id)
-      .order("date", { ascending: false })
-      .limit(1)
-      .single();
+  const platformDataEntries = await Promise.all(
+    (connectedAccounts || []).map(async (acc) => {
+      // Get latest metrics
+      const { data: metrics } = await supabaseAdmin
+        .from("PlatformMetrics")
+        .select("*")
+        .eq("connectedAccountId", acc.id)
+        .order("date", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (metrics) {
-      platformMetrics = {
-        followers: metrics.followers ?? undefined,
-        reach: metrics.reach ?? undefined,
-        engagementRate: metrics.engagementRate ?? undefined,
-        avgViews: metrics.avgViews ?? undefined,
-        likes: metrics.total_likes ?? undefined,
-        comments: metrics.total_comments ?? undefined,
-        shares: metrics.total_shares ?? undefined,
-        saves: metrics.total_saves ?? undefined,
-        profileVisits: metrics.profileVisits ?? undefined,
-        newFollows: metrics.newFollows ?? undefined,
-        unfollows: metrics.unfollows ?? undefined,
-      };
-    }
+      let parsedMetrics = null;
+      if (metrics) {
+        parsedMetrics = {
+          followers: metrics.followers ?? undefined,
+          reach: metrics.reach ?? undefined,
+          engagementRate: metrics.engagementRate ?? undefined,
+          avgViews: metrics.avgViews ?? undefined,
+          likes: metrics.total_likes ?? undefined,
+          comments: metrics.total_comments ?? undefined,
+          shares: metrics.total_shares ?? undefined,
+          saves: metrics.total_saves ?? undefined,
+          profileVisits: metrics.profileVisits ?? undefined,
+          newFollows: metrics.newFollows ?? undefined,
+          unfollows: metrics.unfollows ?? undefined,
+        };
+      }
 
-    // Get last 7 days for chart (Meta API has ~48h delay)
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    const cutoffDate = twoDaysAgo.toISOString().split("T")[0];
-    const { data: history } = await supabaseAdmin
-      .from("PlatformMetrics")
-      .select("date, newFollows, unfollows")
-      .eq("connectedAccountId", instagramAccount.id)
-      .lte("date", cutoffDate)
-      .order("date", { ascending: false })
-      .limit(7);
+      // Get last 7 days for chart
+      const { data: history } = await supabaseAdmin
+        .from("PlatformMetrics")
+        .select("date, newFollows, unfollows")
+        .eq("connectedAccountId", acc.id)
+        .lte("date", cutoffDate)
+        .order("date", { ascending: false })
+        .limit(7);
 
-    if (history) {
-      followerHistory = history.reverse().map(h => ({
-        date: h.date,
-        newFollows: h.newFollows ?? 0,
-        unfollows: h.unfollows ?? 0,
-      }));
-    }
-  }
+      const followerHistory = history
+        ? history.reverse().map(h => ({
+            date: h.date,
+            newFollows: h.newFollows ?? 0,
+            unfollows: h.unfollows ?? 0,
+          }))
+        : [];
+
+      return [acc.platform, { metrics: parsedMetrics, followerHistory }] as const;
+    })
+  );
+
+  const platformDataMap: Record<string, { metrics: typeof platformDataEntries[number][1]["metrics"]; followerHistory: { date: string; newFollows: number; unfollows: number }[] }> = Object.fromEntries(platformDataEntries);
 
   // Get latest followers count for each connected account
   const accountsWithFollowers = await Promise.all(
@@ -176,8 +180,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           achievements={achievements || []}
           collaborations={collaborations || []}
           connectedAccounts={accountsWithFollowers}
-          platformMetrics={platformMetrics}
-          followerHistory={followerHistory}
+          platformDataMap={platformDataMap}
         />
       </div>
 
@@ -191,8 +194,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
               collaborations={collaborations || []}
               totalFollowers={totalFollowers}
               compact={false}
-              platformMetrics={platformMetrics}
-              followerHistory={followerHistory}
+              platformDataMap={platformDataMap}
               connectedAccounts={accountsWithFollowers}
             />
           </div>

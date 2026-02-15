@@ -68,6 +68,11 @@ interface ConnectedAccount {
   followers: number | null;
 }
 
+interface PlatformData {
+  metrics: PlatformMetricsData | null;
+  followerHistory: FollowerHistoryDay[];
+}
+
 interface ProfileCardProps {
   user: ProfileCardUser | null;
   achievements: ProfileCardAchievement[];
@@ -75,8 +80,7 @@ interface ProfileCardProps {
   totalFollowers?: number;
   loading?: boolean;
   compact?: boolean;
-  platformMetrics?: PlatformMetricsData | null;
-  followerHistory?: FollowerHistoryDay[];
+  platformDataMap?: Record<string, PlatformData>;
   connectedAccounts?: ConnectedAccount[];
 }
 
@@ -145,8 +149,7 @@ export default function ProfileCard({
   totalFollowers = 0,
   loading = false,
   compact = false,
-  platformMetrics = null,
-  followerHistory = [],
+  platformDataMap = {},
   connectedAccounts = [],
 }: ProfileCardProps) {
   const displayName = user?.firstName && user?.lastName
@@ -156,8 +159,13 @@ export default function ProfileCard({
   const displayUsername = user?.userName ? `@${user.userName}` : "@username";
   const displayBio = user?.bio || (compact ? "Add a bio to tell brands about yourself." : null);
 
+  // For compact mode, use first available platform
+  const firstPlatform = connectedAccounts[0]?.platform || "INSTAGRAM";
+
   // Compact mode for sidebar
   if (compact) {
+    const platformMetrics = platformDataMap[firstPlatform]?.metrics ?? null;
+    const followerHistory = platformDataMap[firstPlatform]?.followerHistory ?? [];
     return (
       <div>
         {/* Cover Image */}
@@ -387,6 +395,9 @@ export default function ProfileCard({
     displayAccounts[0]?.platform ||
     "INSTAGRAM"
   );
+
+  const platformMetrics = platformDataMap[selectedPlatform]?.metrics ?? null;
+  const followerHistory = platformDataMap[selectedPlatform]?.followerHistory ?? [];
 
   // Full mode for public profile
   return (
