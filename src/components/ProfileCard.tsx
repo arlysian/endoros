@@ -617,7 +617,7 @@ export default function ProfileCard({
             <p className="text-2xl font-semibold text-black">
               {platformMetrics?.reach ? formatNumber(platformMetrics.reach) : "-"}
             </p>
-            <p className="text-xs text-neutral-400 mt-1">Reach</p>
+            <p className="text-xs text-neutral-400 mt-1">Monthly Reach</p>
           </div>
         </div>
 
@@ -719,6 +719,7 @@ export default function ProfileCard({
                           tickLine={false}
                           axisLine={false}
                           tick={{ fontSize: 10, fill: "#a3a3a3" }}
+                          padding={{ left: 10, right: 10 }}
                         />
                         <YAxis
                           hide
@@ -736,11 +737,7 @@ export default function ProfileCard({
                     </ChartContainer>
                     <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
                       <div>
-                        <p className="text-xs text-neutral-400 mb-1">Current</p>
-                        <p className="text-lg font-semibold text-black">{formatNumber(last)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-400 mb-1">Change</p>
+                        <p className="text-xs text-neutral-400 mb-1">Net Growth</p>
                         <p className={`text-lg font-semibold ${change >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
                           {change >= 0 ? "+" : ""}{change.toLocaleString()}
                         </p>

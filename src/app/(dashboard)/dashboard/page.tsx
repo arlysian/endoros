@@ -591,7 +591,7 @@ export default function Dashboard() {
         )}
 {!isTikTok && !isSimplePlatform && (
           <StatCard
-            label="Reach"
+            label="Monthly Reach"
             value={isInstagram ? (hasIgData ? displayData?.reach ?? "-" : "-") : mockData.reach}
           />
         )}
