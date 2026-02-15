@@ -4,9 +4,46 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ProfileCard from "@/components/ProfileCard";
 import MediaKitDesktop from "@/components/MediaKitDesktop";
+import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ userName: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { userName } = await params;
+
+  const { data: user } = await supabaseAdmin
+    .from("User")
+    .select("firstName, lastName, userName, category, bio, profileImageUrl, isMediaKitPublic")
+    .eq("userName", userName)
+    .single();
+
+  if (!user || !user.isMediaKitPublic) {
+    return { title: "Endoros" };
+  }
+
+  const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.userName;
+  const description = user.bio || `${name}'s media kit${user.category ? ` — ${user.category}` : ""}. View stats, audience insights, and more.`;
+  const title = `${name} — Endoros`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      url: `https://endoros.com/${user.userName}`,
+      ...(user.profileImageUrl ? { images: [{ url: user.profileImageUrl, width: 400, height: 400, alt: name }] } : {}),
+    },
+    twitter: {
+      card: user.profileImageUrl ? "summary" : "summary",
+      title,
+      description,
+      ...(user.profileImageUrl ? { images: [user.profileImageUrl] } : {}),
+    },
+  };
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {

@@ -430,16 +430,6 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlatform, engagementPeriod, igConnected, igMetrics]);
 
-  const mockData = {
-    followers: "124.5K",
-    engagementRate: "4.8%",
-    avgViews: "45.2K",
-    reach: "892K",
-    likes: { count: "45.2K", percent: 68 },
-    comments: { count: "12.1K", percent: 18 },
-    shares: { count: "6.2K", percent: 9 },
-    saves: { count: "3.4K", percent: 5 },
-  };
 
   const isInstagram = selectedPlatform === "instagram";
   const isTikTok = selectedPlatform === "tiktok";
@@ -575,24 +565,24 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
         <StatCard
           label={isYouTube ? "Subscribers" : "Followers"}
-          value={isInstagram ? (hasIgData ? displayData?.followers ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.followers ?? "-" : "-") : isYouTube ? (hasYtData ? formatFullNumber(ytMetrics.followers) : "-") : isFacebook ? (hasFbData ? formatFullNumber(fbMetrics.followers) : "-") : mockData.followers}
+          value={isInstagram ? (hasIgData ? displayData?.followers ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.followers ?? "-" : "-") : isYouTube ? (hasYtData ? formatFullNumber(ytMetrics.followers) : "-") : isFacebook ? (hasFbData ? formatFullNumber(fbMetrics.followers) : "-") : "-"}
         />
         {!isSimplePlatform && (
         <StatCard
           label="Engagement"
-          value={isInstagram ? (hasIgData ? displayData?.engagementRate ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.engagementRate ?? "-" : "-") : mockData.engagementRate}
+          value={isInstagram ? (hasIgData ? displayData?.engagementRate ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.engagementRate ?? "-" : "-") : "-"}
         />
         )}
         {(!isSimplePlatform || isYouTube) && (
         <StatCard
           label="Avg. Views"
-          value={isInstagram ? (hasIgData ? displayData?.avgViews ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.avgViews ?? "-" : "-") : isYouTube ? (hasYtData && ytMetrics.avgViews != null ? formatFullNumber(ytMetrics.avgViews) : "-") : mockData.avgViews}
+          value={isInstagram ? (hasIgData ? displayData?.avgViews ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.avgViews ?? "-" : "-") : isYouTube ? (hasYtData && ytMetrics.avgViews != null ? formatFullNumber(ytMetrics.avgViews) : "-") : "-"}
         />
         )}
 {!isTikTok && !isSimplePlatform && (
           <StatCard
             label="Monthly Reach"
-            value={isInstagram ? (hasIgData ? displayData?.reach ?? "-" : "-") : mockData.reach}
+            value={isInstagram ? (hasIgData ? displayData?.reach ?? "-" : "-") : "-"}
           />
         )}
       </div>
@@ -636,7 +626,6 @@ export default function Dashboard() {
             ) : (
               <FollowerGrowthChart
                 data={isInstagram ? history : isTikTok ? ttHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : isYouTube ? ytHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : isFacebook ? fbHistory.map(d => ({ ...d, newFollows: 0, unfollows: 0 })) : []}
-                isRealData={isInstagram || isTikTok || isYouTube || isFacebook}
                 days={historyDays}
                 chartType={isTikTok || isSimplePlatform ? "net" : chartType}
               />
@@ -655,9 +644,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-xs text-neutral-400 mb-1">Net Growth</p>
                     <p className={`text-lg font-semibold ${netChange < 0 ? "text-rose-500" : "text-emerald-600"}`}>
-                      {(isInstagram || isTikTok || isSimplePlatform)
-                        ? (isLoading ? "-" : (historyData.length > 0 ? `${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()}` : "-"))
-                        : "+2,723"}
+                      {isLoading ? "-" : (historyData.length > 0 ? `${netChange >= 0 ? "+" : ""}${netChange.toLocaleString()}` : "-")}
                     </p>
                   </div>
                 );
@@ -675,25 +662,19 @@ export default function Dashboard() {
                     <div>
                       <p className="text-xs text-neutral-400 mb-1">Follows</p>
                       <p className="text-lg font-semibold text-emerald-600">
-                        {isInstagram
-                          ? (historyLoading ? "-" : (showingDay ? `+${selectedDay.newFollows.toLocaleString()}` : (historySummary ? `+${historySummary.totalNewFollows.toLocaleString()}` : "-")))
-                          : "+2,847"}
+                        {historyLoading ? "-" : (showingDay ? `+${selectedDay.newFollows.toLocaleString()}` : (historySummary ? `+${historySummary.totalNewFollows.toLocaleString()}` : "-"))}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-neutral-400 mb-1">Unfollows</p>
                       <p className="text-lg font-semibold text-rose-500">
-                        {isInstagram
-                          ? (historyLoading ? "-" : (showingDay ? `-${selectedDay.unfollows.toLocaleString()}` : (historySummary ? `-${historySummary.totalUnfollows.toLocaleString()}` : "-")))
-                          : "-124"}
+                        {historyLoading ? "-" : (showingDay ? `-${selectedDay.unfollows.toLocaleString()}` : (historySummary ? `-${historySummary.totalUnfollows.toLocaleString()}` : "-"))}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-neutral-400 mb-1">Net</p>
                       <p className={`text-lg font-semibold ${(showingDay ? dayNet < 0 : (historySummary && (historySummary.totalNewFollows - historySummary.totalUnfollows) < 0)) ? "text-rose-500" : "text-emerald-600"}`}>
-                        {isInstagram
-                          ? (historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${(historySummary.totalNewFollows - historySummary.totalUnfollows) >= 0 ? "+" : ""}${(historySummary.totalNewFollows - historySummary.totalUnfollows).toLocaleString()}` : "-")))
-                          : "+2,723"}
+                        {historyLoading ? "-" : (showingDay ? `${dayNet >= 0 ? "+" : ""}${dayNet.toLocaleString()}` : (historySummary ? `${(historySummary.totalNewFollows - historySummary.totalUnfollows) >= 0 ? "+" : ""}${(historySummary.totalNewFollows - historySummary.totalUnfollows).toLocaleString()}` : "-"))}
                       </p>
                     </div>
                   </>
@@ -720,10 +701,10 @@ export default function Dashboard() {
             </select>
           </div>
           <EngagementDonutChart
-            likes={isInstagram ? (engagementData?.likes ?? 0) : isTikTok ? (ttDisplayData?.likes ?? 0) : 45200}
-            comments={isInstagram ? (engagementData?.comments ?? 0) : isTikTok ? (ttDisplayData?.comments ?? 0) : 12100}
-            shares={isInstagram ? (engagementData?.shares ?? 0) : isTikTok ? (ttDisplayData?.shares ?? 0) : 6200}
-            saves={isTikTok ? undefined : (isInstagram ? (engagementData?.saves ?? 0) : 3400)}
+            likes={isInstagram ? (engagementData?.likes ?? 0) : isTikTok ? (ttDisplayData?.likes ?? 0) : 0}
+            comments={isInstagram ? (engagementData?.comments ?? 0) : isTikTok ? (ttDisplayData?.comments ?? 0) : 0}
+            shares={isInstagram ? (engagementData?.shares ?? 0) : isTikTok ? (ttDisplayData?.shares ?? 0) : 0}
+            saves={isTikTok ? undefined : (isInstagram ? (engagementData?.saves ?? 0) : 0)}
             loading={engagementLoading}
           />
         </div>
@@ -810,30 +791,6 @@ function StatCard({
   );
 }
 
-function EngagementBar({
-  label,
-  value,
-  count,
-}: {
-  label: string;
-  value: number;
-  count: string;
-}) {
-  return (
-    <div>
-      <div className="flex justify-between text-sm mb-2">
-        <span className="text-black">{label}</span>
-        <span className="text-neutral-400">{count} ({value}%)</span>
-      </div>
-      <div className="h-1 bg-neutral-100 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-black rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
-  );
-}
 
 function EngagementDonutChart({
   likes,
@@ -986,41 +943,7 @@ function PerformanceRow({
   );
 }
 
-function FollowerGrowthChart({ data, isRealData, days, chartType }: { data: HistoryDay[]; isRealData: boolean; days: number; chartType: "bar" | "net" }) {
-  const mockData = [
-    { day: "Mon", value: 40 },
-    { day: "Tue", value: 55 },
-    { day: "Wed", value: 45 },
-    { day: "Thu", value: 70 },
-    { day: "Fri", value: 65 },
-    { day: "Sat", value: 85 },
-    { day: "Sun", value: 75 },
-  ];
-
-  if (!isRealData) {
-    const maxValue = Math.max(...mockData.map(d => d.value));
-    return (
-      <div className="flex items-end justify-between h-full gap-2">
-        {mockData.map((item) => (
-          <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-            <div className="w-full flex justify-center">
-              <div
-                className="w-6 bg-neutral-100 rounded-sm relative cursor-pointer hover:bg-neutral-200 transition-colors"
-                style={{ height: `${(item.value / maxValue) * 120}px` }}
-              >
-                <div
-                  className="absolute bottom-0 left-0 right-0 bg-black rounded-sm transition-all"
-                  style={{ height: `${(item.value / maxValue) * 100}%` }}
-                />
-              </div>
-            </div>
-            <span className="text-[10px] text-neutral-400">{item.day}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
+function FollowerGrowthChart({ data, days, chartType }: { data: HistoryDay[]; days: number; chartType: "bar" | "net" }) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-neutral-400 text-sm">

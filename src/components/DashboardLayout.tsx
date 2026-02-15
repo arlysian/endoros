@@ -22,8 +22,6 @@ interface UserData {
 }
 
 interface SidebarContextType {
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
 }
@@ -53,8 +51,6 @@ interface UserContextType {
 }
 
 const SidebarContext = createContext<SidebarContextType>({
-  collapsed: false,
-  setCollapsed: () => {},
   mobileMenuOpen: false,
   setMobileMenuOpen: () => {},
 });
@@ -120,7 +116,7 @@ const navItems = [
 ];
 
 function Sidebar() {
-  const { collapsed, setCollapsed, mobileMenuOpen, setMobileMenuOpen } = useSidebar();
+  const { mobileMenuOpen, setMobileMenuOpen } = useSidebar();
   const { user } = useUser();
   const pathname = usePathname();
   const { signOut } = useClerk();
@@ -138,19 +134,15 @@ function Sidebar() {
         className={`
           fixed left-0 top-0 h-screen bg-white
           flex flex-col transition-all duration-200 ease-out z-50
-          ${collapsed ? "lg:w-16" : "lg:w-56"}
-          w-56 -translate-x-full lg:translate-x-0
+          lg:w-56 w-56 -translate-x-full lg:translate-x-0
           ${mobileMenuOpen ? "translate-x-0" : ""}
         `}
       >
         {/* Logo */}
-        <div className={`h-14 flex items-center ${collapsed ? "justify-center" : "px-5"}`}>
-          <Link href="/" className={`font-semibold text-base tracking-tight ${collapsed ? "hidden" : ""}`}>
+        <div className="h-14 flex items-center px-5">
+          <Link href="/" className="font-semibold text-base tracking-tight">
             endoros
           </Link>
-          {collapsed && (
-            <Link href="/" className="font-semibold text-base">e</Link>
-          )}
         </div>
 
         {/* Navigation */}
@@ -169,11 +161,10 @@ function Sidebar() {
                     ? "text-black font-medium"
                     : "text-neutral-500 hover:text-black"
                   }
-                  ${collapsed ? "justify-center" : ""}
                 `}
               >
                 {item.icon}
-                {!collapsed && <span className="text-[13px]">{item.name}</span>}
+                <span className="text-[13px]">{item.name}</span>
               </Link>
             );
           })}
@@ -189,14 +180,13 @@ function Sidebar() {
             className={`
               flex items-center gap-3 px-3 py-2.5 rounded-lg
               bg-black text-white hover:bg-neutral-800 transition-colors
-              ${collapsed ? "justify-center" : ""}
               ${!user?.userName ? "cursor-default" : ""}
             `}
           >
             <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
             </svg>
-            {!collapsed && <span className="text-[13px] font-medium">Preview</span>}
+            <span className="text-[13px] font-medium">Preview</span>
           </a>
         </div>
 
@@ -204,12 +194,12 @@ function Sidebar() {
         <div className="py-3 px-3">
           <button
             onClick={() => signOut({ redirectUrl: "/" })}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-400 hover:text-black transition-colors ${collapsed ? "justify-center" : ""}`}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-neutral-400 hover:text-black transition-colors"
           >
             <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
             </svg>
-            {!collapsed && <span className="text-[13px]">Log out</span>}
+            <span className="text-[13px]">Log out</span>
           </button>
         </div>
       </aside>
@@ -239,7 +229,6 @@ function MobileHeader() {
 }
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -288,7 +277,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileMenuOpen, setMobileMenuOpen }}>
+    <SidebarContext.Provider value={{ mobileMenuOpen, setMobileMenuOpen }}>
       <UserContext.Provider value={{ user, achievements, collaborations, loading: userLoading, refreshUser }}>
         <MobileHeader />
         <Sidebar />
@@ -296,7 +285,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           className={`
             min-h-screen bg-white transition-all duration-200
             pt-14 lg:pt-0
-            ${collapsed ? "lg:pl-16" : "lg:pl-56"}
+            lg:pl-56
           `}
         >
           <div className="max-w-5xl mx-auto px-6 py-8">
