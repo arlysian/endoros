@@ -461,8 +461,8 @@ export default function SocialPlatforms() {
           )}
         </div>
 
-        {/* Facebook */}
-        <div className="pb-6 border-b border-neutral-100">
+        {/* Facebook - commented out for now */}
+        {/* <div className="pb-6 border-b border-neutral-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FacebookIcon className="w-5 h-5" />
@@ -525,7 +525,7 @@ export default function SocialPlatforms() {
               </ul>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* TikTok */}
         <div className="pb-6 border-b border-neutral-100">
@@ -573,8 +573,8 @@ export default function SocialPlatforms() {
           )}
         </div>
 
-        {/* YouTube */}
-        <div className="pb-6 border-b border-neutral-100">
+        {/* YouTube - commented out for now */}
+        {/* <div className="pb-6 border-b border-neutral-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <YouTubeIcon className="w-5 h-5" />
@@ -617,7 +617,7 @@ export default function SocialPlatforms() {
               </button>
             </div>
           )}
-        </div>
+        </div> */}
 
       </div>
 

@@ -1,5 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import ProfileCard from "@/components/ProfileCard";
 import MediaKitDesktop from "@/components/MediaKitDesktop";
 
@@ -9,6 +11,7 @@ interface PageProps {
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { userName } = await params;
+  const { userId } = await auth();
 
   // Fetch user by userName
   const { data: user, error } = await supabaseAdmin
@@ -222,8 +225,25 @@ export default async function PublicProfilePage({ params }: PageProps) {
     })
   );
 
+  const isOwner = userId === user.id;
+
   return (
     <>
+      {/* Back to Dashboard - only for authed owner */}
+      {isOwner && (
+        <div className="fixed top-4 left-4 z-50">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-neutral-200 text-sm text-neutral-600 hover:text-black transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+            </svg>
+            Dashboard
+          </Link>
+        </div>
+      )}
+
       {/* Desktop View - hidden on mobile */}
       <div className="hidden lg:block">
         <MediaKitDesktop
