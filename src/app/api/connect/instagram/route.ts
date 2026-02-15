@@ -143,6 +143,7 @@ export async function POST(request: NextRequest) {
           isPrimary: true,
           pageId: selectedPage.id,
           instagramBusinessId: igAccountId,
+          profileLink: `https://www.instagram.com/${igDetails.username}/`,
           scopes: ["instagram_basic", "pages_read_engagement", "instagram_manage_insights", "pages_show_list", "business_management"],
         },
         {

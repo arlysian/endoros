@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY;
 const TIKTOK_CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET;
 
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   // Verify cron secret
   const authHeader = request.headers.get("authorization");

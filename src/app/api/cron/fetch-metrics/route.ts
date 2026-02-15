@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 // Vercel Cron or manual trigger
 // Add to vercel.json: { "crons": [{ "path": "/api/cron/fetch-metrics", "schedule": "0 3 * * *" }] }
 
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   // Optional: Verify cron secret
   const authHeader = request.headers.get("authorization");

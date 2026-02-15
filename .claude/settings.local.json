@@ -38,7 +38,8 @@
       "mcp__shadcn__view_items_in_registries",
       "mcp__shadcn__list_items_in_registries",
       "mcp__nia__nia_read",
-      "mcp__shadcn__get_add_command_for_items"
+      "mcp__shadcn__get_add_command_for_items",
+      "mcp__firecrawl-mcp__firecrawl_search"
     ]
   },
   "enableAllProjectMcpServers": true,
