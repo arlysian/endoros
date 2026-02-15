@@ -128,10 +128,12 @@ function FeedbackPopover() {
   const [mood, setMood] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!mood) return;
+    if (!mood || submitting) return;
+    setSubmitting(true);
     try {
       await fetch("/api/feedback", {
         method: "POST",
@@ -142,6 +144,7 @@ function FeedbackPopover() {
       // silently fail — feedback is best-effort
     }
     setSubmitted(true);
+    setSubmitting(false);
     setTimeout(() => {
       setOpen(false);
       setSubmitted(false);
@@ -193,7 +196,7 @@ function FeedbackPopover() {
             />
             <button
               type="submit"
-              disabled={!mood}
+              disabled={!mood || submitting}
               className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-black text-white text-[13px] font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-default"
             >
               Submit
