@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, Line, LineChart, XAxis, YAxis, Pie, PieChart, Label } from "recharts";
+import { Area, AreaChart, Bar, BarChart, XAxis, YAxis, Pie, PieChart, Label } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -745,17 +745,28 @@ function FollowerSnapshotChart({ data }: { data: { date: string; followers: numb
     followers: d.followers,
   }));
 
-  const snapshotConfig = {
+  const areaChartConfig = {
     followers: {
       label: "Followers",
-      color: "#000000",
+      color: "#10b981",
     },
   } satisfies ChartConfig;
 
+  const followerValues = chartData.map(d => d.followers);
+  const minFollowers = Math.min(...followerValues);
+  const maxFollowers = Math.max(...followerValues);
+  const padding = Math.max((maxFollowers - minFollowers) * 0.15, 5);
+
   return (
     <div className="w-full h-full overflow-hidden">
-      <ChartContainer config={snapshotConfig} className="h-[140px] w-full">
-        <LineChart data={chartData} margin={{ top: 10, right: 5, left: 5, bottom: 0 }}>
+      <ChartContainer config={areaChartConfig} className="h-[140px] w-full">
+        <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="fillFollowersPublic" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="label"
             tickLine={false}
@@ -763,20 +774,30 @@ function FollowerSnapshotChart({ data }: { data: { date: string; followers: numb
             tickMargin={8}
             tick={{ fontSize: 10, fill: "#a3a3a3" }}
           />
-          <YAxis hide domain={["dataMin - 100", "dataMax + 100"]} />
+          <YAxis hide domain={[minFollowers - padding, maxFollowers + padding]} />
           <ChartTooltip
             cursor={false}
-            content={<ChartTooltipContent indicator="line" />}
+            content={
+              <ChartTooltipContent
+                formatter={(value) => (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-neutral-500">Followers</span>
+                    <span className="font-medium">{Number(value).toLocaleString()}</span>
+                  </div>
+                )}
+              />
+            }
           />
-          <Line
-            type="monotone"
+          <Area
             dataKey="followers"
-            stroke="var(--color-followers)"
+            type="monotone"
+            fill="url(#fillFollowersPublic)"
+            stroke="#10b981"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#000" }}
-            activeDot={{ r: 5 }}
+            isAnimationActive={false}
           />
-        </LineChart>
+        </AreaChart>
       </ChartContainer>
     </div>
   );

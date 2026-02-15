@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Label, Pie, PieChart } from "recharts";
+import { Area, AreaChart, Label, Pie, PieChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -686,38 +686,54 @@ export default function ProfileCard({
                 </>
               )}
 
-              {/* TikTok/other: follower snapshot line */}
+              {/* TikTok/other: follower snapshot area chart */}
               {!hasHistory && hasSnapshots && (() => {
                 const first = followerSnapshots[0].followers;
                 const last = followerSnapshots[followerSnapshots.length - 1].followers;
                 const change = last - first;
                 const snapshotMax = Math.max(...followerSnapshots.map(s => s.followers));
                 const snapshotMin = Math.min(...followerSnapshots.map(s => s.followers));
-                const range = snapshotMax - snapshotMin || 1;
+                const padding = Math.max(Math.round((snapshotMax - snapshotMin) * 0.1), 1);
+
+                const chartData = followerSnapshots.map(s => ({
+                  date: new Date(s.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                  followers: s.followers,
+                }));
+
+                const snapshotConfig = {
+                  followers: { label: "Followers", color: "#10b981" },
+                } satisfies ChartConfig;
 
                 return (
                   <>
-                    <div className="flex items-end gap-3 h-24 pt-2 mb-2">
-                      {followerSnapshots.map((snap, i) => {
-                        const height = ((snap.followers - snapshotMin) / range) * 70 + 10;
-                        return (
-                          <div key={i} className="flex-1 flex items-end justify-center">
-                            <div
-                              className="w-full bg-black rounded-t-sm max-w-[20px]"
-                              style={{ height: `${height}px` }}
-                              title={`${snap.followers.toLocaleString()} followers`}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="flex justify-between mb-5">
-                      {followerSnapshots.map((snap, i) => {
-                        const date = new Date(snap.date);
-                        const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                        return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dateLabel}</span>;
-                      })}
-                    </div>
+                    <ChartContainer config={snapshotConfig} className="h-[120px] w-full mb-2">
+                      <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="fillFollowersMobile" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 10, fill: "#a3a3a3" }}
+                        />
+                        <YAxis
+                          hide
+                          domain={[snapshotMin - padding, snapshotMax + padding]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="followers"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          fill="url(#fillFollowersMobile)"
+                          dot={false}
+                        />
+                      </AreaChart>
+                    </ChartContainer>
                     <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
                       <div>
                         <p className="text-xs text-neutral-400 mb-1">Current</p>
