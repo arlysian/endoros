@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { DM_Sans, Geist_Mono } from "next/font/google";
 import { FacebookSDK } from "@/components/FacebookSDK";
+import { PostHogProvider } from "@/components/PostHogProvider";
+import { PostHogPageView } from "@/components/PostHogPageView";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -32,7 +34,10 @@ export default function RootLayout({
           className={`${dmSans.className} ${geistMono.variable} antialiased`}
         >
           <FacebookSDK />
-          {children}
+          <PostHogProvider>
+            <PostHogPageView />
+            {children}
+          </PostHogProvider>
         </body>
       </html>
     </ClerkProvider>
