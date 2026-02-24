@@ -220,6 +220,42 @@ export type Database = {
         }
         Relationships: []
       }
+      modash_profiles: {
+        Row: {
+          account_type: string | null
+          created_at: string | null
+          engagements: number | null
+          followers: number | null
+          id: string
+          is_verified: boolean | null
+          platform: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          account_type?: string | null
+          created_at?: string | null
+          engagements?: number | null
+          followers?: number | null
+          id: string
+          is_verified?: boolean | null
+          platform?: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          account_type?: string | null
+          created_at?: string | null
+          engagements?: number | null
+          followers?: number | null
+          id?: string
+          is_verified?: boolean | null
+          platform?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       PlatformMetrics: {
         Row: {
           avgViews: number | null
@@ -303,6 +339,86 @@ export type Database = {
           },
         ]
       }
+      profile_emails: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: number
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: never
+          profile_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: never
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_emails_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "modash_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_jobs: {
+        Row: {
+          error_message: string | null
+          filters: Json
+          follower_max: number
+          follower_min: number
+          id: string
+          last_page_scraped: number | null
+          platform: string
+          profiles_inserted: number | null
+          sort: Json | null
+          started_at: string | null
+          status: string
+          total_pages: number | null
+          total_profiles: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          filters: Json
+          follower_max: number
+          follower_min: number
+          id?: string
+          last_page_scraped?: number | null
+          platform?: string
+          profiles_inserted?: number | null
+          sort?: Json | null
+          started_at?: string | null
+          status?: string
+          total_pages?: number | null
+          total_profiles?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          filters?: Json
+          follower_max?: number
+          follower_min?: number
+          id?: string
+          last_page_scraped?: number | null
+          platform?: string
+          profiles_inserted?: number | null
+          sort?: Json | null
+          started_at?: string | null
+          status?: string
+          total_pages?: number | null
+          total_profiles?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       User: {
         Row: {
           audienceSummary: string | null
@@ -368,7 +484,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      email_export: {
+        Row: {
+          account_type: string | null
+          email: string | null
+          engagements: number | null
+          followers: number | null
+          is_verified: boolean | null
+          platform: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
