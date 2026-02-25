@@ -84,7 +84,7 @@ export default function LandingPage() {
               initial="hidden"
               animate="visible"
               variants={stagger}
-              className="max-w-xl"
+              className="max-w-xl relative z-10"
             >
               <motion.div
                 variants={fadeUp}
@@ -106,15 +106,15 @@ export default function LandingPage() {
                 variants={fadeUp}
                 className="text-lg text-neutral-500 mt-8 max-w-lg leading-relaxed"
               >
-                Connect your socials, get a media kit that updates itself. Land the brand deals.
+                No more PDFs and screenshots. Connect your socials to share verified data in a media kit that stays updated 24/7.
               </motion.p>
 
               <motion.div variants={fadeUp} className="flex items-center gap-4 mt-10">
                 <Link
                   href="/signup"
-                  className="group px-8 py-4 bg-neutral-900 text-white rounded-full font-medium hover:bg-neutral-700 transition-all duration-300 hover:shadow-xl hover:shadow-neutral-900/20 flex items-center gap-2"
+                  className="group px-8 py-4 bg-emerald-600 text-white rounded-full font-medium hover:bg-emerald-700 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-600/20 flex items-center gap-2"
                 >
-                  Claim your link
+                  Get started for free
                   <svg
                     className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
                     fill="none"
@@ -125,12 +125,14 @@ export default function LandingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
                   </svg>
                 </Link>
-                <Link
-                  href="#how"
-                  className="text-neutral-500 hover:text-neutral-900 transition-colors duration-300"
+                <a
+                  href="https://endoros.com/k.kaamcia"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-neutral-900 font-medium hover:text-neutral-700 transition-colors duration-300"
                 >
-                  See how it works
-                </Link>
+                  See an example
+                </a>
               </motion.div>
             </motion.div>
 
@@ -313,8 +315,11 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Horizontal divider */}
+      <div className="w-full h-px bg-neutral-400/20" />
+
       {/* Features */}
-      <section className="py-32 px-6 bg-neutral-900 text-white">
+      <section className="py-32 px-6">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -325,7 +330,7 @@ export default function LandingPage() {
             <h2 className="text-4xl font-semibold tracking-tight">
               Everything you need.
               <br />
-              <span className="text-neutral-500">Nothing you don't.</span>
+              <span className="text-neutral-400">Nothing you don't.</span>
             </h2>
           </motion.div>
 
@@ -360,16 +365,18 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="border-t border-neutral-800 pt-6 flex flex-col"
+                className="group border-t border-neutral-200 pt-6 flex flex-col hover:-translate-y-1 transition-transform duration-300 cursor-default"
               >
                 <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
-                <p className="text-neutral-400 mb-4 min-h-[48px]">{feature.desc}</p>
+                <p className="text-neutral-500 mb-4 min-h-[48px]">{feature.desc}</p>
                 {feature.image && (
-                  <img
-                    src={feature.image}
-                    alt={feature.title}
-                    className={`w-full h-auto sm:h-60 md:h-72 sm:object-cover rounded-xl mt-auto ${feature.objectPos === "top" ? "sm:object-top" : feature.objectPos === "bottom" ? "sm:object-bottom" : ""}`}
-                  />
+                  <div className="mt-auto rounded-xl overflow-hidden border border-neutral-200 shadow-lg shadow-neutral-900/10 group-hover:shadow-xl group-hover:shadow-neutral-900/15 transition-shadow duration-300">
+                    <img
+                      src={feature.image}
+                      alt={feature.title}
+                      className={`w-full h-auto sm:h-60 md:h-72 sm:object-cover ${feature.objectPos === "top" ? "sm:object-top" : feature.objectPos === "bottom" ? "sm:object-bottom" : ""}`}
+                    />
+                  </div>
                 )}
               </motion.div>
             ))}
@@ -377,28 +384,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="pt-32 pb-0 px-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto bg-neutral-900 rounded-3xl p-12 sm:p-16 text-center text-white"
-        >
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
-            Ready to look professional?
-          </h2>
-          <p className="text-neutral-400 mb-8 max-w-md mx-auto">
-            Free to start. No credit card. Takes about 2 minutes.
-          </p>
-          <Link
-            href="/signup"
-            className="inline-flex px-8 py-4 bg-white text-neutral-900 rounded-full font-medium hover:bg-neutral-100 transition-colors"
-          >
-            Create your media kit
-          </Link>
-        </motion.div>
-      </section>
+      {/* Horizontal divider */}
+      <div className="w-full h-px bg-neutral-400/20" />
 
       {/* FAQ */}
       <section className="pt-32 pb-32 px-6">
