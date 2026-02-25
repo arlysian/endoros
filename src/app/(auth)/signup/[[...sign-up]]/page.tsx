@@ -1,20 +1,13 @@
 "use client";
 
-import { useSignUp, useAuth } from "@clerk/nextjs";
+import { useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
 export default function SignupPage() {
   const { isLoaded, signUp, setActive } = useSignUp();
-  const { isSignedIn } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (isSignedIn) {
-      router.replace("/dashboard");
-    }
-  }, [isSignedIn, router]);
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
