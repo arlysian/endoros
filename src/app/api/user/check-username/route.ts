@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
+const RESERVED_USERNAMES = ["example"];
+
 export async function GET(request: NextRequest) {
   const { userId } = await auth();
 
@@ -14,6 +16,11 @@ export async function GET(request: NextRequest) {
 
   if (!userName) {
     return NextResponse.json({ error: "Username required" }, { status: 400 });
+  }
+
+  // Block reserved usernames
+  if (RESERVED_USERNAMES.includes(userName.toLowerCase())) {
+    return NextResponse.json({ available: false, taken: true });
   }
 
   try {

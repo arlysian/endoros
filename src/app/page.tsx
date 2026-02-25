@@ -125,14 +125,12 @@ export default function LandingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
                   </svg>
                 </Link>
-                <a
-                  href="https://endoros.com/k.kaamcia"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/example"
                   className="text-neutral-900 font-medium hover:text-neutral-700 transition-colors duration-300"
                 >
                   See an example
-                </a>
+                </Link>
               </motion.div>
             </motion.div>
 

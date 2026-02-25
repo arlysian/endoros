@@ -65,6 +65,12 @@ export default function InfluenceProfile() {
       setCheckingUserName(false);
       return;
     }
+    const reserved = ["example"];
+    if (reserved.includes(userName.toLowerCase())) {
+      setUserNameError("This username is already taken");
+      setCheckingUserName(false);
+      return;
+    }
 
     setCheckingUserName(true);
     try {

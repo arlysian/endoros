@@ -141,6 +141,12 @@ export default function Onboarding() {
       setCheckingUserName(false);
       return;
     }
+    const reserved = ["example"];
+    if (reserved.includes(userName.toLowerCase())) {
+      setUserNameError("This username is already taken");
+      setCheckingUserName(false);
+      return;
+    }
     setCheckingUserName(true);
     try {
       const res = await fetch(
