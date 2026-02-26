@@ -18,139 +18,113 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get all connected Instagram accounts
-    const { data: accounts, error: accountsError } = await supabaseAdmin
-      .from("ConnectedAccount")
-      .select("id, instagramBusinessId, accessToken")
-      .eq("platform", "INSTAGRAM")
-      .not("instagramBusinessId", "is", null)
-      .not("accessToken", "is", null);
+    // Fetch all platform accounts in parallel
+    const [instagramQuery, tiktokQuery, youtubeQuery, facebookQuery] = await Promise.all([
+      supabaseAdmin
+        .from("ConnectedAccount")
+        .select("id, instagramBusinessId, accessToken")
+        .eq("platform", "INSTAGRAM")
+        .not("instagramBusinessId", "is", null)
+        .not("accessToken", "is", null),
+      supabaseAdmin
+        .from("ConnectedAccount")
+        .select("id, platformUserId, accessToken")
+        .eq("platform", "TIKTOK")
+        .not("accessToken", "is", null),
+      supabaseAdmin
+        .from("ConnectedAccount")
+        .select("id, platformUserId, accessToken, refreshToken")
+        .eq("platform", "YOUTUBE")
+        .not("accessToken", "is", null),
+      supabaseAdmin
+        .from("ConnectedAccount")
+        .select("id, pageId, pageAccessToken")
+        .eq("platform", "FACEBOOK")
+        .not("pageAccessToken", "is", null),
+    ]);
 
-    if (accountsError) {
-      console.error("Error fetching accounts:", accountsError);
-      return NextResponse.json({ error: "Failed to fetch accounts" }, { status: 500 });
-    }
+    if (instagramQuery.error) console.error("Error fetching Instagram accounts:", instagramQuery.error);
+    if (tiktokQuery.error) console.error("Error fetching TikTok accounts:", tiktokQuery.error);
+    if (youtubeQuery.error) console.error("Error fetching YouTube accounts:", youtubeQuery.error);
+    if (facebookQuery.error) console.error("Error fetching Facebook accounts:", facebookQuery.error);
 
-    if (!accounts || accounts.length === 0) {
-      return NextResponse.json({ message: "No accounts to process" });
-    }
-
-    // Filter to only accounts with valid credentials (TypeScript narrowing)
-    const validAccounts = accounts.filter(
+    // Filter to valid accounts
+    const validInstagram = (instagramQuery.data ?? []).filter(
       (acc): acc is { id: string; instagramBusinessId: string; accessToken: string } =>
         acc.instagramBusinessId !== null && acc.accessToken !== null
     );
 
-    const instagramResults = [];
+    const validTiktok = (tiktokQuery.data ?? []).filter(
+      (acc): acc is { id: string; platformUserId: string; accessToken: string } =>
+        acc.platformUserId !== null && acc.accessToken !== null
+    );
 
-    for (const account of validAccounts) {
+    const validYoutube = (youtubeQuery.data ?? []).filter(
+      (acc): acc is { id: string; platformUserId: string; accessToken: string; refreshToken: string | null } =>
+        acc.platformUserId !== null && acc.accessToken !== null
+    );
+
+    const validFacebook = (facebookQuery.data ?? []).filter(
+      (acc): acc is { id: string; pageId: string; pageAccessToken: string } =>
+        acc.pageId !== null && acc.pageAccessToken !== null
+    );
+
+    // Process ALL accounts across ALL platforms in parallel
+    const instagramPromises = validInstagram.map(async (account) => {
       try {
         const [metrics] = await Promise.all([
           fetchInstagramMetrics(account),
           fetchAudienceDemographics(account),
         ]);
-        instagramResults.push({ accountId: account.id, success: true, metrics });
+        return { accountId: account.id, success: true as const, metrics };
       } catch (err) {
         console.error(`Error processing Instagram account ${account.id}:`, err);
-        instagramResults.push({ accountId: account.id, success: false, error: String(err) });
+        return { accountId: account.id, success: false as const, error: String(err) };
       }
-    }
+    });
 
-    // Get all TikTok accounts
-    const { data: tiktokAccounts, error: tiktokError } = await supabaseAdmin
-      .from("ConnectedAccount")
-      .select("id, platformUserId, accessToken")
-      .eq("platform", "TIKTOK")
-      .not("accessToken", "is", null);
-
-    if (tiktokError) {
-      console.error("Error fetching TikTok accounts:", tiktokError);
-    }
-
-    const tiktokResults = [];
-
-    if (tiktokAccounts) {
-      const validTiktokAccounts = tiktokAccounts.filter(
-        (acc): acc is { id: string; platformUserId: string; accessToken: string } =>
-          acc.platformUserId !== null && acc.accessToken !== null
-      );
-
-      for (const account of validTiktokAccounts) {
-        try {
-          const metrics = await fetchTikTokMetrics(account);
-          tiktokResults.push({ accountId: account.id, success: true, metrics });
-        } catch (err) {
-          console.error(`Error processing TikTok account ${account.id}:`, err);
-          tiktokResults.push({ accountId: account.id, success: false, error: String(err) });
-        }
+    const tiktokPromises = validTiktok.map(async (account) => {
+      try {
+        const metrics = await fetchTikTokMetrics(account);
+        return { accountId: account.id, success: true as const, metrics };
+      } catch (err) {
+        console.error(`Error processing TikTok account ${account.id}:`, err);
+        return { accountId: account.id, success: false as const, error: String(err) };
       }
-    }
+    });
 
-    // Get all YouTube accounts
-    const { data: youtubeAccounts, error: youtubeError } = await supabaseAdmin
-      .from("ConnectedAccount")
-      .select("id, platformUserId, accessToken, refreshToken")
-      .eq("platform", "YOUTUBE")
-      .not("accessToken", "is", null);
-
-    if (youtubeError) {
-      console.error("Error fetching YouTube accounts:", youtubeError);
-    }
-
-    const youtubeResults = [];
-
-    if (youtubeAccounts) {
-      const validYoutubeAccounts = youtubeAccounts.filter(
-        (acc): acc is { id: string; platformUserId: string; accessToken: string; refreshToken: string | null } =>
-          acc.platformUserId !== null && acc.accessToken !== null
-      );
-
-      for (const account of validYoutubeAccounts) {
-        try {
-          const metrics = await fetchYouTubeMetrics(account);
-          youtubeResults.push({ accountId: account.id, success: true, metrics });
-        } catch (err) {
-          console.error(`Error processing YouTube account ${account.id}:`, err);
-          youtubeResults.push({ accountId: account.id, success: false, error: String(err) });
-        }
+    const youtubePromises = validYoutube.map(async (account) => {
+      try {
+        const metrics = await fetchYouTubeMetrics(account);
+        return { accountId: account.id, success: true as const, metrics };
+      } catch (err) {
+        console.error(`Error processing YouTube account ${account.id}:`, err);
+        return { accountId: account.id, success: false as const, error: String(err) };
       }
-    }
+    });
 
-    // Get all Facebook accounts
-    const { data: facebookAccounts, error: facebookError } = await supabaseAdmin
-      .from("ConnectedAccount")
-      .select("id, pageId, pageAccessToken")
-      .eq("platform", "FACEBOOK")
-      .not("pageAccessToken", "is", null);
-
-    if (facebookError) {
-      console.error("Error fetching Facebook accounts:", facebookError);
-    }
-
-    const facebookResults = [];
-
-    if (facebookAccounts) {
-      const validFacebookAccounts = facebookAccounts.filter(
-        (acc): acc is { id: string; pageId: string; pageAccessToken: string } =>
-          acc.pageId !== null && acc.pageAccessToken !== null
-      );
-
-      for (const account of validFacebookAccounts) {
-        try {
-          const metrics = await fetchFacebookMetrics(account);
-          facebookResults.push({ accountId: account.id, success: true, metrics });
-        } catch (err) {
-          console.error(`Error processing Facebook account ${account.id}:`, err);
-          facebookResults.push({ accountId: account.id, success: false, error: String(err) });
-        }
+    const facebookPromises = validFacebook.map(async (account) => {
+      try {
+        const metrics = await fetchFacebookMetrics(account);
+        return { accountId: account.id, success: true as const, metrics };
+      } catch (err) {
+        console.error(`Error processing Facebook account ${account.id}:`, err);
+        return { accountId: account.id, success: false as const, error: String(err) };
       }
-    }
+    });
+
+    const [instagramResults, tiktokResults, youtubeResults, facebookResults] = await Promise.all([
+      Promise.all(instagramPromises),
+      Promise.all(tiktokPromises),
+      Promise.all(youtubePromises),
+      Promise.all(facebookPromises),
+    ]);
 
     return NextResponse.json({
-      instagram: { processed: validAccounts.length, results: instagramResults },
-      tiktok: { processed: tiktokResults.length, results: tiktokResults },
-      youtube: { processed: youtubeResults.length, results: youtubeResults },
-      facebook: { processed: facebookResults.length, results: facebookResults },
+      instagram: { processed: validInstagram.length, results: instagramResults },
+      tiktok: { processed: validTiktok.length, results: tiktokResults },
+      youtube: { processed: validYoutube.length, results: youtubeResults },
+      facebook: { processed: validFacebook.length, results: facebookResults },
     });
   } catch (error) {
     console.error("Cron job error:", error);
