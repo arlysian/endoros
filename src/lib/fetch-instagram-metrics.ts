@@ -514,7 +514,7 @@ export async function fetchInstagramMetrics(account: Account) {
 
   // Fetch recent media for engagement metrics
   const mediaRes = await fetch(
-    `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=500&access_token=${token}`
+    `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=50&access_token=${token}`
   );
   const mediaRaw = await mediaRes.json();
   const mediaParsed = IgMediaListSchema.safeParse(mediaRaw);
