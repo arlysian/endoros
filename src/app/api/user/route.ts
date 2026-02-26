@@ -94,6 +94,13 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    if (typeof updates.userName === "string" && /\s/.test(updates.userName)) {
+      return NextResponse.json(
+        { error: "Username cannot contain spaces" },
+        { status: 400 }
+      );
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: "No valid fields to update" },

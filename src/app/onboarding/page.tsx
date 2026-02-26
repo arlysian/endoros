@@ -181,12 +181,13 @@ export default function Onboarding() {
   };
 
   const handleUserNameChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, userName: value }));
+    const sanitized = value.replace(/\s/g, "");
+    setFormData((prev) => ({ ...prev, userName: sanitized }));
     if (userNameCheckTimeout.current) {
       clearTimeout(userNameCheckTimeout.current);
     }
     userNameCheckTimeout.current = setTimeout(() => {
-      checkUserNameAvailability(value);
+      checkUserNameAvailability(sanitized);
     }, 500);
   };
 

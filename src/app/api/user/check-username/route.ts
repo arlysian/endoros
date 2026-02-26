@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Username required" }, { status: 400 });
   }
 
+  if (/\s/.test(userName)) {
+    return NextResponse.json({ error: "Username cannot contain spaces" }, { status: 400 });
+  }
+
   // Block reserved usernames
   if (RESERVED_USERNAMES.includes(userName.toLowerCase())) {
     return NextResponse.json({ available: false, taken: true });

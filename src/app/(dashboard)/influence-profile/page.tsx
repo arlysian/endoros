@@ -92,7 +92,8 @@ export default function InfluenceProfile() {
 
   // Handle username change with debounce
   const handleUserNameChange = (value: string) => {
-    setFormData({ ...formData, userName: value });
+    const sanitized = value.replace(/\s/g, "");
+    setFormData({ ...formData, userName: sanitized });
 
     // Clear previous timeout
     if (userNameCheckTimeout.current) {
