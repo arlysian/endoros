@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   // Get connected account
   const { data: account } = await supabaseAdmin
     .from("ConnectedAccount")
-    .select("id")
+    .select("id, createdAt")
     .eq("userId", userId)
     .eq("platform", "INSTAGRAM")
     .single();
@@ -29,13 +29,24 @@ export async function GET(request: NextRequest) {
   cutoff.setDate(cutoff.getDate() - 2);
   const cutoffDate = cutoff.toISOString().split("T")[0];
 
-  const { data: metrics, error } = await supabaseAdmin
+  // Only show data since the account was connected
+  const connectedDate = account.createdAt
+    ? new Date(account.createdAt).toISOString().split("T")[0]
+    : null;
+
+  let query = supabaseAdmin
     .from("PlatformMetrics")
     .select("date, followers, newFollows, unfollows, profileVisits, linkClicks, likes, comments, shares, saves")
     .eq("connectedAccountId", account.id)
     .lte("date", cutoffDate)
     .order("date", { ascending: false })
     .limit(validDays);
+
+  if (connectedDate) {
+    query = query.gte("date", connectedDate);
+  }
+
+  const { data: metrics, error } = await query;
 
   if (error) {
     console.error("History fetch error:", error);
