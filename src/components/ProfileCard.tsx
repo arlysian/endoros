@@ -97,6 +97,14 @@ interface AccountData {
   performanceData?: PerformanceData | null;
 }
 
+interface CreatorRate {
+  id: string;
+  platform: string;
+  contentType: string;
+  price: number;
+  currency: string;
+}
+
 interface ProfileCardProps {
   user: ProfileCardUser | null;
   achievements: ProfileCardAchievement[];
@@ -107,6 +115,7 @@ interface ProfileCardProps {
   platformDataMap?: Record<string, PlatformData>;
   accountDataMap?: Record<string, AccountData>;
   connectedAccounts?: ConnectedAccount[];
+  rates?: CreatorRate[];
 }
 
 const countryNames: Record<string, string> = {
@@ -198,6 +207,7 @@ export default function ProfileCard({
   platformDataMap = {},
   accountDataMap = {},
   connectedAccounts = [],
+  rates = [],
 }: ProfileCardProps) {
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -575,6 +585,44 @@ export default function ProfileCard({
             </div>
           </div>
         )}
+
+        {/* Rates */}
+        {rates.length > 0 && (() => {
+          const grouped = rates.reduce<Record<string, CreatorRate[]>>((acc, rate) => {
+            (acc[rate.platform] ??= []).push(rate);
+            return acc;
+          }, {});
+          const platformLabel: Record<string, string> = {
+            INSTAGRAM: "Instagram",
+            TIKTOK: "TikTok",
+            TWITTER: "X / Twitter",
+            YOUTUBE: "YouTube",
+            FACEBOOK: "Facebook",
+          };
+          const formatCurrency = (price: number, currency: string) =>
+            new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(price);
+
+          return (
+            <div className="mb-6">
+              <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Rates</h2>
+              <div className="space-y-3">
+                {Object.entries(grouped).map(([platform, items]) => (
+                  <div key={platform}>
+                    <p className="text-xs font-medium text-neutral-500 mb-1">{platformLabel[platform] || platform}</p>
+                    <div className="space-y-1">
+                      {items.map((rate) => (
+                        <div key={rate.id} className="flex items-center justify-between">
+                          <span className="text-sm text-neutral-600">{rate.contentType}</span>
+                          <span className="text-sm font-medium text-black">{formatCurrency(rate.price, rate.currency)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Platform Selector */}
         {displayAccounts.length > 0 && (

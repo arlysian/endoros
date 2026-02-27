@@ -232,6 +232,7 @@ export default function ExampleProfilePage() {
           collaborations={mockCollaborations}
           connectedAccounts={mockConnectedAccounts}
           accountDataMap={accountDataMap}
+          rates={[]}
         />
       </div>
 

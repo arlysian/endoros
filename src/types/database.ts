@@ -55,6 +55,47 @@ export type Database = {
           },
         ]
       }
+      CreatorRate: {
+        Row: {
+          id: string
+          userId: string
+          platform: string
+          contentType: string
+          price: number
+          currency: string
+          createdAt: string | null
+          updatedAt: string | null
+        }
+        Insert: {
+          id?: string
+          userId: string
+          platform: string
+          contentType: string
+          price: number
+          currency?: string
+          createdAt?: string | null
+          updatedAt?: string | null
+        }
+        Update: {
+          id?: string
+          userId?: string
+          platform?: string
+          contentType?: string
+          price?: number
+          currency?: string
+          createdAt?: string | null
+          updatedAt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "CreatorRate_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "User"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       AudienceDemographics: {
         Row: {
           connectedAccountId: string

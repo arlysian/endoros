@@ -126,6 +126,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .eq("userId", user.id)
     .order("date", { ascending: false });
 
+  // Fetch creator rates
+  const { data: rates } = await supabaseAdmin
+    .from("CreatorRate")
+    .select("*")
+    .eq("userId", user.id)
+    .order("platform", { ascending: true });
+
   // Fetch collaborations
   const { data: collaborations } = await supabaseAdmin
     .from("Collaboration")
@@ -307,6 +314,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           collaborations={collaborations || []}
           connectedAccounts={accountsWithFollowers}
           accountDataMap={accountDataMap}
+          rates={rates || []}
         />
       </div>
 
@@ -321,6 +329,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
               compact={false}
               connectedAccounts={accountsWithFollowers}
               accountDataMap={accountDataMap}
+              rates={rates || []}
             />
           </div>
         </div>
