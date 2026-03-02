@@ -287,7 +287,7 @@ function Sidebar() {
           })}
         </nav>
 
-        {/* Preview Link */}
+        {/* Media Kit Link */}
         <div className="px-3 mb-2">
           <a
             href={user?.userName ? `/${user.userName}` : "#"}
@@ -295,8 +295,10 @@ function Sidebar() {
             rel={user?.userName ? "noopener noreferrer" : undefined}
             onClick={(e) => { if (!user?.userName) e.preventDefault(); }}
             className={`
-              flex items-center gap-3 px-3 py-2.5 rounded-lg
-              bg-black text-white hover:bg-neutral-800 transition-colors
+              group flex items-center gap-3 px-3 py-2.5 rounded-lg
+              bg-gradient-to-r from-emerald-600 to-emerald-500 text-white
+              hover:from-emerald-500 hover:to-emerald-400 transition-all
+              shadow-md shadow-emerald-600/20 hover:shadow-lg hover:shadow-emerald-600/30
               ${!user?.userName ? "cursor-default" : ""}
             `}
           >
@@ -304,6 +306,9 @@ function Sidebar() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
             </svg>
             <span className="text-[13px] font-medium">Your Media Kit</span>
+            <svg className="w-3.5 h-3.5 ml-auto opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+            </svg>
           </a>
         </div>
 

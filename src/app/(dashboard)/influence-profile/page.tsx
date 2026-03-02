@@ -599,7 +599,7 @@ export default function InfluenceProfile() {
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium text-black mb-2">Audience Summary</label>
+          <label className="block text-sm font-medium text-black mb-2">Insight about your audience</label>
           <textarea
             value={formData.audienceSummary}
             onChange={(e) => setFormData({ ...formData, audienceSummary: e.target.value })}
