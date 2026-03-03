@@ -958,9 +958,22 @@ export default function MediaKitMobile({
                       content={
                         <ChartTooltipContent
                           hideLabel
-                          formatter={(value, name) => {
-                            const item = rawItems.find(i => i.type === name);
-                            return item ? formatNumber(item.raw) : value;
+                          formatter={(value, name, item) => {
+                            const raw = rawItems.find(i => i.type === name);
+                            return (
+                              <>
+                                <div
+                                  className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                  style={{ backgroundColor: raw?.fill || item.payload?.fill }}
+                                />
+                                <div className="flex flex-1 justify-between items-center leading-none gap-2">
+                                  <span className="text-muted-foreground capitalize">{name as string}</span>
+                                  <span className="text-foreground font-mono font-medium tabular-nums">
+                                    {raw ? formatNumber(raw.raw) : value?.toLocaleString()}
+                                  </span>
+                                </div>
+                              </>
+                            );
                           }}
                         />
                       }

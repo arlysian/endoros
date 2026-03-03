@@ -553,9 +553,23 @@ export default function MediaKitDesktop({
                           content={
                             <ChartTooltipContent
                               hideLabel
-                              formatter={(value, name) => {
+                              formatter={(value, name, item) => {
                                 const realMap: Record<string, number> = { likes, comments, shares, saves };
-                                return realMap[name as string] !== undefined ? formatNumber(realMap[name as string]) : value;
+                                const realVal = realMap[name as string];
+                                return (
+                                  <>
+                                    <div
+                                      className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                      style={{ backgroundColor: item.payload?.fill }}
+                                    />
+                                    <div className="flex flex-1 justify-between items-center leading-none gap-2">
+                                      <span className="text-muted-foreground capitalize">{name as string}</span>
+                                      <span className="text-foreground font-mono font-medium tabular-nums">
+                                        {realVal !== undefined ? formatNumber(realVal) : value?.toLocaleString()}
+                                      </span>
+                                    </div>
+                                  </>
+                                );
                               }}
                             />
                           }
