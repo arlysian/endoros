@@ -196,13 +196,17 @@ export default function MediaKitDesktop({
 }: MediaKitDesktopProps) {
   const defaultAccount = connectedAccounts.find(a => a.platform === "INSTAGRAM") || connectedAccounts[0];
   const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
+  const [growthDays, setGrowthDays] = useState<7 | 30>(7);
 
   const selectedAccount = connectedAccounts.find(a => a.id === selectedAccountId);
   const accountData = accountDataMap[selectedAccountId];
   const platformMetrics = accountData?.metrics ?? null;
-  const followerHistory = accountData?.followerHistory ?? [];
-  const followerSnapshots = accountData?.followerSnapshots ?? [];
+  const allFollowerHistory = accountData?.followerHistory ?? [];
+  const allFollowerSnapshots = accountData?.followerSnapshots ?? [];
   const demographics = accountData?.demographics ?? [];
+
+  const followerHistory = allFollowerHistory.slice(-growthDays);
+  const followerSnapshots = allFollowerSnapshots.slice(-growthDays);
 
   const performanceData = accountData?.performanceData ?? null;
 
@@ -559,14 +563,27 @@ export default function MediaKitDesktop({
               <div className="col-span-2 pt-4 border-t border-neutral-100">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-sm font-medium text-black">Follower Growth</h3>
-                  <span className="text-xs text-neutral-500">7 days</span>
+                  <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setGrowthDays(7)}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 7 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                    >
+                      7d
+                    </button>
+                    <button
+                      onClick={() => setGrowthDays(30)}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 30 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                    >
+                      30d
+                    </button>
+                  </div>
                 </div>
 
                 {/* IG: follows/unfollows breakdown chart */}
                 {hasHistory && (
                   <>
                     <div className="h-40">
-                      <FollowerGrowthChart data={followerHistory} />
+                      <FollowerGrowthChart data={followerHistory} growthDays={growthDays} />
                     </div>
                     <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
                       <div>
@@ -595,7 +612,7 @@ export default function MediaKitDesktop({
                   return (
                     <>
                       <div className="h-40">
-                        <FollowerSnapshotChart data={followerSnapshots} />
+                        <FollowerSnapshotChart data={followerSnapshots} growthDays={growthDays} />
                       </div>
                       <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
                         <div>
@@ -792,9 +809,12 @@ export default function MediaKitDesktop({
   );
 }
 
-function FollowerGrowthChart({ data }: { data: FollowerHistoryDay[] }) {
+function FollowerGrowthChart({ data, growthDays }: { data: FollowerHistoryDay[]; growthDays: 7 | 30 }) {
   const chartData = data.map((d) => ({
-    label: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    label: growthDays <= 14
+      ? new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : new Date(d.date).getDate().toString(),
+    fullDate: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     newFollows: d.newFollows,
     unfollows: d.unfollows,
   }));
@@ -820,10 +840,21 @@ function FollowerGrowthChart({ data }: { data: FollowerHistoryDay[] }) {
             axisLine={false}
             tickMargin={8}
             tick={{ fontSize: 10, fill: "#a3a3a3" }}
+            interval={growthDays === 30 ? 2 : 0}
           />
           <ChartTooltip
             cursor={false}
-            content={<ChartTooltipContent indicator="dashed" />}
+            content={
+              <ChartTooltipContent
+                indicator="dashed"
+                labelFormatter={(value, payload) => {
+                  if (growthDays === 30 && payload?.[0]?.payload?.fullDate) {
+                    return payload[0].payload.fullDate;
+                  }
+                  return value;
+                }}
+              />
+            }
           />
           <Bar dataKey="newFollows" fill="var(--color-newFollows)" radius={3} />
           <Bar dataKey="unfollows" fill="var(--color-unfollows)" radius={3} />
@@ -833,9 +864,12 @@ function FollowerGrowthChart({ data }: { data: FollowerHistoryDay[] }) {
   );
 }
 
-function FollowerSnapshotChart({ data }: { data: { date: string; followers: number }[] }) {
+function FollowerSnapshotChart({ data, growthDays }: { data: { date: string; followers: number }[]; growthDays: 7 | 30 }) {
   const chartData = data.map((d) => ({
-    label: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    label: growthDays <= 14
+      ? new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : new Date(d.date).getDate().toString(),
+    fullDate: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     followers: d.followers,
   }));
 
@@ -867,12 +901,19 @@ function FollowerSnapshotChart({ data }: { data: { date: string; followers: numb
             axisLine={false}
             tickMargin={8}
             tick={{ fontSize: 10, fill: "#a3a3a3" }}
+            interval={growthDays === 30 ? 2 : 0}
           />
           <YAxis hide domain={[minFollowers - padding, maxFollowers + padding]} />
           <ChartTooltip
             cursor={false}
             content={
               <ChartTooltipContent
+                labelFormatter={(value, payload) => {
+                  if (growthDays === 30 && payload?.[0]?.payload?.fullDate) {
+                    return payload[0].payload.fullDate;
+                  }
+                  return value;
+                }}
                 formatter={(value) => (
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-emerald-500" />

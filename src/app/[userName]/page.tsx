@@ -247,7 +247,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           .eq("connectedAccountId", acc.id)
           .lte("date", cutoffDate)
           .order("date", { ascending: false })
-          .limit(7);
+          .limit(30);
 
         followerHistory = history
           ? history.reverse().map(h => ({
@@ -263,7 +263,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           .eq("connectedAccountId", acc.id)
           .not("followers", "is", null)
           .order("date", { ascending: false })
-          .limit(7);
+          .limit(30);
 
         followerSnapshots = snapshots
           ? snapshots.reverse().map(s => ({

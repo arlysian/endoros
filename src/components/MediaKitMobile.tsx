@@ -359,7 +359,7 @@ export default function MediaKitMobile({
                           style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 2 : 0)}px` }}
                         />
                         <div
-                          className="w-[45%] bg-rose-400 rounded-t-sm"
+                          className="w-[45%] bg-red-500 rounded-t-sm"
                           style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 2 : 0)}px` }}
                         />
                       </div>
@@ -451,14 +451,18 @@ export default function MediaKitMobile({
   // State for selected account
   const defaultAccount = displayAccounts.find(a => a.platform === "INSTAGRAM") || displayAccounts[0];
   const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
+  const [growthDays, setGrowthDays] = useState<7 | 30>(7);
 
   const selectedAccount = displayAccounts.find(a => a.id === selectedAccountId);
   const selectedPlatform = selectedAccount?.platform || "INSTAGRAM";
   const accountData = accountDataMap[selectedAccountId];
   const platformMetrics = accountData?.metrics ?? platformDataMap[selectedPlatform]?.metrics ?? null;
-  const followerHistory = accountData?.followerHistory ?? platformDataMap[selectedPlatform]?.followerHistory ?? [];
-  const followerSnapshots = accountData?.followerSnapshots ?? [];
+  const allFollowerHistory = accountData?.followerHistory ?? platformDataMap[selectedPlatform]?.followerHistory ?? [];
+  const allFollowerSnapshots = accountData?.followerSnapshots ?? [];
   const demographics = accountData?.demographics ?? [];
+
+  const followerHistory = allFollowerHistory.slice(-growthDays);
+  const followerSnapshots = allFollowerSnapshots.slice(-growthDays);
 
   // Full mode for public profile
   return (
@@ -688,7 +692,20 @@ export default function MediaKitMobile({
             <div className="mb-8">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-semibold text-black pb-2 border-b-2 border-black/10">Follower Growth</h3>
-                <span className="text-xs text-neutral-400">Last 7 days</span>
+                <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setGrowthDays(7)}
+                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 7 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                  >
+                    7d
+                  </button>
+                  <button
+                    onClick={() => setGrowthDays(30)}
+                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 30 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                  >
+                    30d
+                  </button>
+                </div>
               </div>
 
               {/* IG: follows/unfollows breakdown */}
@@ -706,7 +723,7 @@ export default function MediaKitMobile({
                             title={`+${day.newFollows.toLocaleString()} follows`}
                           />
                           <div
-                            className="w-[45%] bg-rose-400 rounded-t-sm"
+                            className="w-[45%] bg-red-500 rounded-t-sm"
                             style={{ height: `${Math.max(unfollowsHeight, day.unfollows > 0 ? 2 : 0)}px` }}
                             title={`-${day.unfollows.toLocaleString()} unfollows`}
                           />
@@ -717,8 +734,11 @@ export default function MediaKitMobile({
                   <div className="flex justify-between mb-5">
                     {followerHistory.map((day, i) => {
                       const date = new Date(day.date);
-                      const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                      return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{dateLabel}</span>;
+                      const dateLabel = growthDays <= 14
+                        ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                        : date.getDate().toString();
+                      const show = growthDays === 30 ? i % 3 === 0 : true;
+                      return <span key={i} className="flex-1 text-center text-[10px] text-neutral-400">{show ? dateLabel : ""}</span>;
                     })}
                   </div>
                   <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
@@ -750,7 +770,10 @@ export default function MediaKitMobile({
                 const padding = Math.max(Math.round((snapshotMax - snapshotMin) * 0.1), 1);
 
                 const chartData = followerSnapshots.map(s => ({
-                  date: new Date(s.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                  date: growthDays <= 14
+                    ? new Date(s.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : new Date(s.date).getDate().toString(),
+                  fullDate: new Date(s.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
                   followers: s.followers,
                 }));
 
@@ -774,10 +797,31 @@ export default function MediaKitMobile({
                           axisLine={false}
                           tick={{ fontSize: 10, fill: "#a3a3a3" }}
                           padding={{ left: 10, right: 10 }}
+                          interval={growthDays === 30 ? 2 : 0}
                         />
                         <YAxis
                           hide
                           domain={[snapshotMin - padding, snapshotMax + padding]}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={
+                            <ChartTooltipContent
+                              labelFormatter={(value, payload) => {
+                                if (growthDays === 30 && payload?.[0]?.payload?.fullDate) {
+                                  return payload[0].payload.fullDate;
+                                }
+                                return value;
+                              }}
+                              formatter={(value) => (
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  <span className="text-neutral-500">Followers</span>
+                                  <span className="font-medium">{Number(value).toLocaleString()}</span>
+                                </div>
+                              )}
+                            />
+                          }
                         />
                         <Area
                           type="monotone"
