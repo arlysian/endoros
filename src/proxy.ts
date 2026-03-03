@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/signup(.*)',
   '/api/webhooks(.*)',
   '/api/cron(.*)',
+  '/api/backfill-engagement',
   '/:userName',
 ]);
 
