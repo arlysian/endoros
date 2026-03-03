@@ -711,12 +711,12 @@ export default function MediaKitMobile({
               {/* IG: follows/unfollows breakdown */}
               {hasHistory && (
                 <>
-                  <div className="flex items-end gap-3 h-24 pt-2 mb-2">
+                  <div className={`flex items-end ${growthDays === 30 ? "gap-0.5" : "gap-3"} h-24 pt-2 mb-2`}>
                     {followerHistory.map((day, i) => {
                       const followsHeight = (day.newFollows / maxValue) * 80;
                       const unfollowsHeight = (day.unfollows / maxValue) * 80;
                       return (
-                        <div key={i} className="flex-1 flex gap-0.5 items-end justify-center">
+                        <div key={i} className="flex-1 flex gap-px items-end justify-center">
                           <div
                             className="w-[45%] bg-emerald-500 rounded-t-sm"
                             style={{ height: `${Math.max(followsHeight, day.newFollows > 0 ? 2 : 0)}px` }}
