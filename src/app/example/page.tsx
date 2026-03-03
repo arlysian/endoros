@@ -144,6 +144,18 @@ const mockDemographics = [
   { type: "city", label: "Toronto", value: 3.1 },
 ];
 
+const mockEngagementHistory = Array.from({ length: 30 }, (_, i) => {
+  const d = new Date(today);
+  d.setDate(d.getDate() - (32 - i));
+  return {
+    date: d.toISOString().split("T")[0],
+    likes: Math.floor(150 + Math.random() * 100),
+    comments: Math.floor(8 + Math.random() * 15),
+    shares: Math.floor(4 + Math.random() * 10),
+    saves: Math.floor(10 + Math.random() * 20),
+  };
+});
+
 const accountDataMap: Record<
   string,
   {
@@ -167,6 +179,8 @@ const accountDataMap: Record<
       thisWeek: { profileVisits: number; linkClicks: number };
       lastWeek: { profileVisits: number; linkClicks: number };
     } | null;
+    engagementHistory: { date: string; likes: number; comments: number; shares: number; saves: number }[];
+    totalEngagement: { likes: number; comments: number; shares: number; saves: number } | null;
   }
 > = {
   "acc-ig": {
@@ -190,6 +204,8 @@ const accountDataMap: Record<
       thisWeek: { profileVisits: 2150, linkClicks: 387 },
       lastWeek: { profileVisits: 1820, linkClicks: 310 },
     },
+    engagementHistory: mockEngagementHistory,
+    totalEngagement: { likes: 58400, comments: 3120, shares: 1890, saves: 4210 },
   },
   "acc-tt": {
     metrics: {
@@ -204,6 +220,8 @@ const accountDataMap: Record<
     followerSnapshots: mockFollowerSnapshots,
     demographics: [],
     performanceData: null,
+    engagementHistory: [],
+    totalEngagement: null,
   },
 };
 

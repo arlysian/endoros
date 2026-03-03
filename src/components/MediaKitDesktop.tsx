@@ -89,12 +89,22 @@ interface PerformanceData {
   lastWeek: { profileVisits: number; linkClicks: number };
 }
 
+interface EngagementHistoryDay {
+  date: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+}
+
 interface AccountData {
   metrics: PlatformMetrics | null;
   followerHistory: FollowerHistoryDay[];
   followerSnapshots: FollowerSnapshot[];
   demographics: DemographicItem[];
   performanceData?: PerformanceData | null;
+  engagementHistory?: EngagementHistoryDay[];
+  totalEngagement?: { likes: number; comments: number; shares: number; saves: number } | null;
 }
 
 interface CreatorRate {
@@ -197,6 +207,7 @@ export default function MediaKitDesktop({
   const defaultAccount = connectedAccounts.find(a => a.platform === "INSTAGRAM") || connectedAccounts[0];
   const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
   const [growthDays, setGrowthDays] = useState<7 | 30>(7);
+  const [engagementDays, setEngagementDays] = useState<"1" | "7" | "30" | "total">("7");
 
   const selectedAccount = connectedAccounts.find(a => a.id === selectedAccountId);
   const accountData = accountDataMap[selectedAccountId];
@@ -204,6 +215,8 @@ export default function MediaKitDesktop({
   const allFollowerHistory = accountData?.followerHistory ?? [];
   const allFollowerSnapshots = accountData?.followerSnapshots ?? [];
   const demographics = accountData?.demographics ?? [];
+  const engagementHistory = accountData?.engagementHistory ?? [];
+  const totalEngagement = accountData?.totalEngagement ?? null;
 
   const followerHistory = allFollowerHistory.slice(-growthDays);
   const followerSnapshots = allFollowerSnapshots.slice(-growthDays);
@@ -225,10 +238,29 @@ export default function MediaKitDesktop({
   const netGrowth = totalNewFollows - totalUnfollows;
   const maxValue = Math.max(...followerHistory.map(d => Math.max(d.newFollows, d.unfollows)), 1);
 
-  const likes = platformMetrics?.likes || 0;
-  const comments = platformMetrics?.comments || 0;
-  const shares = platformMetrics?.shares || 0;
-  const saves = platformMetrics?.saves || 0;
+  // Aggregate engagement based on selected period
+  const isIG = selectedAccount?.platform === "INSTAGRAM";
+  const hasEngagementHistory = engagementHistory.length > 0;
+
+  let likes: number, comments: number, shares: number, saves: number;
+  if (isIG && engagementDays === "total" && totalEngagement) {
+    likes = totalEngagement.likes;
+    comments = totalEngagement.comments;
+    shares = totalEngagement.shares;
+    saves = totalEngagement.saves;
+  } else if (isIG && hasEngagementHistory && engagementDays !== "total") {
+    const sliceCount = engagementDays === "1" ? 1 : engagementDays === "7" ? 7 : 30;
+    const sliced = engagementHistory.slice(-sliceCount);
+    likes = sliced.reduce((s, d) => s + d.likes, 0);
+    comments = sliced.reduce((s, d) => s + d.comments, 0);
+    shares = sliced.reduce((s, d) => s + d.shares, 0);
+    saves = sliced.reduce((s, d) => s + d.saves, 0);
+  } else {
+    likes = platformMetrics?.likes || 0;
+    comments = platformMetrics?.comments || 0;
+    shares = platformMetrics?.shares || 0;
+    saves = platformMetrics?.saves || 0;
+  }
   const engagementTotal = likes + comments + shares + saves;
   const hasEngagementData = engagementTotal > 0;
 
@@ -471,7 +503,22 @@ export default function MediaKitDesktop({
 
               {/* Engagement Breakdown */}
               <div>
-                <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Engagement</h3>
+                <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-black/10">
+                  <h3 className="text-base font-semibold text-black">Engagement</h3>
+                  {isIG && (
+                    <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                      {(["1", "7", "30", "total"] as const).map((period) => (
+                        <button
+                          key={period}
+                          onClick={() => setEngagementDays(period)}
+                          className={`px-2.5 py-1 text-xs rounded-md transition-colors ${engagementDays === period ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                        >
+                          {period === "total" ? "Total" : `${period}d`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {hasEngagementData ? (
                   <>
                     <ChartContainer

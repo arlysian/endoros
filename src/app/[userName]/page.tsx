@@ -168,6 +168,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
       thisWeek: { profileVisits: number; linkClicks: number };
       lastWeek: { profileVisits: number; linkClicks: number };
     } | null;
+    engagementHistory: { date: string; likes: number; comments: number; shares: number; saves: number }[];
+    totalEngagement: { likes: number; comments: number; shares: number; saves: number } | null;
   }> = {};
 
   const accountsWithFollowers = await Promise.all(
@@ -191,7 +193,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 32);
           const { data: last30 } = await supabaseAdmin
             .from("PlatformMetrics")
-            .select("likes, comments, shares, saves")
+            .select("date, likes, comments, shares, saves")
             .eq("connectedAccountId", acc.id)
             .gte("date", thirtyDaysAgo.toISOString().split("T")[0])
             .order("date", { ascending: false })
@@ -273,6 +275,41 @@ export default async function PublicProfilePage({ params }: PageProps) {
           : [];
       }
 
+      // Engagement history — build from the last30 query (IG only)
+      let engagementHistory: { date: string; likes: number; comments: number; shares: number; saves: number }[] = [];
+      let totalEngagement: { likes: number; comments: number; shares: number; saves: number } | null = null;
+      if (acc.platform === "INSTAGRAM" && metrics) {
+        // Engagement data has a 1-day delay (yesterday is the latest)
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        const engagementCutoff = oneDayAgo.toISOString().split("T")[0];
+
+        const last30Ref = await supabaseAdmin
+          .from("PlatformMetrics")
+          .select("date, likes, comments, shares, saves")
+          .eq("connectedAccountId", acc.id)
+          .lte("date", engagementCutoff)
+          .order("date", { ascending: false })
+          .limit(30);
+
+        if (last30Ref.data && last30Ref.data.length > 0) {
+          engagementHistory = [...last30Ref.data].reverse().map(row => ({
+            date: row.date,
+            likes: row.likes ?? 0,
+            comments: row.comments ?? 0,
+            shares: row.shares ?? 0,
+            saves: row.saves ?? 0,
+          }));
+        }
+
+        totalEngagement = {
+          likes: metrics.total_likes ?? 0,
+          comments: metrics.total_comments ?? 0,
+          shares: metrics.total_shares ?? 0,
+          saves: metrics.total_saves ?? 0,
+        };
+      }
+
       // Demographics — only IG has this
       let demographics: { type: string; label: string; value: number }[] = [];
       if (acc.platform === "INSTAGRAM") {
@@ -314,7 +351,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         }
       }
 
-      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, followerSnapshots, demographics, performanceData };
+      accountDataMap[acc.id] = { metrics: parsedMetrics, followerHistory, followerSnapshots, demographics, performanceData, engagementHistory, totalEngagement };
 
       return {
         ...acc,
