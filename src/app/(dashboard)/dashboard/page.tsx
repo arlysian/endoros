@@ -815,8 +815,8 @@ function EngagementDonutChart({
     saves: "#D4DAF7",
   };
 
-  // Apply minimum segment size so small metrics remain visible
-  const MIN_PCT = 0.08; // 8% minimum visual size
+  // Cap likes at 75% visual space, remaining 25% split proportionally among other metrics
+  const LIKES_MAX_PCT = 0.75;
   const rawItems = saves !== undefined
     ? [
         { type: "likes", raw: likes, fill: colors.likes },
@@ -832,17 +832,17 @@ function EngagementDonutChart({
 
   const chartData = (() => {
     if (!hasData) return rawItems.map(i => ({ ...i, value: i.raw }));
-    const nonZero = rawItems.filter(i => i.raw > 0);
-    if (nonZero.length <= 1) return rawItems.map(i => ({ ...i, value: i.raw }));
+    const likesPct = likes / total;
+    if (likesPct <= LIKES_MAX_PCT) return rawItems.map(i => ({ ...i, value: i.raw }));
 
-    const pcts = rawItems.map(i => i.raw / total);
-    const boosted = pcts.map(p => (p > 0 && p < MIN_PCT) ? MIN_PCT : p);
-    const boostedSum = boosted.reduce((s, v) => s + v, 0);
-    const scaled = boosted.map(p => p / boostedSum);
-    return rawItems.map((item, idx) => ({
-      ...item,
-      value: Math.round(scaled[idx] * total) || (item.raw > 0 ? 1 : 0),
-    }));
+    const othersTotal = total - likes;
+    return rawItems.map((item) => {
+      if (item.type === "likes") {
+        return { ...item, value: Math.round(LIKES_MAX_PCT * total) };
+      }
+      const share = othersTotal > 0 ? item.raw / othersTotal : 0;
+      return { ...item, value: Math.round(share * (1 - LIKES_MAX_PCT) * total) || (item.raw > 0 ? 1 : 0) };
+    });
   })();
 
   const chartConfig: ChartConfig = {

@@ -274,20 +274,21 @@ export default function MediaKitDesktop({
     pct: hasEngagementData ? Math.round((item.value / engagementTotal) * 100) : 0,
   }));
 
-  // Apply minimum segment size so small metrics remain visible in the donut
-  const MIN_ENGAGEMENT_PCT = 0.08;
+  // Cap likes at 75% visual space, remaining 25% split proportionally among other metrics
+  const LIKES_MAX_PCT = 0.75;
   const engagementChartValues = (() => {
     if (!hasEngagementData) return { likes, comments, shares, saves };
-    const items = [likes, comments, shares, saves];
-    const nonZero = items.filter(v => v > 0);
-    if (nonZero.length <= 1) return { likes, comments, shares, saves };
+    const likesPct = likes / engagementTotal;
+    if (likesPct <= LIKES_MAX_PCT) return { likes, comments, shares, saves };
 
-    const pcts = items.map(v => v / engagementTotal);
-    const boosted = pcts.map(p => (p > 0 && p < MIN_ENGAGEMENT_PCT) ? MIN_ENGAGEMENT_PCT : p);
-    const boostedSum = boosted.reduce((s, v) => s + v, 0);
-    const scaled = boosted.map(p => p / boostedSum);
-    const vals = scaled.map((s, i) => Math.round(s * engagementTotal) || (items[i] > 0 ? 1 : 0));
-    return { likes: vals[0], comments: vals[1], shares: vals[2], saves: vals[3] };
+    const othersTotal = comments + shares + saves;
+    const remaining = (1 - LIKES_MAX_PCT) * engagementTotal;
+    return {
+      likes: Math.round(LIKES_MAX_PCT * engagementTotal),
+      comments: othersTotal > 0 ? Math.round((comments / othersTotal) * remaining) || (comments > 0 ? 1 : 0) : 0,
+      shares: othersTotal > 0 ? Math.round((shares / othersTotal) * remaining) || (shares > 0 ? 1 : 0) : 0,
+      saves: othersTotal > 0 ? Math.round((saves / othersTotal) * remaining) || (saves > 0 ? 1 : 0) : 0,
+    };
   })();
 
   return (
