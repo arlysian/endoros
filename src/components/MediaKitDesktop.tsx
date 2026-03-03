@@ -274,6 +274,22 @@ export default function MediaKitDesktop({
     pct: hasEngagementData ? Math.round((item.value / engagementTotal) * 100) : 0,
   }));
 
+  // Apply minimum segment size so small metrics remain visible in the donut
+  const MIN_ENGAGEMENT_PCT = 0.08;
+  const engagementChartValues = (() => {
+    if (!hasEngagementData) return { likes, comments, shares, saves };
+    const items = [likes, comments, shares, saves];
+    const nonZero = items.filter(v => v > 0);
+    if (nonZero.length <= 1) return { likes, comments, shares, saves };
+
+    const pcts = items.map(v => v / engagementTotal);
+    const boosted = pcts.map(p => (p > 0 && p < MIN_ENGAGEMENT_PCT) ? MIN_ENGAGEMENT_PCT : p);
+    const boostedSum = boosted.reduce((s, v) => s + v, 0);
+    const scaled = boosted.map(p => p / boostedSum);
+    const vals = scaled.map((s, i) => Math.round(s * engagementTotal) || (items[i] > 0 ? 1 : 0));
+    return { likes: vals[0], comments: vals[1], shares: vals[2], saves: vals[3] };
+  })();
+
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
@@ -534,15 +550,23 @@ export default function MediaKitDesktop({
                       <PieChart>
                         <ChartTooltip
                           cursor={false}
-                          content={<ChartTooltipContent hideLabel />}
+                          content={
+                            <ChartTooltipContent
+                              hideLabel
+                              formatter={(value, name) => {
+                                const realMap: Record<string, number> = { likes, comments, shares, saves };
+                                return realMap[name as string] !== undefined ? formatNumber(realMap[name as string]) : value;
+                              }}
+                            />
+                          }
                         />
                         <Pie
                           data={[
-                            { type: "likes", value: likes, fill: "#4A5FD9" },
-                            { type: "comments", value: comments, fill: "#7B8BE6" },
-                            { type: "shares", value: shares, fill: "#A9B4EF" },
-                            { type: "saves", value: saves, fill: "#D4DAF7" },
-                          ]}
+                            { type: "likes", value: engagementChartValues.likes, fill: "#4A5FD9" },
+                            { type: "comments", value: engagementChartValues.comments, fill: "#7B8BE6" },
+                            { type: "shares", value: engagementChartValues.shares, fill: "#A9B4EF" },
+                            { type: "saves", value: engagementChartValues.saves, fill: "#D4DAF7" },
+                          ].filter(d => d.value > 0)}
                           dataKey="value"
                           nameKey="type"
                           innerRadius={45}
@@ -583,18 +607,19 @@ export default function MediaKitDesktop({
                       </PieChart>
                     </ChartContainer>
                     <div className="flex justify-center gap-3 mt-3">
-                      {[
-                        { type: "Likes", color: "#4A5FD9" },
-                        { type: "Comments", color: "#7B8BE6" },
-                        { type: "Shares", color: "#A9B4EF" },
-                        { type: "Saves", color: "#D4DAF7" },
-                      ].map((item) => (
-                        <div key={item.type} className="flex items-center gap-1">
+                      {engagementData.filter((item) => item.value > 0).map((item) => (
+                        <div key={item.label} className="flex items-center gap-1">
                           <div
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: item.color }}
+                            style={{ backgroundColor: ({
+                              Likes: "#4A5FD9",
+                              Comments: "#7B8BE6",
+                              Shares: "#A9B4EF",
+                              Saves: "#D4DAF7",
+                            } as Record<string, string>)[item.label] }}
                           />
-                          <span className="text-[10px] text-neutral-500">{item.type}</span>
+                          <span className="text-[10px] text-neutral-500">{item.label}</span>
+                          <span className="text-[10px] text-neutral-400">({item.pct}%)</span>
                         </div>
                       ))}
                     </div>

@@ -815,18 +815,35 @@ function EngagementDonutChart({
     saves: "#D4DAF7",
   };
 
-  const chartData = saves !== undefined
+  // Apply minimum segment size so small metrics remain visible
+  const MIN_PCT = 0.08; // 8% minimum visual size
+  const rawItems = saves !== undefined
     ? [
-        { type: "likes", value: likes, fill: colors.likes },
-        { type: "comments", value: comments, fill: colors.comments },
-        { type: "shares", value: shares, fill: colors.shares },
-        { type: "saves", value: saves, fill: colors.saves },
+        { type: "likes", raw: likes, fill: colors.likes },
+        { type: "comments", raw: comments, fill: colors.comments },
+        { type: "shares", raw: shares, fill: colors.shares },
+        { type: "saves", raw: saves, fill: colors.saves },
       ]
     : [
-        { type: "likes", value: likes, fill: colors.likes },
-        { type: "comments", value: comments, fill: colors.comments },
-        { type: "shares", value: shares, fill: colors.shares },
+        { type: "likes", raw: likes, fill: colors.likes },
+        { type: "comments", raw: comments, fill: colors.comments },
+        { type: "shares", raw: shares, fill: colors.shares },
       ];
+
+  const chartData = (() => {
+    if (!hasData) return rawItems.map(i => ({ ...i, value: i.raw }));
+    const nonZero = rawItems.filter(i => i.raw > 0);
+    if (nonZero.length <= 1) return rawItems.map(i => ({ ...i, value: i.raw }));
+
+    const pcts = rawItems.map(i => i.raw / total);
+    const boosted = pcts.map(p => (p > 0 && p < MIN_PCT) ? MIN_PCT : p);
+    const boostedSum = boosted.reduce((s, v) => s + v, 0);
+    const scaled = boosted.map(p => p / boostedSum);
+    return rawItems.map((item, idx) => ({
+      ...item,
+      value: Math.round(scaled[idx] * total) || (item.raw > 0 ? 1 : 0),
+    }));
+  })();
 
   const chartConfig: ChartConfig = {
     value: { label: "Engagement" },
@@ -849,10 +866,18 @@ function EngagementDonutChart({
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  hideLabel
+                  formatter={(value, name) => {
+                    const item = rawItems.find(i => i.type === name);
+                    return item ? formatNumber(item.raw) : value;
+                  }}
+                />
+              }
             />
             <Pie
-              data={chartData}
+              data={chartData.filter(d => d.value > 0)}
               dataKey="value"
               nameKey="type"
               innerRadius={50}
@@ -899,8 +924,8 @@ function EngagementDonutChart({
       )}
       {hasData && (
         <div className="flex justify-center gap-4 mt-4">
-          {chartData.map((item) => {
-            const pct = Math.round((item.value / total) * 100);
+          {rawItems.filter((item) => item.raw > 0).map((item) => {
+            const pct = Math.round((item.raw / total) * 100);
             return (
               <div key={item.type} className="flex items-center gap-1.5">
                 <div
