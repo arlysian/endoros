@@ -23,6 +23,7 @@ export async function GET(request: Request) {
 
   const results = [];
   for (const acc of accounts ?? []) {
+    if (!acc.instagramBusinessId || !acc.accessToken) continue;
     try {
       await backfillEngagement({
         id: acc.id,
