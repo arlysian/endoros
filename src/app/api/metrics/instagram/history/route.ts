@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   // Get connected account
   const { data: account } = await supabaseAdmin
     .from("ConnectedAccount")
-    .select("id, createdAt")
+    .select("id")
     .eq("userId", userId)
     .eq("platform", "INSTAGRAM")
     .single();
@@ -29,12 +29,7 @@ export async function GET(request: NextRequest) {
   cutoff.setDate(cutoff.getDate() - 2);
   const cutoffDate = cutoff.toISOString().split("T")[0];
 
-  // Only show data since the account was connected
-  const connectedDate = account.createdAt
-    ? new Date(account.createdAt).toISOString().split("T")[0]
-    : null;
-
-  let query = supabaseAdmin
+  const { data: metrics, error } = await supabaseAdmin
     .from("PlatformMetrics")
     .select("date, followers, newFollows, unfollows, profileVisits, linkClicks, likes, comments, shares, saves")
     .eq("connectedAccountId", account.id)
@@ -42,19 +37,15 @@ export async function GET(request: NextRequest) {
     .order("date", { ascending: false })
     .limit(validDays);
 
-  if (connectedDate) {
-    query = query.gte("date", connectedDate);
-  }
-
-  const { data: metrics, error } = await query;
-
   if (error) {
     console.error("History fetch error:", error);
     return NextResponse.json({ history: [] });
   }
 
   // Reverse to get chronological order (oldest first)
-  const history = (metrics || []).reverse().map((row) => ({
+  const rows = (metrics || []).reverse();
+
+  const history = rows.map((row) => ({
     date: row.date,
     followers: row.followers || 0,
     newFollows: row.newFollows || 0,
@@ -66,6 +57,46 @@ export async function GET(request: NextRequest) {
     shares: row.shares || 0,
     saves: row.saves || 0,
   }));
+
+  // Backfill follower counts using daily deltas.
+  // If the most recent day (cutoff = today-2) has a real follower count, use it.
+  // Otherwise, take today's count and subtract the gap days' net to estimate it.
+  // Then walk backwards from there.
+  if (history.length > 0) {
+    const last = history[history.length - 1];
+
+    if (last.followers === 0) {
+      // No follower count at cutoff day — derive from today's count
+      const today = new Date().toISOString().split("T")[0];
+      const { data: todayRow } = await supabaseAdmin
+        .from("PlatformMetrics")
+        .select("followers")
+        .eq("connectedAccountId", account.id)
+        .eq("date", today)
+        .single();
+
+      if (todayRow?.followers && todayRow.followers > 0) {
+        const { data: recentDays } = await supabaseAdmin
+          .from("PlatformMetrics")
+          .select("newFollows, unfollows")
+          .eq("connectedAccountId", account.id)
+          .gt("date", cutoffDate)
+          .lte("date", today);
+
+        const recentFollows = (recentDays || []).reduce((s, d) => s + (d.newFollows || 0), 0);
+        const recentUnfollows = (recentDays || []).reduce((s, d) => s + (d.unfollows || 0), 0);
+        last.followers = todayRow.followers - recentFollows + recentUnfollows;
+      }
+    }
+
+    // Walk backwards from the most recent day using daily deltas
+    if (last.followers > 0) {
+      for (let i = history.length - 2; i >= 0; i--) {
+        const nextDay = history[i + 1];
+        history[i].followers = nextDay.followers - nextDay.newFollows + nextDay.unfollows;
+      }
+    }
+  }
 
   // Calculate totals
   const totalNewFollows = history.reduce((sum, row) => sum + row.newFollows, 0);

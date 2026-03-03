@@ -103,15 +103,24 @@ const mockCollaborations = [
 ];
 
 const today = new Date();
-const mockFollowerHistory = Array.from({ length: 7 }, (_, i) => {
-  const d = new Date(today);
-  d.setDate(d.getDate() - (9 - i)); // offset so it looks like "up to 2 days ago"
-  return {
-    date: d.toISOString().split("T")[0],
-    newFollows: Math.floor(180 + Math.random() * 120),
-    unfollows: Math.floor(20 + Math.random() * 30),
-  };
-});
+const mockFollowerHistory = (() => {
+  const raw = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (9 - i));
+    return {
+      date: d.toISOString().split("T")[0],
+      newFollows: Math.floor(180 + Math.random() * 120),
+      unfollows: Math.floor(20 + Math.random() * 30),
+      followers: 0,
+    };
+  });
+  // Backfill from a mock current count
+  raw[raw.length - 1].followers = 12500;
+  for (let i = raw.length - 2; i >= 0; i--) {
+    raw[i].followers = raw[i + 1].followers - raw[i + 1].newFollows + raw[i + 1].unfollows;
+  }
+  return raw;
+})();
 
 const mockFollowerSnapshots = Array.from({ length: 7 }, (_, i) => {
   const d = new Date(today);
@@ -172,7 +181,7 @@ const accountDataMap: Record<
       newFollows?: number;
       unfollows?: number;
     } | null;
-    followerHistory: { date: string; newFollows: number; unfollows: number }[];
+    followerHistory: { date: string; newFollows: number; unfollows: number; followers: number }[];
     followerSnapshots: { date: string; followers: number }[];
     demographics: { type: string; label: string; value: number }[];
     performanceData: {

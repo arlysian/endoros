@@ -41,6 +41,7 @@ export interface FollowerHistoryDay {
   date: string;
   newFollows: number;
   unfollows: number;
+  followers: number;
 }
 
 export interface PlatformMetricsData {
@@ -462,6 +463,7 @@ export default function MediaKitMobile({
   const defaultAccount = displayAccounts.find(a => a.platform === "INSTAGRAM") || displayAccounts[0];
   const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
   const [growthDays, setGrowthDays] = useState<7 | 30>(7);
+  const [growthChartType, setGrowthChartType] = useState<"bar" | "total">("bar");
   const [engagementDays, setEngagementDays] = useState<"1" | "7" | "30" | "total">("7");
 
   const selectedAccount = displayAccounts.find(a => a.id === selectedAccountId);
@@ -705,24 +707,42 @@ export default function MediaKitMobile({
             <div className="mb-8">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-semibold text-black pb-2 border-b-2 border-black/10">Follower Growth</h3>
-                <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
-                  <button
-                    onClick={() => setGrowthDays(7)}
-                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 7 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
-                  >
-                    7d
-                  </button>
-                  <button
-                    onClick={() => setGrowthDays(30)}
-                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 30 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
-                  >
-                    30d
-                  </button>
+                <div className="flex items-center gap-2">
+                  {hasHistory && (
+                    <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setGrowthChartType("bar")}
+                        className={`px-2 py-1 text-[10px] rounded-md transition-colors ${growthChartType === "bar" ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                      >
+                        +/-
+                      </button>
+                      <button
+                        onClick={() => setGrowthChartType("total")}
+                        className={`px-2 py-1 text-[10px] rounded-md transition-colors ${growthChartType === "total" ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                      >
+                        Total
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setGrowthDays(7)}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 7 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                    >
+                      7d
+                    </button>
+                    <button
+                      onClick={() => setGrowthDays(30)}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 30 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                    >
+                      30d
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* IG: follows/unfollows breakdown */}
-              {hasHistory && (
+              {/* IG: follows/unfollows bar chart */}
+              {hasHistory && growthChartType === "bar" && (
                 <>
                   <div className={`flex items-end ${growthDays === 30 ? "gap-0.5" : "gap-3"} h-24 pt-2 mb-2`}>
                     {followerHistory.map((day, i) => {
@@ -772,6 +792,89 @@ export default function MediaKitMobile({
                   </div>
                 </>
               )}
+
+              {/* IG: total follower growth area chart */}
+              {hasHistory && growthChartType === "total" && (() => {
+                const snapshotData = followerHistory.map(d => ({ date: d.date, followers: d.followers }));
+                const followerValues = snapshotData.map(d => d.followers);
+                const minF = Math.min(...followerValues);
+                const maxF = Math.max(...followerValues);
+                const padding = Math.max((maxF - minF) * 0.15, 5);
+                const first = snapshotData[0]?.followers || 0;
+                const last = snapshotData[snapshotData.length - 1]?.followers || 0;
+                const change = last - first;
+
+                const areaData = snapshotData.map(d => ({
+                  label: growthDays <= 14
+                    ? new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : new Date(d.date).getDate().toString(),
+                  fullDate: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                  followers: d.followers,
+                }));
+
+                return (
+                  <>
+                    <ChartContainer
+                      config={{ followers: { label: "Followers", color: "#10b981" } }}
+                      className="h-[120px] w-full"
+                    >
+                      <AreaChart data={areaData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="fillFollowersMobileTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                          tick={{ fontSize: 10, fill: "#a3a3a3" }}
+                          interval={growthDays === 30 ? 2 : 0}
+                        />
+                        <YAxis hide domain={[minF - padding, maxF + padding]} />
+                        <ChartTooltip
+                          cursor={false}
+                          content={
+                            <ChartTooltipContent
+                              labelFormatter={(value, payload) => {
+                                if (growthDays === 30 && payload?.[0]?.payload?.fullDate) {
+                                  return payload[0].payload.fullDate;
+                                }
+                                return value;
+                              }}
+                              formatter={(value) => (
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  <span className="text-neutral-500">Followers</span>
+                                  <span className="font-medium">{Number(value).toLocaleString()}</span>
+                                </div>
+                              )}
+                            />
+                          }
+                        />
+                        <Area
+                          dataKey="followers"
+                          type="monotone"
+                          fill="url(#fillFollowersMobileTotal)"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ChartContainer>
+                    <div className="flex items-center gap-8 pt-4 border-t border-neutral-100">
+                      <div>
+                        <p className="text-xs text-neutral-400 mb-1">Net Growth</p>
+                        <p className={`text-lg font-semibold ${change >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                          {change >= 0 ? "+" : ""}{change.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* TikTok/other: follower snapshot area chart */}
               {!hasHistory && hasSnapshots && (() => {

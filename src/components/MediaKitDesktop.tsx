@@ -66,6 +66,7 @@ interface FollowerHistoryDay {
   date: string;
   newFollows: number;
   unfollows: number;
+  followers: number;
 }
 
 interface PlatformData {
@@ -207,6 +208,7 @@ export default function MediaKitDesktop({
   const defaultAccount = connectedAccounts.find(a => a.platform === "INSTAGRAM") || connectedAccounts[0];
   const [selectedAccountId, setSelectedAccountId] = useState<string>(defaultAccount?.id || "");
   const [growthDays, setGrowthDays] = useState<7 | 30>(7);
+  const [growthChartType, setGrowthChartType] = useState<"bar" | "total">("bar");
   const [engagementDays, setEngagementDays] = useState<"1" | "7" | "30" | "total">("7");
 
   const selectedAccount = connectedAccounts.find(a => a.id === selectedAccountId);
@@ -650,24 +652,42 @@ export default function MediaKitDesktop({
               <div className="col-span-2 pt-4 border-t border-neutral-100">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-sm font-medium text-black">Follower Growth</h3>
-                  <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
-                    <button
-                      onClick={() => setGrowthDays(7)}
-                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 7 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
-                    >
-                      7d
-                    </button>
-                    <button
-                      onClick={() => setGrowthDays(30)}
-                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 30 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
-                    >
-                      30d
-                    </button>
+                  <div className="flex items-center gap-2">
+                    {hasHistory && (
+                      <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                        <button
+                          onClick={() => setGrowthChartType("bar")}
+                          className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthChartType === "bar" ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                        >
+                          +/-
+                        </button>
+                        <button
+                          onClick={() => setGrowthChartType("total")}
+                          className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthChartType === "total" ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                        >
+                          Total
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setGrowthDays(7)}
+                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 7 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                      >
+                        7d
+                      </button>
+                      <button
+                        onClick={() => setGrowthDays(30)}
+                        className={`px-2.5 py-1 text-xs rounded-md transition-colors ${growthDays === 30 ? "bg-white text-black shadow-sm font-medium" : "text-neutral-500 hover:text-black"}`}
+                      >
+                        30d
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* IG: follows/unfollows breakdown chart */}
-                {hasHistory && (
+                {/* IG: follows/unfollows bar chart */}
+                {hasHistory && growthChartType === "bar" && (
                   <>
                     <div className="h-40">
                       <FollowerGrowthChart data={followerHistory} growthDays={growthDays} />
@@ -690,6 +710,29 @@ export default function MediaKitDesktop({
                     </div>
                   </>
                 )}
+
+                {/* IG: total follower growth area chart */}
+                {hasHistory && growthChartType === "total" && (() => {
+                  const snapshotData = followerHistory.map(d => ({ date: d.date, followers: d.followers }));
+                  const first = snapshotData[0]?.followers || 0;
+                  const last = snapshotData[snapshotData.length - 1]?.followers || 0;
+                  const change = last - first;
+                  return (
+                    <>
+                      <div className="h-40">
+                        <FollowerSnapshotChart data={snapshotData} growthDays={growthDays} />
+                      </div>
+                      <div className="flex items-center gap-8 mt-6 pt-4 border-t border-neutral-100">
+                        <div>
+                          <p className="text-xs text-neutral-400 mb-1">Net Growth</p>
+                          <p className={`text-lg font-semibold ${change >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                            {change >= 0 ? "+" : ""}{change.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 {/* TikTok/other: follower snapshot chart */}
                 {!hasHistory && followerSnapshots.length > 0 && (() => {

@@ -161,7 +161,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       newFollows?: number;
       unfollows?: number;
     } | null;
-    followerHistory: { date: string; newFollows: number; unfollows: number }[];
+    followerHistory: { date: string; newFollows: number; unfollows: number; followers: number }[];
     followerSnapshots: { date: string; followers: number }[];
     demographics: { type: string; label: string; value: number }[];
     performanceData: {
@@ -237,15 +237,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
         }
       }
 
-      // IG: follows/unfollows breakdown
-      let followerHistory: { date: string; newFollows: number; unfollows: number }[] = [];
+      // IG: follows/unfollows breakdown + backfilled follower counts
+      let followerHistory: { date: string; newFollows: number; unfollows: number; followers: number }[] = [];
       // TikTok/other: follower count snapshots over time
       let followerSnapshots: { date: string; followers: number }[] = [];
 
       if (acc.platform === "INSTAGRAM") {
         const { data: history } = await supabaseAdmin
           .from("PlatformMetrics")
-          .select("date, newFollows, unfollows")
+          .select("date, newFollows, unfollows, followers")
           .eq("connectedAccountId", acc.id)
           .lte("date", cutoffDate)
           .order("date", { ascending: false })
@@ -256,8 +256,43 @@ export default async function PublicProfilePage({ params }: PageProps) {
               date: h.date,
               newFollows: h.newFollows ?? 0,
               unfollows: h.unfollows ?? 0,
+              followers: h.followers ?? 0,
             }))
           : [];
+
+        // Backfill follower counts using daily deltas
+        if (followerHistory.length > 0) {
+          const last = followerHistory[followerHistory.length - 1];
+          if (last.followers === 0) {
+            // Derive from today's follower count
+            const today = new Date().toISOString().split("T")[0];
+            const { data: todayRow } = await supabaseAdmin
+              .from("PlatformMetrics")
+              .select("followers")
+              .eq("connectedAccountId", acc.id)
+              .eq("date", today)
+              .single();
+
+            if (todayRow?.followers && todayRow.followers > 0) {
+              const { data: recentDays } = await supabaseAdmin
+                .from("PlatformMetrics")
+                .select("newFollows, unfollows")
+                .eq("connectedAccountId", acc.id)
+                .gt("date", cutoffDate)
+                .lte("date", today);
+
+              const recentFollows = (recentDays || []).reduce((s, d) => s + (d.newFollows || 0), 0);
+              const recentUnfollows = (recentDays || []).reduce((s, d) => s + (d.unfollows || 0), 0);
+              last.followers = todayRow.followers - recentFollows + recentUnfollows;
+            }
+          }
+          if (last.followers > 0) {
+            for (let i = followerHistory.length - 2; i >= 0; i--) {
+              const nextDay = followerHistory[i + 1];
+              followerHistory[i].followers = nextDay.followers - nextDay.newFollows + nextDay.unfollows;
+            }
+          }
+        }
       } else if (acc.platform === "TIKTOK") {
         const { data: snapshots } = await supabaseAdmin
           .from("PlatformMetrics")
