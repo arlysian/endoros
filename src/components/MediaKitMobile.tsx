@@ -955,15 +955,7 @@ export default function MediaKitMobile({
                   <PieChart>
                     <ChartTooltip
                       cursor={false}
-                      content={
-                        <ChartTooltipContent
-                          hideLabel
-                          formatter={(value, name) => {
-                            const item = rawItems.find(i => i.type === name);
-                            return item ? formatNumber(item.raw) : value;
-                          }}
-                        />
-                      }
+                      content={<ChartTooltipContent hideLabel />}
                     />
                     <Pie
                       data={chartData.filter(d => d.value > 0)}

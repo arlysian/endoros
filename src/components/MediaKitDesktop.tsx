@@ -550,15 +550,7 @@ export default function MediaKitDesktop({
                       <PieChart>
                         <ChartTooltip
                           cursor={false}
-                          content={
-                            <ChartTooltipContent
-                              hideLabel
-                              formatter={(value, name) => {
-                                const realMap: Record<string, number> = { likes, comments, shares, saves };
-                                return realMap[name as string] !== undefined ? formatNumber(realMap[name as string]) : value;
-                              }}
-                            />
-                          }
+                          content={<ChartTooltipContent hideLabel />}
                         />
                         <Pie
                           data={[
