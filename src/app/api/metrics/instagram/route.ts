@@ -39,6 +39,25 @@ export async function GET() {
     );
   }
 
+  // Calculate 30-day engagement rate from daily aggregates
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 32);
+  const { data: last30 } = await supabaseAdmin
+    .from("PlatformMetrics")
+    .select("likes, comments, shares, saves")
+    .eq("connectedAccountId", account.id)
+    .gte("date", thirtyDaysAgo.toISOString().split("T")[0])
+    .order("date", { ascending: false })
+    .limit(30);
+
+  if (last30 && last30.length > 0 && metrics.followers && metrics.followers > 0) {
+    const totalEngagement = last30.reduce(
+      (sum, row) => sum + (row.likes || 0) + (row.comments || 0) + (row.shares || 0) + (row.saves || 0),
+      0
+    );
+    metrics.engagementRate = Math.round((totalEngagement / (last30.length * metrics.followers)) * 10000) / 100;
+  }
+
   return NextResponse.json(
     { metrics },
     { headers: { "Cache-Control": "private, max-age=60" } }

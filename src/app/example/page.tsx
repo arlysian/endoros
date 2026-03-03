@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ProfileCard from "@/components/ProfileCard";
+import MediaKitMobile from "@/components/MediaKitMobile";
 import MediaKitDesktop from "@/components/MediaKitDesktop";
 import ExampleWrapper from "./ExampleWrapper";
 import type { Metadata } from "next";
@@ -240,7 +240,7 @@ export default function ExampleProfilePage() {
       <div className="lg:hidden min-h-screen bg-neutral-50 pt-8 max-[574px]:pt-0 flex flex-col">
         <div className="w-full max-w-[560px] mx-auto max-[574px]:max-w-full flex-1 flex flex-col">
           <div className="bg-white max-[574px]:rounded-none rounded-2xl overflow-hidden flex-1 flex flex-col">
-            <ProfileCard
+            <MediaKitMobile
               user={mockUser}
               achievements={mockAchievements}
               collaborations={mockCollaborations}

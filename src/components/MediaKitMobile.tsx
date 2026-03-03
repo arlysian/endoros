@@ -9,7 +9,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
-export interface ProfileCardUser {
+export interface MediaKitMobileUser {
   firstName: string | null;
   lastName: string | null;
   userName: string | null;
@@ -21,7 +21,7 @@ export interface ProfileCardUser {
   audienceSummary?: string | null;
 }
 
-export interface ProfileCardAchievement {
+export interface MediaKitMobileAchievement {
   id: string;
   title: string;
   description?: string | null;
@@ -29,7 +29,7 @@ export interface ProfileCardAchievement {
   category?: string | null;
 }
 
-export interface ProfileCardCollaboration {
+export interface MediaKitMobileCollaboration {
   id: string;
   brand: string;
   campaign?: string | null;
@@ -105,10 +105,10 @@ interface CreatorRate {
   currency: string;
 }
 
-interface ProfileCardProps {
-  user: ProfileCardUser | null;
-  achievements: ProfileCardAchievement[];
-  collaborations: ProfileCardCollaboration[];
+interface MediaKitMobileProps {
+  user: MediaKitMobileUser | null;
+  achievements: MediaKitMobileAchievement[];
+  collaborations: MediaKitMobileCollaboration[];
   totalFollowers?: number;
   loading?: boolean;
   compact?: boolean;
@@ -197,7 +197,7 @@ function PlatformIcon({ platform, className }: { platform: string; className?: s
   }
 }
 
-export default function ProfileCard({
+export default function MediaKitMobile({
   user,
   achievements,
   collaborations,
@@ -208,7 +208,7 @@ export default function ProfileCard({
   accountDataMap = {},
   connectedAccounts = [],
   rates = [],
-}: ProfileCardProps) {
+}: MediaKitMobileProps) {
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
     : user?.firstName || user?.userName || (compact ? "Your Name" : "Creator");
@@ -284,7 +284,7 @@ export default function ProfileCard({
             <p className="text-xl font-semibold text-black">
               {platformMetrics?.engagementRate ? `${platformMetrics.engagementRate}%` : "-"}
             </p>
-            <p className="text-xs text-neutral-400">Engagement</p>
+            <p className="text-xs text-neutral-400">{firstAccount?.platform === "INSTAGRAM" ? "Monthly Engagement" : "Engagement"}</p>
           </div>
           <div className="text-center">
             <p className="text-xl font-semibold text-black">
@@ -659,7 +659,7 @@ export default function ProfileCard({
             <p className="text-2xl font-semibold text-black">
               {platformMetrics?.engagementRate ? `${platformMetrics.engagementRate}%` : "-"}
             </p>
-            <p className="text-xs text-neutral-400 mt-1">Engagement</p>
+            <p className="text-xs text-neutral-400 mt-1">{selectedAccount?.platform === "INSTAGRAM" ? "Monthly Engagement" : "Engagement"}</p>
           </div>
           <div className="text-center bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
             <p className="text-2xl font-semibold text-black">

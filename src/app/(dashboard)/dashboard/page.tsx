@@ -140,7 +140,7 @@ export default function Dashboard() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [chartType, setChartType] = useState<"bar" | "net">("bar");
-  const [engagementPeriod, setEngagementPeriod] = useState<"today" | "7" | "30" | "total">("total");
+  const [engagementPeriod, setEngagementPeriod] = useState<"today" | "7" | "30" | "total">("30");
 
   // Performance table state (this week vs last week)
   const [performanceData, setPerformanceData] = useState<{
@@ -569,7 +569,7 @@ export default function Dashboard() {
         />
         {!isSimplePlatform && (
         <StatCard
-          label="Engagement"
+          label={isInstagram ? "Monthly Engagement" : "Engagement"}
           value={isInstagram ? (hasIgData ? displayData?.engagementRate ?? "-" : "-") : isTikTok ? (hasTtData ? ttDisplayData?.engagementRate ?? "-" : "-") : "-"}
         />
         )}

@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { notFound } from "next/navigation";
-import ProfileCard from "@/components/ProfileCard";
+import MediaKitMobile from "@/components/MediaKitMobile";
 import MediaKitDesktop from "@/components/MediaKitDesktop";
 import BackToDashboard from "./BackToDashboard";
 import type { Metadata } from "next";
@@ -185,10 +185,31 @@ export default async function PublicProfilePage({ params }: PageProps) {
       let parsedMetrics = null;
       if (metrics) {
         if (acc.platform === "INSTAGRAM") {
+          // Calculate 30-day engagement rate from daily aggregates
+          let engagementRate30d = metrics.engagementRate ?? undefined;
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 32);
+          const { data: last30 } = await supabaseAdmin
+            .from("PlatformMetrics")
+            .select("likes, comments, shares, saves")
+            .eq("connectedAccountId", acc.id)
+            .gte("date", thirtyDaysAgo.toISOString().split("T")[0])
+            .order("date", { ascending: false })
+            .limit(30);
+
+          if (last30 && last30.length > 0 && metrics.followers && metrics.followers > 0) {
+            const totalEngagement = last30.reduce(
+              (sum: number, row: { likes: number | null; comments: number | null; shares: number | null; saves: number | null }) =>
+                sum + (row.likes || 0) + (row.comments || 0) + (row.shares || 0) + (row.saves || 0),
+              0
+            );
+            engagementRate30d = Math.round((totalEngagement / (last30.length * metrics.followers)) * 10000) / 100;
+          }
+
           parsedMetrics = {
             followers: metrics.followers ?? undefined,
             reach: metrics.reach ?? undefined,
-            engagementRate: metrics.engagementRate ?? undefined,
+            engagementRate: engagementRate30d,
             avgViews: metrics.avgViews ?? undefined,
             likes: metrics.total_likes ?? undefined,
             comments: metrics.total_comments ?? undefined,
@@ -322,7 +343,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       <div className="lg:hidden min-h-screen bg-neutral-50 pt-8 max-[574px]:pt-0 flex flex-col">
         <div className="w-full max-w-[560px] mx-auto max-[574px]:max-w-full flex-1 flex flex-col">
           <div className="bg-white max-[574px]:rounded-none rounded-2xl overflow-hidden flex-1 flex flex-col">
-            <ProfileCard
+            <MediaKitMobile
               user={user}
               achievements={achievements || []}
               collaborations={collaborations || []}

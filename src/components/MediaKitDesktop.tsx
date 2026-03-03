@@ -448,7 +448,7 @@ export default function MediaKitDesktop({
                     <p className="text-2xl font-semibold text-black">
                       {platformMetrics?.engagementRate ? `${platformMetrics.engagementRate}%` : "-"}
                     </p>
-                    <p className="text-xs text-neutral-400 mt-1">Engagement Rate</p>
+                    <p className="text-xs text-neutral-400 mt-1">{selectedAccount?.platform === "INSTAGRAM" ? "Monthly Engagement" : "Engagement Rate"}</p>
                   </div>
                   <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
