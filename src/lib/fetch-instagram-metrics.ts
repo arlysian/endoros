@@ -618,6 +618,45 @@ export async function fetchInstagramMetrics(account: Account) {
     linkClicksValue = wcParsed.data.data[0].total_value.value;
   }
 
+  // Daily engagement metrics (yesterday, 24h lag) — account-level totals across all media
+  let dailyLikes = 0;
+  let dailyComments = 0;
+  let dailyShares = 0;
+  let dailySaves = 0;
+
+  const engagementBatch = [
+    { method: "GET", relative_url: `${instagramBusinessId}/insights?metric=likes&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}` },
+    { method: "GET", relative_url: `${instagramBusinessId}/insights?metric=comments&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}` },
+    { method: "GET", relative_url: `${instagramBusinessId}/insights?metric=shares&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}` },
+    { method: "GET", relative_url: `${instagramBusinessId}/insights?metric=saves&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}` },
+  ];
+
+  const engagementBatchRes = await fetch(
+    `https://graph.facebook.com/v24.0/?access_token=${token}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batch: engagementBatch }),
+    }
+  );
+  const engagementBatchRaw = await engagementBatchRes.json();
+  if (Array.isArray(engagementBatchRaw)) {
+    const parsed = BatchResponseSchema.safeParse(engagementBatchRaw);
+    if (parsed.success) {
+      const extractVal = (idx: number): number => {
+        if (parsed.data[idx]?.code === 200) {
+          const p = IgInsightTotalValueSchema.safeParse(JSON.parse(parsed.data[idx].body));
+          if (p.success) return p.data.data[0].total_value.value;
+        }
+        return 0;
+      };
+      dailyLikes = extractVal(0);
+      dailyComments = extractVal(1);
+      dailyShares = extractVal(2);
+      dailySaves = extractVal(3);
+    }
+  }
+
   // Follows and unfollows (day before yesterday → yesterday to avoid lag)
   const today = new Date();
   const yesterday = new Date(today);
@@ -690,7 +729,7 @@ export async function fetchInstagramMetrics(account: Account) {
     throw new Error(followsError.message);
   }
 
-  // Upsert yesterday's profile visits and link clicks (24h lag)
+  // Upsert yesterday's profile visits, link clicks, and daily engagement (24h lag)
   const { error: yesterdayMetricsError } = await supabaseAdmin
     .from("PlatformMetrics")
     .upsert(
@@ -699,6 +738,10 @@ export async function fetchInstagramMetrics(account: Account) {
         date: yesterdayStr,
         profileVisits: profileVisitsValue,
         linkClicks: linkClicksValue,
+        likes: dailyLikes,
+        comments: dailyComments,
+        shares: dailyShares,
+        saves: dailySaves,
         createdAt: new Date().toISOString(),
       },
       { onConflict: "connectedAccountId,date" }
