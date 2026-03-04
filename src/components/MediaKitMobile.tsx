@@ -116,6 +116,18 @@ interface CreatorRate {
   currency: string;
 }
 
+interface PinnedPost {
+  id: string;
+  igMediaId: string;
+  mediaType: string;
+  imageUrl: string;
+  permalink: string;
+  caption: string | null;
+  likeCount: number | null;
+  commentsCount: number | null;
+  displayOrder: number;
+}
+
 interface MediaKitMobileProps {
   user: MediaKitMobileUser | null;
   achievements: MediaKitMobileAchievement[];
@@ -127,6 +139,7 @@ interface MediaKitMobileProps {
   accountDataMap?: Record<string, AccountData>;
   connectedAccounts?: ConnectedAccount[];
   rates?: CreatorRate[];
+  pinnedPosts?: PinnedPost[];
 }
 
 const countryNames: Record<string, string> = {
@@ -219,6 +232,7 @@ export default function MediaKitMobile({
   accountDataMap = {},
   connectedAccounts = [],
   rates = [],
+  pinnedPosts = [],
 }: MediaKitMobileProps) {
   const displayName = user?.firstName && user?.lastName
     ? `${user.firstName} ${user.lastName}`
@@ -305,22 +319,33 @@ export default function MediaKitMobile({
           </div>
         </div>
 
-        {/* Achievements */}
-        <div className="mb-6">
-          <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Achievements</h4>
-          {achievements.length > 0 ? (
-            <div className="space-y-1.5">
-              {achievements.map((achievement) => (
-                <div key={achievement.id} className="flex items-start gap-2">
-                  <span className="text-neutral-300 mt-0.5 text-xs">—</span>
-                  <p className="text-sm font-medium text-black">{achievement.title}</p>
-                </div>
+        {/* Portfolio - Compact */}
+        {pinnedPosts.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Portfolio</h4>
+            <div className="grid grid-cols-2 gap-0.5">
+              {pinnedPosts.map((post) => (
+                <a
+                  key={post.id}
+                  href={post.permalink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative overflow-hidden aspect-square"
+                >
+                  <img src={post.imageUrl} alt={post.caption || "Instagram post"} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-end">
+                    <div className="p-2 opacity-0 group-hover:opacity-100 transition-opacity w-full">
+                      <div className="flex gap-3 text-white text-xs">
+                        <span>{post.likeCount ?? 0} likes</span>
+                        <span>{post.commentsCount ?? 0} comments</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
               ))}
             </div>
-          ) : (
-            <p className="text-sm text-neutral-400">No achievements yet</p>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Brand Collaborations */}
         <div className="mb-6">
@@ -341,6 +366,23 @@ export default function MediaKitMobile({
             </div>
           ) : (
             <p className="text-sm text-neutral-400">No collaborations yet</p>
+          )}
+        </div>
+
+        {/* Achievements */}
+        <div className="mb-6">
+          <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Achievements</h4>
+          {achievements.length > 0 ? (
+            <div className="space-y-1.5">
+              {achievements.map((achievement) => (
+                <div key={achievement.id} className="flex items-start gap-2">
+                  <span className="text-neutral-300 mt-0.5 text-xs">—</span>
+                  <p className="text-sm font-medium text-black">{achievement.title}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-neutral-400">No achievements yet</p>
           )}
         </div>
 
@@ -560,21 +602,29 @@ export default function MediaKitMobile({
           )}
         </div>
 
-        {/* Achievements */}
-        {achievements.length > 0 && (
+        {/* Portfolio */}
+        {pinnedPosts.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Achievements</h2>
-            <div className="space-y-2">
-              {achievements.map((achievement) => (
-                <div key={achievement.id} className="flex items-start gap-2">
-                  <span className="text-neutral-300 mt-0.5">—</span>
-                  <div>
-                    <p className="text-sm font-medium text-black">{achievement.title}</p>
-                    {achievement.date && (
-                      <p className="text-xs text-neutral-400 mt-0.5">{achievement.date}</p>
-                    )}
+            <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Portfolio</h2>
+            <div className="grid grid-cols-2 gap-0.5">
+              {pinnedPosts.map((post) => (
+                <a
+                  key={post.id}
+                  href={post.permalink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative overflow-hidden aspect-square"
+                >
+                  <img src={post.imageUrl} alt={post.caption || "Instagram post"} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-end">
+                    <div className="p-2 opacity-0 group-hover:opacity-100 transition-opacity w-full">
+                      <div className="flex gap-3 text-white text-xs">
+                        <span>{post.likeCount ?? 0} likes</span>
+                        <span>{post.commentsCount ?? 0} comments</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </div>
@@ -597,6 +647,26 @@ export default function MediaKitMobile({
                       <p className="text-xs text-neutral-400 mt-0.5">
                         {collab.type}{collab.type && collab.date && " · "}{collab.date}
                       </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Achievements */}
+        {achievements.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-3">Achievements</h2>
+            <div className="space-y-2">
+              {achievements.map((achievement) => (
+                <div key={achievement.id} className="flex items-start gap-2">
+                  <span className="text-neutral-300 mt-0.5">—</span>
+                  <div>
+                    <p className="text-sm font-medium text-black">{achievement.title}</p>
+                    {achievement.date && (
+                      <p className="text-xs text-neutral-400 mt-0.5">{achievement.date}</p>
                     )}
                   </div>
                 </div>

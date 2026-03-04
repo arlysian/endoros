@@ -140,6 +140,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
     .eq("userId", user.id)
     .order("date", { ascending: false });
 
+  // Fetch pinned posts
+  const { data: pinnedPosts } = await supabaseAdmin
+    .from("PinnedPost")
+    .select("*")
+    .eq("userId", user.id)
+    .order("displayOrder", { ascending: true });
+
   // Fetch metrics per connected account, keyed by platform
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -408,6 +415,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           connectedAccounts={accountsWithFollowers}
           accountDataMap={accountDataMap}
           rates={rates || []}
+          pinnedPosts={pinnedPosts || []}
         />
       </div>
 
@@ -423,6 +431,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
               connectedAccounts={accountsWithFollowers}
               accountDataMap={accountDataMap}
               rates={rates || []}
+              pinnedPosts={pinnedPosts || []}
             />
           </div>
         </div>

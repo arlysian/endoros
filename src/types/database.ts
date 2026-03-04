@@ -297,6 +297,69 @@ export type Database = {
         }
         Relationships: []
       }
+      PinnedPost: {
+        Row: {
+          id: string
+          userId: string
+          connectedAccountId: string
+          igMediaId: string
+          mediaType: string
+          imageUrl: string
+          permalink: string
+          caption: string | null
+          likeCount: number | null
+          commentsCount: number | null
+          displayOrder: number
+          createdAt: string | null
+          updatedAt: string | null
+        }
+        Insert: {
+          id?: string
+          userId: string
+          connectedAccountId: string
+          igMediaId: string
+          mediaType: string
+          imageUrl: string
+          permalink: string
+          caption?: string | null
+          likeCount?: number | null
+          commentsCount?: number | null
+          displayOrder?: number
+          createdAt?: string | null
+          updatedAt?: string | null
+        }
+        Update: {
+          id?: string
+          userId?: string
+          connectedAccountId?: string
+          igMediaId?: string
+          mediaType?: string
+          imageUrl?: string
+          permalink?: string
+          caption?: string | null
+          likeCount?: number | null
+          commentsCount?: number | null
+          displayOrder?: number
+          createdAt?: string | null
+          updatedAt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "PinnedPost_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "User"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "PinnedPost_connectedAccountId_fkey"
+            columns: ["connectedAccountId"]
+            isOneToOne: false
+            referencedRelation: "ConnectedAccount"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       PlatformMetrics: {
         Row: {
           avgViews: number | null

@@ -484,15 +484,6 @@ export default function InfluenceProfile() {
                   {profileImagePreview ? "Change" : "Upload"}
                 </span>
               </button>
-              {profileImagePreview && (
-                <button
-                  onClick={handleRemoveImage}
-                  className="flex items-center gap-2 px-4 py-2 border border-red-200 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                  <span className="text-sm font-medium">Remove</span>
-                </button>
-              )}
             </div>
             <p className="text-sm text-neutral-400">
               JPG, PNG up to 5MB
