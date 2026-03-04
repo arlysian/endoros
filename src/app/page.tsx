@@ -183,47 +183,6 @@ export default function LandingPage() {
       {/* Horizontal divider */}
       <div className="w-full h-px bg-neutral-400/20" />
 
-      {/* Trusted by creators section */}
-      <section className="py-32 px-6 relative overflow-hidden">
-        {/* Center - Scrolling names */}
-        <div className="flex items-center justify-center relative z-10">
-          <span className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-neutral-300 leading-none">
-            endoros.com/
-          </span>
-
-          {/* Vertical scrolling names - film credits style */}
-          <div className="relative h-[220px] sm:h-[260px] overflow-hidden">
-            {/* Gradient masks for fade effect */}
-            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
-
-            <motion.div
-              animate={{ y: ["0%", "-50%"] }}
-              transition={{
-                y: {
-                  duration: 15,
-                  repeat: Infinity,
-                  ease: "linear",
-                },
-              }}
-              className="flex flex-col items-start"
-            >
-              {[...creatorNames, ...creatorNames].map((name, i) => (
-                <span
-                  key={`${name}-${i}`}
-                  className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-[1.5] text-neutral-900"
-                >
-                  {name}
-                </span>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Horizontal divider */}
-      <div className="w-full h-px bg-neutral-400/20" />
-
       {/* Logos / Social proof - Marquee */}
       <section className="py-8">
         <p className="text-sm text-neutral-400 text-center mb-6">Trusted by creators working with</p>
@@ -257,6 +216,59 @@ export default function LandingPage() {
               </div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* Horizontal divider */}
+      <div className="w-full h-px bg-neutral-400/20" />
+
+      {/* Featured on */}
+      <section className="py-12 px-6">
+        <p className="text-sm text-neutral-400 text-center mb-8">Featured on</p>
+        <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-10 sm:gap-16">
+          <img src="/Forbes.svg" alt="Forbes" className="h-18 opacity-40 hover:opacity-70 transition-opacity" />
+          <img src="/Wired_logo.svg" alt="Wired" className="h-8 opacity-40 hover:opacity-70 transition-opacity" />
+          <img src="/Women's_Wear_Daily_logo.svg" alt="WWD" className="h-8 opacity-40 hover:opacity-70 transition-opacity" />
+          <img src="/New_York_Times_(NYT)_(1).svg" alt="The New York Times" className="h-7 opacity-40 hover:opacity-70 transition-opacity" />
+          <img src="/Fast_Company_(3).svg" alt="Fast Company" className="h-7 opacity-40 hover:opacity-70 transition-opacity" />
+        </div>
+      </section>
+
+      {/* Horizontal divider */}
+      <div className="w-full h-px bg-neutral-400/20" />
+
+      {/* Trusted by creators - Scrolling names */}
+      <section className="py-32 px-6 relative overflow-hidden">
+        <div className="flex items-center justify-center relative z-10">
+          <span className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-neutral-300 leading-none">
+            endoros.com/
+          </span>
+
+          <div className="relative h-[220px] sm:h-[260px] overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none" />
+
+            <motion.div
+              animate={{ y: ["0%", "-50%"] }}
+              transition={{
+                y: {
+                  duration: 15,
+                  repeat: Infinity,
+                  ease: "linear",
+                },
+              }}
+              className="flex flex-col items-start"
+            >
+              {[...creatorNames, ...creatorNames].map((name, i) => (
+                <span
+                  key={`${name}-${i}`}
+                  className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-[1.5] text-neutral-900"
+                >
+                  {name}
+                </span>
+              ))}
+            </motion.div>
+          </div>
         </div>
       </section>
 

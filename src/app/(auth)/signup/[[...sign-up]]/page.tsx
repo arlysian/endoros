@@ -79,14 +79,6 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="px-10 pt-10 flex items-center">
-        <Link href="/">
-          <span className="text-2xl font-semibold text-black tracking-tight">
-            endoros
-          </span>
-        </Link>
-      </header>
-
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-16">
         <div className="w-full max-w-md">
           {!verifying ? (
