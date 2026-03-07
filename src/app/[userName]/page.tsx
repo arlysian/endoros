@@ -63,7 +63,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
       profileImageUrl,
       coverImageUrl,
       audienceSummary,
-      isMediaKitPublic
+      isMediaKitPublic,
+      email,
+      emailCta
     `)
     .eq("userName", userName)
     .single();

@@ -53,6 +53,7 @@ export default function InfluenceProfile() {
         location: user.location || "",
         bio: user.bio || "",
         audienceSummary: user.audienceSummary || "",
+        emailCta: user.emailCta || "",
       });
       setFormLoaded(true);
     }
@@ -280,6 +281,7 @@ export default function InfluenceProfile() {
     location: "",
     bio: "",
     audienceSummary: "",
+    emailCta: "",
   });
 
   interface Achievement {
@@ -320,6 +322,15 @@ export default function InfluenceProfile() {
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "collab" | "achievement"; id: string | number } | null>(null);
+
+  // Collapsible sections
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    personal: true,
+    contact: true,
+    about: true,
+  });
+  const toggleSection = (key: string) =>
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Fetch achievements and collaborations on mount
   useEffect(() => {
@@ -453,167 +464,141 @@ export default function InfluenceProfile() {
         <p className="text-sm text-neutral-500 mt-1">Manage your influencer profile</p>
       </div>
 
-      {/* Basic Information */}
-      <section className="mb-10">
-        <h2 className="text-lg font-medium text-black mb-6">Basic Information</h2>
-
-        {/* Profile Picture */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className={`w-20 h-20 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center relative ${profileImagePreview ? "" : "bg-gray-200"}`}>
-            {profileImagePreview ? (
-              <img
-                src={profileImagePreview}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <UserIcon className="w-10 h-10 text-gray-400" />
-            )}
-            {pendingPfp && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white" />
-            )}
+      {/* Personal Info */}
+      <section className="mb-6 border border-border rounded-xl overflow-hidden">
+        <button
+          onClick={() => toggleSection("personal")}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-medium text-black">Personal Info</h2>
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <button
-                onClick={() => pfpInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-black hover:bg-hover transition-colors"
-              >
-                <UploadIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">
+          <ChevronIcon className={`w-5 h-5 text-neutral-400 transition-transform ${openSections.personal ? "rotate-180" : ""}`} />
+        </button>
+        {openSections.personal && (
+          <div className="px-6 pb-6 border-t border-border pt-4">
+            {/* Profile Picture */}
+            <div className="flex items-center gap-4 mb-5">
+              <div className={`w-16 h-16 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center relative ${profileImagePreview ? "" : "bg-gray-200"}`}>
+                {profileImagePreview ? (
+                  <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-8 h-8 text-gray-400" />
+                )}
+                {pendingPfp && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white" />
+                )}
+              </div>
+              <div>
+                <button
+                  onClick={() => pfpInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-1.5 border border-border rounded-lg text-black hover:bg-hover transition-colors text-sm"
+                >
+                  <UploadIcon className="w-3.5 h-3.5" />
                   {profileImagePreview ? "Change" : "Upload"}
-                </span>
-              </button>
+                </button>
+                <p className="text-xs text-neutral-400 mt-1">
+                  JPG, PNG up to 5MB
+                  {pendingPfp && <span className="text-yellow-600 ml-1">• Unsaved</span>}
+                </p>
+                <input ref={pfpInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+              </div>
             </div>
-            <p className="text-sm text-neutral-400">
-              JPG, PNG up to 5MB
-              {pendingPfp && <span className="text-yellow-600 ml-2">• Unsaved</span>}
-            </p>
-            <input
-              ref={pfpInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-        </div>
 
-        {/* Form Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">First Name</label>
-            <input
-              type="text"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              maxLength={50}
-              placeholder="Enter your first name"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">First Name</label>
+                <input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} maxLength={50} placeholder="Enter your first name" className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">Last Name</label>
+                <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} maxLength={50} placeholder="Enter your last name" className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">Username</label>
+                <input type="text" value={formData.userName} onChange={(e) => handleUserNameChange(e.target.value)} maxLength={30} placeholder="@yourname" className={`w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black ${userNameError ? "border border-red-500" : ""}`} />
+                {checkingUserName && <p className="text-xs text-neutral-400 mt-1">Checking availability...</p>}
+                {userNameError && <p className="text-xs text-red-500 mt-1">{userNameError}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">Category</label>
+                <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black appearance-none cursor-pointer">
+                  <option value="">Please select</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">Last Name</label>
-            <input
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              maxLength={50}
-              placeholder="Enter your last name"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">User Name / Creator Name</label>
-            <input
-              type="text"
-              value={formData.userName}
-              onChange={(e) => handleUserNameChange(e.target.value)}
-              maxLength={30}
-              placeholder="@yourname"
-              className={`w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black ${userNameError ? "border border-red-500" : ""}`}
-            />
-            {checkingUserName && (
-              <p className="text-sm text-neutral-400 mt-1">Checking availability...</p>
-            )}
-            {userNameError && (
-              <p className="text-sm text-red-500 mt-1">{userNameError}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">Select your primary category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black appearance-none cursor-pointer"
-            >
-              <option value="">Please select</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">Website (Optional)</label>
-            <input
-              type="url"
-              value={formData.website}
-              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              maxLength={200}
-              placeholder="https://yourwebsite.com"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-black mb-2">Location (Optional)</label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              maxLength={100}
-              placeholder="Los Angeles, CA"
-              className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black"
-            />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-black mb-2">Bio / About</label>
-          <textarea
-            value={formData.bio}
-            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-            maxLength={500}
-            rows={4}
-            placeholder="Add a bio to tell brands about yourself."
-            className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black resize-none"
-          />
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-black mb-2">Insight about your audience</label>
-          <textarea
-            value={formData.audienceSummary}
-            onChange={(e) => setFormData({ ...formData, audienceSummary: e.target.value })}
-            maxLength={300}
-            rows={3}
-            placeholder="e.g., Young professionals aged 25-34, interested in tech and lifestyle..."
-            className="w-full px-4 py-3 bg-gray-50 rounded-lg text-black focus:outline-none focus:ring-2 ring-black resize-none"
-          />
-        </div>
-
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={handleSaveChanges}
-            disabled={saving}
-            className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
+        )}
       </section>
 
+      {/* Contact & Links */}
+      <section className="mb-6 border border-border rounded-xl overflow-hidden">
+        <button
+          onClick={() => toggleSection("contact")}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <h2 className="text-base font-medium text-black">Contact & Links</h2>
+          <ChevronIcon className={`w-5 h-5 text-neutral-400 transition-transform ${openSections.contact ? "rotate-180" : ""}`} />
+        </button>
+        {openSections.contact && (
+          <div className="px-6 pb-6 border-t border-border pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">Contact Email</label>
+                <input type="email" value={formData.emailCta} onChange={(e) => setFormData({ ...formData, emailCta: e.target.value })} maxLength={200} placeholder={user?.email || "your@email.com"} className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black" />
+                <p className="text-xs text-neutral-400 mt-1">Defaults to account email if empty.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">Website</label>
+                <input type="url" value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} maxLength={200} placeholder="https://yourwebsite.com" className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1.5">Location</label>
+                <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} maxLength={100} placeholder="Los Angeles, CA" className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black" />
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* About */}
+      <section className="mb-6 border border-border rounded-xl overflow-hidden">
+        <button
+          onClick={() => toggleSection("about")}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <h2 className="text-base font-medium text-black">About</h2>
+          <ChevronIcon className={`w-5 h-5 text-neutral-400 transition-transform ${openSections.about ? "rotate-180" : ""}`} />
+        </button>
+        {openSections.about && (
+          <div className="px-6 pb-6 border-t border-border pt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-black mb-1.5">Bio</label>
+              <textarea value={formData.bio} onChange={(e) => setFormData({ ...formData, bio: e.target.value })} maxLength={500} rows={3} placeholder="Tell brands about yourself." className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black resize-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-black mb-1.5">Audience Insight</label>
+              <textarea value={formData.audienceSummary} onChange={(e) => setFormData({ ...formData, audienceSummary: e.target.value })} maxLength={300} rows={2} placeholder="e.g., Young professionals aged 25-34, interested in tech and lifestyle..." className="w-full px-3 py-2.5 bg-gray-50 rounded-lg text-black text-sm focus:outline-none focus:ring-2 ring-black resize-none" />
+            </div>
+          </div>
+        )}
+      </section>
+
+      <div className="flex justify-end mb-10">
+        <button
+          onClick={handleSaveChanges}
+          disabled={saving}
+          className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+
       {/* Achievements & Highlights */}
-      <section className="bg-white rounded-xl p-6  mb-6">
+      <section className="mb-10">
         <h2 className="text-lg font-medium text-black mb-6">Achievements & Highlights</h2>
 
         <div className="space-y-4">
@@ -654,7 +639,7 @@ export default function InfluenceProfile() {
       </section>
 
       {/* Brand Collaborations */}
-      <section className="bg-white rounded-xl p-6  mb-6">
+      <section className="mb-10">
         <h2 className="text-lg font-medium text-black mb-6">Brand Collaborations</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1020,6 +1005,14 @@ function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
     </svg>
   );
 }

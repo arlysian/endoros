@@ -25,7 +25,8 @@ export async function GET() {
       coverImageUrl,
       isMediaKitPublic,
       audienceSummary,
-      onboardingCompleted
+      onboardingCompleted,
+      emailCta
     `)
     .eq("id", userId)
     .single();
@@ -85,6 +86,7 @@ export async function PATCH(request: NextRequest) {
       "audienceSummary",
       "onboardingCompleted",
       "phone",
+      "emailCta",
     ];
 
     const updates: Record<string, string | number | boolean | null> = {};

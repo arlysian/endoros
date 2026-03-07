@@ -55,47 +55,6 @@ export type Database = {
           },
         ]
       }
-      CreatorRate: {
-        Row: {
-          id: string
-          userId: string
-          platform: string
-          contentType: string
-          price: number
-          currency: string
-          createdAt: string | null
-          updatedAt: string | null
-        }
-        Insert: {
-          id?: string
-          userId: string
-          platform: string
-          contentType: string
-          price: number
-          currency?: string
-          createdAt?: string | null
-          updatedAt?: string | null
-        }
-        Update: {
-          id?: string
-          userId?: string
-          platform?: string
-          contentType?: string
-          price?: number
-          currency?: string
-          createdAt?: string | null
-          updatedAt?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "CreatorRate_userId_fkey"
-            columns: ["userId"]
-            isOneToOne: false
-            referencedRelation: "User"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       AudienceDemographics: {
         Row: {
           connectedAccountId: string
@@ -237,6 +196,80 @@ export type Database = {
           },
         ]
       }
+      CreatorRate: {
+        Row: {
+          contentType: string
+          createdAt: string | null
+          currency: string
+          id: string
+          platform: string
+          price: number
+          updatedAt: string | null
+          userId: string
+        }
+        Insert: {
+          contentType: string
+          createdAt?: string | null
+          currency?: string
+          id?: string
+          platform: string
+          price: number
+          updatedAt?: string | null
+          userId: string
+        }
+        Update: {
+          contentType?: string
+          createdAt?: string | null
+          currency?: string
+          id?: string
+          platform?: string
+          price?: number
+          updatedAt?: string | null
+          userId?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "CreatorRate_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "User"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_export_completed: {
+        Row: {
+          account_type: string | null
+          email: string | null
+          engagements: number | null
+          followers: number | null
+          is_verified: boolean | null
+          platform: string | null
+          profile_id: string | null
+          username: string | null
+        }
+        Insert: {
+          account_type?: string | null
+          email?: string | null
+          engagements?: number | null
+          followers?: number | null
+          is_verified?: boolean | null
+          platform?: string | null
+          profile_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          account_type?: string | null
+          email?: string | null
+          engagements?: number | null
+          followers?: number | null
+          is_verified?: boolean | null
+          platform?: string | null
+          profile_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       Feedback: {
         Row: {
           createdAt: string
@@ -299,63 +332,63 @@ export type Database = {
       }
       PinnedPost: {
         Row: {
-          id: string
-          userId: string
-          connectedAccountId: string
-          igMediaId: string
-          mediaType: string
-          imageUrl: string
-          permalink: string
           caption: string | null
-          likeCount: number | null
           commentsCount: number | null
-          displayOrder: number
+          connectedAccountId: string
           createdAt: string | null
+          displayOrder: number
+          id: string
+          igMediaId: string
+          imageUrl: string
+          likeCount: number | null
+          mediaType: string
+          permalink: string
           updatedAt: string | null
+          userId: string
         }
         Insert: {
-          id?: string
-          userId: string
-          connectedAccountId: string
-          igMediaId: string
-          mediaType: string
-          imageUrl: string
-          permalink: string
           caption?: string | null
-          likeCount?: number | null
           commentsCount?: number | null
-          displayOrder?: number
+          connectedAccountId: string
           createdAt?: string | null
+          displayOrder?: number
+          id?: string
+          igMediaId: string
+          imageUrl: string
+          likeCount?: number | null
+          mediaType: string
+          permalink: string
           updatedAt?: string | null
+          userId: string
         }
         Update: {
-          id?: string
-          userId?: string
-          connectedAccountId?: string
-          igMediaId?: string
-          mediaType?: string
-          imageUrl?: string
-          permalink?: string
           caption?: string | null
-          likeCount?: number | null
           commentsCount?: number | null
-          displayOrder?: number
+          connectedAccountId?: string
           createdAt?: string | null
+          displayOrder?: number
+          id?: string
+          igMediaId?: string
+          imageUrl?: string
+          likeCount?: number | null
+          mediaType?: string
+          permalink?: string
           updatedAt?: string | null
+          userId?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "PinnedPost_userId_fkey"
-            columns: ["userId"]
-            isOneToOne: false
-            referencedRelation: "User"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "PinnedPost_connectedAccountId_fkey"
             columns: ["connectedAccountId"]
             isOneToOne: false
             referencedRelation: "ConnectedAccount"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "PinnedPost_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "User"
             referencedColumns: ["id"]
           },
         ]
@@ -532,6 +565,7 @@ export type Database = {
           createdAt: string
           customUrl: string | null
           email: string
+          emailCta: string | null
           firstName: string | null
           id: string
           isMediaKitPublic: boolean
@@ -552,6 +586,7 @@ export type Database = {
           createdAt?: string
           customUrl?: string | null
           email: string
+          emailCta?: string | null
           firstName?: string | null
           id: string
           isMediaKitPublic?: boolean
@@ -572,6 +607,7 @@ export type Database = {
           createdAt?: string
           customUrl?: string | null
           email?: string
+          emailCta?: string | null
           firstName?: string | null
           id?: string
           isMediaKitPublic?: boolean

@@ -20,6 +20,7 @@ interface UserData {
   coverImageUrl: string | null;
   onboardingCompleted: boolean;
   audienceSummary: string | null;
+  emailCta: string | null;
 }
 
 interface SidebarContextType {
