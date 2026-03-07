@@ -574,7 +574,9 @@ export default function MediaKitDesktop({
             <div className="grid grid-cols-2 gap-8">
               {/* Key Stats for Brands */}
               <div>
-                <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Key Metrics</h3>
+                <div className="flex items-center h-8 mb-4">
+                  <h3 className="text-base font-semibold text-black">Key Metrics</h3>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 hover:shadow-md transition-shadow">
                     <p className="text-2xl font-semibold text-black">
@@ -605,7 +607,7 @@ export default function MediaKitDesktop({
 
               {/* Engagement Breakdown */}
               <div>
-                <div className="flex items-center justify-between mb-4 pb-2 border-b-2 border-black/10">
+                <div className="flex items-center justify-between h-8 mb-4">
                   <h3 className="text-base font-semibold text-black">Engagement</h3>
                   {isIG && (
                     <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
@@ -734,7 +736,7 @@ export default function MediaKitDesktop({
               {/* Follower Growth - Full Width */}
               <div className="col-span-2 pt-4 border-t border-neutral-100">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-sm font-medium text-black">Follower Growth</h3>
+                  <h3 className="text-base font-semibold text-black">Follower Growth</h3>
                   <div className="flex items-center gap-2">
                     {hasHistory && (
                       <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
@@ -850,7 +852,7 @@ export default function MediaKitDesktop({
               {/* Performance Table - Instagram only */}
               {selectedAccount?.platform === "INSTAGRAM" && performanceData && (
                 <div className="col-span-2 pt-4 border-t border-neutral-100">
-                  <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Performance</h3>
+                  <h3 className="text-base font-semibold text-black mb-4 ">Performance</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -892,7 +894,7 @@ export default function MediaKitDesktop({
               {/* Audience Summary + Demographics */}
               {(user.audienceSummary || demographics.length > 0) && (
                 <div className="col-span-2 pt-4 border-t border-neutral-100">
-                  <h3 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h3>
+                  <h3 className="text-base font-semibold text-black mb-3 ">Audience</h3>
                   {user.audienceSummary && (
                     <p className="text-sm text-neutral-600 leading-relaxed mb-6">{user.audienceSummary}</p>
                   )}

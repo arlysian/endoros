@@ -804,7 +804,7 @@ export default function MediaKitMobile({
           return (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-base font-semibold text-black pb-2 border-b-2 border-black/10">Follower Growth</h3>
+                <h3 className="text-base font-semibold text-black ">Follower Growth</h3>
                 <div className="flex items-center gap-2">
                   {hasHistory && (
                     <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
@@ -1136,7 +1136,7 @@ export default function MediaKitMobile({
 
           return (
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-5 pb-2 border-b-2 border-black/10">
+              <div className="flex items-center justify-between mb-5 ">
                 <h3 className="text-base font-semibold text-black">Engagement</h3>
                 {isIG && (
                   <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
@@ -1264,7 +1264,7 @@ export default function MediaKitMobile({
 
           return (
             <div className="mb-8">
-              <h3 className="text-base font-semibold text-black mb-4 pb-2 border-b-2 border-black/10">Performance</h3>
+              <h3 className="text-base font-semibold text-black mb-4 ">Performance</h3>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-100">
@@ -1308,7 +1308,7 @@ export default function MediaKitMobile({
         {/* Audience Summary + Demographics */}
         {(user?.audienceSummary || demographics.length > 0) && (
           <div className="mb-8">
-            <h2 className="text-base font-semibold text-black mb-3 pb-2 border-b-2 border-black/10">Audience</h2>
+            <h2 className="text-base font-semibold text-black mb-3 ">Audience</h2>
             {user?.audienceSummary && (
               <p className="text-sm text-neutral-500 leading-relaxed mb-5">{user.audienceSummary}</p>
             )}
