@@ -109,3 +109,29 @@ body {
 .animate-marquee {
   animation: marquee 18s linear infinite;
 }
+
+/* Phone input overrides */
+.phone-input-wrapper .PhoneInputInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #000;
+}
+.phone-input-wrapper .PhoneInputCountry {
+  margin-right: 0.5rem;
+}
+.phone-input-wrapper .PhoneInputCountrySelect {
+  font-size: 0.875rem;
+}
+.phone-input-wrapper .PhoneInputCountryIcon {
+  width: 1.25rem;
+  height: 0.9rem;
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+.phone-input-wrapper .PhoneInputCountryIcon--border {
+  box-shadow: none;
+  background: none;
+}

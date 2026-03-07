@@ -6,6 +6,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import Cropper, { Area } from "react-easy-crop";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import {
   Shirt,
   Sparkles,
@@ -163,18 +165,14 @@ export default function Onboarding() {
     }
   }, []);
 
-  const handlePhoneChange = (value: string) => {
-    const cleaned = value.replace(/[^\d+\-\s()]/g, "");
-    setFormData((prev) => ({ ...prev, phone: cleaned }));
+  const handlePhoneChange = (value: string | undefined) => {
+    const phone = value || "";
+    setFormData((prev) => ({ ...prev, phone }));
 
-    if (!cleaned) {
+    if (!phone) {
       setPhoneError(null);
-    } else if (
-      !/^\+\d{1,3}[\s\-]?\d{8,14}$/.test(cleaned.replace(/[\s\-()]/g, ""))
-    ) {
-      setPhoneError(
-        "Enter a valid number with country code (e.g. +1 555 1234567)"
-      );
+    } else if (!isValidPhoneNumber(phone)) {
+      setPhoneError("Enter a valid phone number");
     } else {
       setPhoneError(null);
     }
@@ -549,12 +547,12 @@ export default function Onboarding() {
                     <label className="block text-sm font-medium text-black mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
+                      international
+                      defaultCountry="US"
                       value={formData.phone}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      placeholder="+1 555 1234567"
-                      className={`w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-200 ${
+                      onChange={handlePhoneChange}
+                      className={`phone-input-wrapper w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-black focus-within:ring-2 focus-within:ring-neutral-200 ${
                         phoneError ? "ring-2 ring-red-500/20" : ""
                       }`}
                     />
