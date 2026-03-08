@@ -24,9 +24,11 @@ import {
   Upload,
   MapPin,
   User,
+  Lock,
+  AlertCircle,
 } from "lucide-react";
 
-const TOTAL_STEPS = 6; // 0-5
+const TOTAL_STEPS = 8; // 0-7
 
 const categories = [
   { label: "Fashion & Style", icon: Shirt },
@@ -84,14 +86,40 @@ async function getCroppedImg(imageSrc: string, crop: Area): Promise<Blob> {
   });
 }
 
+const CACHE_KEY = "onboarding_cache";
+
+type OnboardingCache = {
+  step: number;
+  formData: { userName: string; location: string; category: string; phone: string; bio: string };
+  croppedPreview: string | null;
+  photoFile: string | null;
+};
+
+function getCache(): OnboardingCache | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveCache(data: OnboardingCache) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function clearCache() {
+  try { sessionStorage.removeItem(CACHE_KEY); } catch {}
+}
+
 export default function Onboarding() {
   const router = useRouter();
 
-  const [step, setStep] = useState(0);
+  const cached = typeof window !== "undefined" ? getCache() : null;
+
+  const [step, setStep] = useState(cached?.step ?? 0);
   const [direction, setDirection] = useState(1);
   const [firstName, setFirstName] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(cached?.formData ?? {
     userName: "",
     location: "",
     category: "",
@@ -108,13 +136,29 @@ export default function Onboarding() {
   const userNameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Photo state
-  const [photoFile, setPhotoFile] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<string | null>(cached?.photoFile ?? null);
   const [croppedPhoto, setCroppedPhoto] = useState<Blob | null>(null);
-  const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
+  const [croppedPreview, setCroppedPreview] = useState<string | null>(cached?.croppedPreview ?? null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Instagram connect state
+  const [igConnecting, setIgConnecting] = useState(false);
+  const [igConnected, setIgConnected] = useState(false);
+  const [igUsername, setIgUsername] = useState<string | null>(null);
+  const [igError, setIgError] = useState<string | null>(null);
+
+  // TikTok connect state
+  const [ttConnecting, setTtConnecting] = useState(false);
+  const [ttConnected, setTtConnected] = useState(false);
+  const [ttUsername, setTtUsername] = useState<string | null>(null);
+
+  // Persist onboarding progress to sessionStorage
+  useEffect(() => {
+    saveCache({ step, formData, croppedPreview, photoFile });
+  }, [step, formData, croppedPreview, photoFile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,6 +179,25 @@ export default function Onboarding() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Check if TikTok was just connected via redirect, or already connected
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "tiktok") {
+      window.history.replaceState({}, "", "/onboarding");
+    }
+
+    // Check if TikTok is already connected
+    fetch("/api/connect/tiktok")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.account) {
+          setTtConnected(true);
+          setTtUsername(data.account.username);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const checkUserNameAvailability = useCallback(async (userName: string) => {
@@ -237,6 +300,72 @@ export default function Onboarding() {
       setZoom(1);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleInstagramConnect = () => {
+    if (!window.FB) {
+      setIgError("Facebook SDK is still loading. Please wait a moment and try again.");
+      return;
+    }
+
+    setIgConnecting(true);
+    setIgError(null);
+
+    window.FB.login(
+      (response: { authResponse?: { accessToken: string } }) => {
+        if (response.authResponse) {
+          const connectInstagram = async () => {
+            try {
+              const res = await fetch("/api/connect/instagram", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  accessToken: response.authResponse!.accessToken,
+                }),
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                // Progressive error messages
+                const msg = data.error || "";
+                if (msg.includes("No Facebook Pages found")) {
+                  setIgError(
+                    "no_page"
+                  );
+                } else if (msg.includes("No Instagram Business account")) {
+                  setIgError(
+                    "no_ig_business"
+                  );
+                } else {
+                  setIgError(msg || "Something went wrong. Please try again.");
+                }
+                return;
+              }
+
+              setIgConnected(true);
+              setIgUsername(data.account.username);
+            } catch {
+              setIgError("Connection failed. Please try again.");
+            } finally {
+              setIgConnecting(false);
+            }
+          };
+          connectInstagram();
+        } else {
+          setIgConnecting(false);
+        }
+      },
+      {
+        scope:
+          "instagram_basic,pages_read_engagement,instagram_manage_insights,pages_show_list,business_management",
+      }
+    );
+  };
+
+  const handleTiktokConnect = () => {
+    setTtConnecting(true);
+    window.location.href = "/api/connect/tiktok/authorize?from=onboarding";
   };
 
   const handleSubmit = async () => {
@@ -609,8 +738,230 @@ export default function Onboarding() {
               </motion.div>
             )}
 
-            {/* Step 4 — Profile Photo */}
+            {/* Step 4 — Connect Instagram */}
             {step === 4 && (
+              <motion.div
+                key="instagram"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <button
+                  onClick={goBack}
+                  className="flex items-center gap-1 text-sm text-neutral-500 hover:text-black transition-colors mb-6"
+                >
+                  <ArrowLeft size={16} /> Back
+                </button>
+                <h2 className="text-2xl font-semibold text-black mb-2">
+                  Connect your Instagram
+                </h2>
+                <p className="text-neutral-500 mb-6">
+                  Unlock your full media kit with real metrics and analytics.
+                </p>
+
+                <div className="bg-neutral-50 rounded-2xl p-6">
+                  {igConnected && igUsername ? (
+                    <div className="flex items-center gap-4">
+                      <InstagramIcon className="w-10 h-10" />
+                      <div>
+                        <p className="text-sm font-medium text-black">
+                          @{igUsername}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          Connected successfully
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center">
+                      <InstagramIcon className="w-12 h-12 mb-4" />
+                      <p className="text-sm text-neutral-600 mb-5">
+                        One-tap connect via Facebook. We&apos;ll import your
+                        profile and metrics automatically.
+                      </p>
+                      <button
+                        onClick={handleInstagramConnect}
+                        disabled={igConnecting}
+                        className="w-full px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                      >
+                        {igConnecting ? "Connecting..." : "Connect Instagram"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Progressive error messages */}
+                  {igError && (
+                    <div className="mt-4 p-3 bg-white rounded-lg border border-neutral-200">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle
+                          size={16}
+                          className="text-amber-500 mt-0.5 shrink-0"
+                        />
+                        <div className="text-sm">
+                          {igError === "no_page" && (
+                            <>
+                              <p className="font-medium text-black mb-1">
+                                No Facebook Page found
+                              </p>
+                              <p className="text-neutral-500">
+                                Instagram connects through a Facebook Page.{" "}
+                                <a
+                                  href="https://www.facebook.com/business/help/1199464373557428"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-black underline hover:no-underline"
+                                >
+                                  Create one here
+                                </a>
+                                , then try again.
+                              </p>
+                            </>
+                          )}
+                          {igError === "no_ig_business" && (
+                            <>
+                              <p className="font-medium text-black mb-1">
+                                Professional account required
+                              </p>
+                              <p className="text-neutral-500">
+                                Switch to an Instagram professional account and
+                                link it to your Facebook Page.{" "}
+                                <a
+                                  href="https://help.instagram.com/2358103564437429"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-black underline hover:no-underline"
+                                >
+                                  Learn how
+                                </a>
+                              </p>
+                            </>
+                          )}
+                          {igError !== "no_page" &&
+                            igError !== "no_ig_business" && (
+                              <p className="text-neutral-600">{igError}</p>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Trust signals */}
+                <div className="mt-4 flex items-center gap-2 justify-center text-xs text-emerald-600">
+                  <Lock size={12} />
+                  <span>
+                    Read-only access — we can&apos;t post or message on your
+                    behalf
+                  </span>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={goNext}
+                    className="flex-1 px-6 py-3 bg-neutral-100 text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors"
+                  >
+                    Skip for now
+                  </button>
+                  {igConnected && (
+                    <button
+                      onClick={goNext}
+                      className="flex-1 px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors"
+                    >
+                      Continue
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 5 — Connect TikTok */}
+            {step === 5 && (
+              <motion.div
+                key="tiktok"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <button
+                  onClick={goBack}
+                  className="flex items-center gap-1 text-sm text-neutral-500 hover:text-black transition-colors mb-6"
+                >
+                  <ArrowLeft size={16} /> Back
+                </button>
+                <h2 className="text-2xl font-semibold text-black mb-2">
+                  Connect your TikTok
+                </h2>
+                <p className="text-neutral-500 mb-6">
+                  Import your TikTok profile and video metrics.
+                </p>
+
+                <div className="bg-neutral-50 rounded-2xl p-6">
+                  {ttConnected && ttUsername ? (
+                    <div className="flex items-center gap-4">
+                      <TikTokIcon className="w-10 h-10" />
+                      <div>
+                        <p className="text-sm font-medium text-black">
+                          @{ttUsername}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          Connected successfully
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center">
+                      <TikTokIcon className="w-12 h-12 mb-4" />
+                      <p className="text-sm text-neutral-600 mb-5">
+                        Connect your TikTok account to showcase your video
+                        performance.
+                      </p>
+                      <button
+                        onClick={handleTiktokConnect}
+                        disabled={ttConnecting}
+                        className="w-full px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                      >
+                        {ttConnecting ? "Redirecting..." : "Connect TikTok"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Trust signals */}
+                <div className="mt-4 flex items-center gap-2 justify-center text-xs text-emerald-600">
+                  <Lock size={12} />
+                  <span>
+                    Read-only access — we can&apos;t post or message on your
+                    behalf
+                  </span>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={goNext}
+                    className="flex-1 px-6 py-3 bg-neutral-100 text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors"
+                  >
+                    Skip for now
+                  </button>
+                  {ttConnected && (
+                    <button
+                      onClick={goNext}
+                      className="flex-1 px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors"
+                    >
+                      Continue
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 6 — Profile Photo */}
+            {step === 6 && (
               <motion.div
                 key="photo"
                 custom={direction}
@@ -747,8 +1098,8 @@ export default function Onboarding() {
               </motion.div>
             )}
 
-            {/* Step 5 — Completion */}
-            {step === 5 && (
+            {/* Step 7 — Completion */}
+            {step === 7 && (
               <motion.div
                 key="done"
                 custom={direction}
@@ -814,10 +1165,32 @@ export default function Onboarding() {
                       )}
                     </div>
                   </div>
+                  {(igConnected || ttConnected) && (
+                    <div className="mt-4 pt-4 border-t border-neutral-200 space-y-2">
+                      {igConnected && igUsername && (
+                        <div className="flex items-center gap-2">
+                          <InstagramIcon className="w-4 h-4" />
+                          <span className="text-sm text-black">@{igUsername}</span>
+                          <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
+                            <Check size={12} /> Connected
+                          </span>
+                        </div>
+                      )}
+                      {ttConnected && ttUsername && (
+                        <div className="flex items-center gap-2">
+                          <TikTokIcon className="w-4 h-4" />
+                          <span className="text-sm text-black">@{ttUsername}</span>
+                          <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
+                            <Check size={12} /> Connected
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
 
                 <button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() => { clearCache(); router.push("/dashboard"); }}
                   className="px-8 py-3 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition-colors"
                 >
                   Go to Dashboard
@@ -828,5 +1201,33 @@ export default function Onboarding() {
         </div>
       </div>
     </div>
+  );
+}
+
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <defs>
+        <radialGradient id="ig-grad" cx="30%" cy="107%" r="150%">
+          <stop offset="0%" stopColor="#FEDA75" />
+          <stop offset="5%" stopColor="#FA7E1E" />
+          <stop offset="45%" stopColor="#D62976" />
+          <stop offset="60%" stopColor="#962FBF" />
+          <stop offset="90%" stopColor="#4F5BD5" />
+        </radialGradient>
+      </defs>
+      <rect x="0" y="0" width="24" height="24" rx="6" fill="url(#ig-grad)" />
+      <rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="white" strokeWidth={1.5} fill="none" />
+      <circle cx="12" cy="12" r="3.5" stroke="white" strokeWidth={1.5} fill="none" />
+      <circle cx="17.5" cy="6.5" r="1" fill="white" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z" />
+    </svg>
   );
 }

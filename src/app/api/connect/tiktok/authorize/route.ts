@@ -40,8 +40,10 @@ export async function GET(request: Request) {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-  // Generate a random state for CSRF protection
-  const state = crypto.randomUUID();
+  // Encode origin (onboarding vs dashboard) into state for callback routing
+  const from = url.searchParams.get("from") || "";
+  const statePayload = JSON.stringify({ csrf: crypto.randomUUID(), from });
+  const state = Buffer.from(statePayload).toString("base64url");
 
   // TikTok scopes to request
   const scopes = [

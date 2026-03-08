@@ -92,14 +92,6 @@ Tiktok:
 
   Add a section for multiple external links (other socials, merch, newsletter, etc.)
 
-  6. Video Introduction
-
-  Short video clip where the creator introduces themselves - very personal touch.
-
-  7. Testimonials/Reviews
-
-  Brands could leave reviews. Social proof from past collaborations.
-
   8. Contact CTA
 
   More prominent "Work with me" button - currently website link is subtle.
@@ -116,6 +108,15 @@ Tiktok:
 
   "Download Media Kit" button that generates a clean PDF.
 
-  12. QR Code
 
-  Shareable QR code for the profile - useful for in-person networking.
+
+  - design 
+  - phone number
+  - explore migration to ig
+  - show creators who's viewing their profile
+  
+  - maybe add interpretation and explanation of data to creators ? 
+  - how many have viewed their media kit  
+  - add to onboarding this thing
+  
+  - source serif pro, lato, dm sans, space grotesque, space mono, shantell sans

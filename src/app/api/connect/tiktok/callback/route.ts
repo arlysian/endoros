@@ -21,17 +21,27 @@ export async function GET(request: Request) {
   const error = url.searchParams.get("error");
   const errorDescription = url.searchParams.get("error_description");
 
+  // Parse origin from state
+  let from = "";
+  try {
+    const stateParam = url.searchParams.get("state") || "";
+    const statePayload = JSON.parse(Buffer.from(stateParam, "base64url").toString());
+    from = statePayload.from || "";
+  } catch {}
+  const successRedirect = from === "onboarding" ? "/onboarding?connected=tiktok" : "/social-platforms?connected=tiktok";
+  const errorRedirect = from === "onboarding" ? "/onboarding" : "/social-platforms";
+
   if (error) {
     console.error("TikTok OAuth error:", error, errorDescription);
     return NextResponse.redirect(
-      new URL(`/social-platforms?error=${encodeURIComponent(errorDescription || error)}`, request.url)
+      new URL(`${errorRedirect}?error=${encodeURIComponent(errorDescription || error)}`, request.url)
     );
   }
 
   if (!code) {
     console.error("No code received from TikTok");
     return NextResponse.redirect(
-      new URL("/social-platforms?error=No+authorization+code+received", request.url)
+      new URL(`${errorRedirect}?error=No+authorization+code+received`, request.url)
     );
   }
 
@@ -40,14 +50,14 @@ export async function GET(request: Request) {
   if (!codeVerifier) {
     console.error("No code verifier found in cookie");
     return NextResponse.redirect(
-      new URL("/social-platforms?error=Session+expired.+Please+try+again.", request.url)
+      new URL(`${errorRedirect}?error=Session+expired.+Please+try+again.`, request.url)
     );
   }
 
   if (!TIKTOK_CLIENT_KEY || !TIKTOK_CLIENT_SECRET) {
     console.error("TikTok credentials not configured");
     return NextResponse.redirect(
-      new URL("/social-platforms?error=TikTok+configuration+error", request.url)
+      new URL(`${errorRedirect}?error=TikTok+configuration+error`, request.url)
     );
   }
 
@@ -75,7 +85,7 @@ export async function GET(request: Request) {
     if (tokenData.error || !tokenData.access_token) {
       console.error("Token exchange error:", tokenData);
       return NextResponse.redirect(
-        new URL(`/social-platforms?error=${encodeURIComponent(tokenData.error_description || "Failed to get access token")}`, request.url)
+        new URL(`${errorRedirect}?error=${encodeURIComponent(tokenData.error_description || "Failed to get access token")}`, request.url)
       );
     }
 
@@ -99,7 +109,7 @@ export async function GET(request: Request) {
     if (userData.error?.code !== "ok" && userData.error) {
       console.error("User info error:", userData);
       return NextResponse.redirect(
-        new URL(`/social-platforms?error=${encodeURIComponent(userData.error?.message || "Failed to fetch user info")}`, request.url)
+        new URL(`${errorRedirect}?error=${encodeURIComponent(userData.error?.message || "Failed to fetch user info")}`, request.url)
       );
     }
 
@@ -107,7 +117,7 @@ export async function GET(request: Request) {
     if (!userInfo) {
       console.error("No user data received:", userData);
       return NextResponse.redirect(
-        new URL("/social-platforms?error=Failed+to+fetch+user+info", request.url)
+        new URL(`${errorRedirect}?error=Failed+to+fetch+user+info`, request.url)
       );
     }
 
@@ -140,7 +150,7 @@ export async function GET(request: Request) {
     if (dbError || !data) {
       console.error("Database error:", dbError);
       return NextResponse.redirect(
-        new URL("/social-platforms?error=Failed+to+save+account", request.url)
+        new URL(`${errorRedirect}?error=Failed+to+save+account`, request.url)
       );
     }
 
@@ -156,13 +166,13 @@ export async function GET(request: Request) {
     }
 
     // Redirect back to social platforms page with success and clear the cookie
-    const response = NextResponse.redirect(new URL("/social-platforms?connected=tiktok", request.url));
+    const response = NextResponse.redirect(new URL(successRedirect, request.url));
     response.cookies.delete("tiktok_code_verifier");
     return response;
   } catch (err) {
     console.error("TikTok callback error:", err);
     return NextResponse.redirect(
-      new URL("/social-platforms?error=Connection+failed", request.url)
+      new URL(`${errorRedirect}?error=Connection+failed`, request.url)
     );
   }
 }
