@@ -78,7 +78,8 @@ export async function POST(request: NextRequest) {
 
     // Fetch post details from Instagram
     const mediaRes = await fetch(
-      `https://graph.facebook.com/v24.0/${igMediaId}?fields=id,caption,media_type,media_url,thumbnail_url,permalink,like_count,comments_count&access_token=${account.accessToken}`
+      `https://graph.facebook.com/v24.0/${igMediaId}?fields=id,caption,media_type,media_url,thumbnail_url,permalink,like_count,comments_count`,
+      { headers: { Authorization: `Bearer ${account.accessToken}` } }
     );
     const mediaData = await mediaRes.json();
 

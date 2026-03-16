@@ -39,12 +39,12 @@ export async function GET(request: NextRequest) {
     const after = searchParams.get("after");
 
     // Fetch recent media from Instagram Graph API
-    let url = `https://graph.facebook.com/v24.0/${account.instagramBusinessId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=${limit}&access_token=${account.accessToken}`;
+    let url = `https://graph.facebook.com/v24.0/${account.instagramBusinessId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=${limit}`;
     if (after) {
       url += `&after=${after}`;
     }
 
-    const mediaRes = await fetch(url);
+    const mediaRes = await fetch(url, { headers: { Authorization: `Bearer ${account.accessToken}` } });
     const mediaData = await mediaRes.json();
 
     if (mediaData.error) {

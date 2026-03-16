@@ -62,8 +62,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Access token required" }, { status: 400 });
     }
 
-    console.log("Short-lived token:", shortLivedToken);
-
     // 1. Exchange short-lived token for long-lived token
     const tokenExchangeUrl = `https://graph.facebook.com/v24.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${FACEBOOK_APP_ID}&client_secret=${FACEBOOK_APP_SECRET}&fb_exchange_token=${shortLivedToken}`;
     const tokenResponse = await fetch(tokenExchangeUrl);
@@ -77,16 +75,12 @@ export async function POST(request: NextRequest) {
     const longLivedToken = tokenData.access_token;
     const expiresIn = tokenData.expires_in || 60 * 24 * 60 * 60;
 
-    console.log("Long-lived token:", longLivedToken);
-    console.log("Expires in:", expiresIn, "seconds");
-
     // 2. Get Facebook Pages the user manages
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v24.0/me/accounts?access_token=${longLivedToken}`
+      `https://graph.facebook.com/v24.0/me/accounts`,
+      { headers: { Authorization: `Bearer ${longLivedToken}` } }
     );
     const pagesData = await pagesResponse.json();
-
-    console.log("Pages response:", JSON.stringify(pagesData, null, 2));
 
     if (pagesData.error || !pagesData.data?.length) {
       console.error("Pages error:", pagesData.error || "No pages found", pagesData);
@@ -99,7 +93,8 @@ export async function POST(request: NextRequest) {
 
     for (const page of pagesData.data) {
       const igAccountResponse = await fetch(
-        `https://graph.facebook.com/v24.0/${page.id}?fields=instagram_business_account&access_token=${longLivedToken}`
+        `https://graph.facebook.com/v24.0/${page.id}?fields=instagram_business_account`,
+        { headers: { Authorization: `Bearer ${longLivedToken}` } }
       );
       const igAccountData = await igAccountResponse.json();
 
@@ -117,7 +112,8 @@ export async function POST(request: NextRequest) {
 
     // 4. Get Instagram account details
     const igDetailsResponse = await fetch(
-      `https://graph.facebook.com/v24.0/${igAccountId}?fields=id,username,followers_count,profile_picture_url&access_token=${longLivedToken}`
+      `https://graph.facebook.com/v24.0/${igAccountId}?fields=id,username,followers_count,profile_picture_url`,
+      { headers: { Authorization: `Bearer ${longLivedToken}` } }
     );
     const igDetails = await igDetailsResponse.json();
 

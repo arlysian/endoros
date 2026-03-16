@@ -101,10 +101,10 @@ export async function backfillFollowerHistory(account: Account) {
   }));
 
   const batchRes = await fetch(
-    `https://graph.facebook.com/v24.0/?access_token=${token}`,
+    `https://graph.facebook.com/v24.0/`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ batch: batchRequests }),
     }
   );
@@ -185,10 +185,10 @@ export async function backfillProfileVisits(account: Account) {
   }));
 
   const batchRes = await fetch(
-    `https://graph.facebook.com/v24.0/?access_token=${token}`,
+    `https://graph.facebook.com/v24.0/`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ batch: batchRequests }),
     }
   );
@@ -260,10 +260,10 @@ export async function backfillLinkClicks(account: Account) {
   }));
 
   const batchRes = await fetch(
-    `https://graph.facebook.com/v24.0/?access_token=${token}`,
+    `https://graph.facebook.com/v24.0/`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ batch: batchRequests }),
     }
   );
@@ -357,10 +357,10 @@ export async function backfillEngagement(account: Account) {
   const allResponses: z.infer<typeof BatchResponseItemSchema>[] = [];
   for (const batch of batches) {
     const batchRes = await fetch(
-      `https://graph.facebook.com/v24.0/?access_token=${token}`,
+      `https://graph.facebook.com/v24.0/`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ batch }),
       }
     );
@@ -436,7 +436,8 @@ export async function fetchAudienceDemographics(account: Account) {
 
   for (const breakdown of breakdowns) {
     const res = await fetch(
-      `${baseUrl}?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=${breakdown}&access_token=${token}`
+      `${baseUrl}?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=${breakdown}`,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     const raw = await res.json();
 
@@ -488,7 +489,8 @@ export async function fetchInstagramMetrics(account: Account) {
 
   // 1. Fetch profile (followers, username)
   const profileResponse = await fetch(
-    `https://graph.facebook.com/v24.0/${instagramBusinessId}?fields=followers_count,username&access_token=${token}`
+    `https://graph.facebook.com/v24.0/${instagramBusinessId}?fields=followers_count,username`,
+    { headers: { Authorization: `Bearer ${token}` } }
   );
   const profileRaw = await profileResponse.json();
 
@@ -505,7 +507,7 @@ export async function fetchInstagramMetrics(account: Account) {
   };
 
   // Reach
-  const reachRes = await fetch(`${baseUrl}?metric=reach&period=days_28&access_token=${token}`);
+  const reachRes = await fetch(`${baseUrl}?metric=reach&period=days_28`, { headers: { Authorization: `Bearer ${token}` } });
   const reachRaw = await reachRes.json();
   const reachParsed = IgInsightValueSchema.safeParse(reachRaw);
   if (reachParsed.success) {
@@ -514,7 +516,8 @@ export async function fetchInstagramMetrics(account: Account) {
 
   // Fetch recent media for engagement metrics
   const mediaRes = await fetch(
-    `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=50&access_token=${token}`
+    `https://graph.facebook.com/v24.0/${instagramBusinessId}/media?fields=id,like_count,comments_count&limit=50`,
+    { headers: { Authorization: `Bearer ${token}` } }
   );
   const mediaRaw = await mediaRes.json();
   const mediaParsed = IgMediaListSchema.safeParse(mediaRaw);
@@ -545,10 +548,10 @@ export async function fetchInstagramMetrics(account: Account) {
     for (let i = 0; i < batchRequests.length; i += batchSize) {
       const batch = batchRequests.slice(i, i + batchSize);
       const batchRes = await fetch(
-        `https://graph.facebook.com/v24.0/?access_token=${token}`,
+        `https://graph.facebook.com/v24.0/`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ batch }),
         }
       );
@@ -601,7 +604,7 @@ export async function fetchInstagramMetrics(account: Account) {
   profileViewsNextDate.setDate(profileViewsNextDate.getDate() + 1);
   const profileViewsSince = Math.floor(profileViewsDate.getTime() / 1000);
   const profileViewsUntil = Math.floor(profileViewsNextDate.getTime() / 1000);
-  const profileViewsRes = await fetch(`${baseUrl}?metric=profile_views&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}&access_token=${token}`);
+  const profileViewsRes = await fetch(`${baseUrl}?metric=profile_views&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}`, { headers: { Authorization: `Bearer ${token}` } });
   const profileViewsRaw = await profileViewsRes.json();
   let profileVisitsValue = 0;
   const pvParsed = IgInsightTotalValueSchema.safeParse(profileViewsRaw);
@@ -610,7 +613,7 @@ export async function fetchInstagramMetrics(account: Account) {
   }
 
   // Website clicks (yesterday, 24h lag)
-  const websiteClicksRes = await fetch(`${baseUrl}?metric=website_clicks&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}&access_token=${token}`);
+  const websiteClicksRes = await fetch(`${baseUrl}?metric=website_clicks&period=day&metric_type=total_value&since=${profileViewsSince}&until=${profileViewsUntil}`, { headers: { Authorization: `Bearer ${token}` } });
   const websiteClicksRaw = await websiteClicksRes.json();
   let linkClicksValue = 0;
   const wcParsed = IgInsightTotalValueSchema.safeParse(websiteClicksRaw);
@@ -632,10 +635,10 @@ export async function fetchInstagramMetrics(account: Account) {
   ];
 
   const engagementBatchRes = await fetch(
-    `https://graph.facebook.com/v24.0/?access_token=${token}`,
+    `https://graph.facebook.com/v24.0/`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ batch: engagementBatch }),
     }
   );
@@ -668,7 +671,8 @@ export async function fetchInstagramMetrics(account: Account) {
   const dayBeforeYesterdayStr = dayBeforeYesterday.toISOString().split("T")[0];
 
   const followsRes = await fetch(
-    `${baseUrl}?metric=follows_and_unfollows&metric_type=total_value&period=day&breakdown=follow_type&since=${dayBeforeYesterdayStr}&until=${yesterdayStr}&access_token=${token}`
+    `${baseUrl}?metric=follows_and_unfollows&metric_type=total_value&period=day&breakdown=follow_type&since=${dayBeforeYesterdayStr}&until=${yesterdayStr}`,
+    { headers: { Authorization: `Bearer ${token}` } }
   );
   const followsRaw = await followsRes.json();
 

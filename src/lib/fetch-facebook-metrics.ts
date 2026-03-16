@@ -13,7 +13,8 @@ const FacebookPageSchema = z.object({
 
 export async function fetchFacebookMetrics(account: Account) {
   const res = await fetch(
-    `https://graph.facebook.com/v24.0/${account.pageId}?fields=followers_count&access_token=${account.pageAccessToken}`
+    `https://graph.facebook.com/v24.0/${account.pageId}?fields=followers_count`,
+    { headers: { Authorization: `Bearer ${account.pageAccessToken}` } }
   );
 
   const raw = await res.json();

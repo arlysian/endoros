@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
 
     // 2. Get Facebook Pages the user manages
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v24.0/me/accounts?fields=id,name,access_token,fan_count,picture&access_token=${longLivedToken}`
+      `https://graph.facebook.com/v24.0/me/accounts?fields=id,name,access_token,fan_count,picture`,
+      { headers: { Authorization: `Bearer ${longLivedToken}` } }
     );
     const pagesData = await pagesResponse.json();
 
